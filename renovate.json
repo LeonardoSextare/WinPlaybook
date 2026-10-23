@@ -8,6 +8,7 @@
   ],
   "schedule": ["* * * * 1"],
   "minimumReleaseAge": "3 days",
+  "automerge": true,
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["* * * * 1"]
@@ -30,13 +31,6 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["ghcr.io/**"],
       "minimumReleaseAge": null
-    },
-    {
-      "description": "A new Python version changes the image interpreter, so wait for manual approval",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["python"],
-      "matchUpdateTypes": ["major", "minor"],
-      "dependencyDashboardApproval": true
     },
     {
       "matchManagers": ["github-actions"],
