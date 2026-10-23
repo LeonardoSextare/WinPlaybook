@@ -1,0 +1,7 @@
+- name: Say hello
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Print a greeting
+      ansible.builtin.debug:
+        msg: hello from WinPlaybook

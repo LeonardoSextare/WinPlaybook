@@ -1,0 +1,135 @@
+name: Image release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - image/**
+      - tests/integration/**
+      - tests/helpers/**
+      - tests/data/**
+      - requirements.psd1
+      - .github/workflows/image-ci.yml
+      - .github/workflows/image-release.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-release
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  IMAGE_NAME: ghcr.io/leonardosextare/winplaybook
+  GIT_CLIFF__BUMP__INITIAL_TAG: image-v0.1.0
+
+jobs:
+  integration-tests:
+    name: Integration tests
+    uses: ./.github/workflows/image-ci.yml
+
+  version:
+    name: Version
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.release_info.outputs.should_release }}
+      tag: ${{ steps.release_info.outputs.tag }}
+      version: ${{ steps.release_info.outputs.version }}
+      minor: ${{ steps.release_info.outputs.minor }}
+      major: ${{ steps.release_info.outputs.major }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Calculate the next version
+        id: next_version
+        uses: orhun/git-cliff-action@v4
+        with:
+          args: >-
+            --include-path "image/**"
+            --tag-pattern "^image-v"
+            --bumped-version
+
+      - name: Compare with the latest release
+        id: release_info
+        env:
+          NEXT_TAG: ${{ steps.next_version.outputs.content }}
+        run: |
+          $tag = $env:NEXT_TAG.Trim()
+          $latest = git tag --list 'image-v*' --merged HEAD --sort=-version:refname | Select-Object -First 1
+          $version = [version] ($tag -replace '^image-v')
+          $shouldRelease = if ($tag -eq $latest) { 'false' } else { 'true' }
+
+          Write-Host "Latest: $($latest ?? 'none'). Next: $tag. Should release: $shouldRelease."
+          @(
+              "should_release=$shouldRelease"
+              "tag=$tag"
+              "version=$version"
+              "minor=$($version.Major).$($version.Minor)"
+              "major=$($version.Major)"
+          ) | Add-Content $env:GITHUB_OUTPUT
+
+  publish:
+    name: Publish
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    env:
+      TAG: ${{ needs.version.outputs.tag }}
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Generate the release notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          args: >-
+            --include-path "image/**"
+            --tag-pattern "^image-v"
+            --unreleased
+            --bump
+            --strip all
+            --output release-notes.md
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push the image
+        uses: docker/build-push-action@v7
+        with:
+          context: image
+          push: true
+          labels: org.opencontainers.image.version=${{ env.VERSION }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
+            ${{ env.IMAGE_NAME }}:${{ needs.version.outputs.minor }}
+            ${{ env.IMAGE_NAME }}:${{ needs.version.outputs.major }}
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create $env:TAG --title "Image $env:VERSION" --notes-file release-notes.md --target $env:GITHUB_SHA
