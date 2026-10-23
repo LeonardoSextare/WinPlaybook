@@ -1,0 +1,7 @@
+- name: Use a short module name
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Print a greeting
+      debug:
+        msg: hello
