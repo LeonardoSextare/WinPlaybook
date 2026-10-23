@@ -2,19 +2,25 @@ name: Image CI
 
 on:
   pull_request:
-    paths: &image-paths
+    paths:
       - image/**
       - tests/integration/**
       - tests/helpers/**
       - tests/data/**
       - requirements.psd1
       - .github/workflows/image-ci.yml
-  push:
-    branches: [main]
-    paths: *image-paths
+  workflow_call:
 
 permissions:
   contents: read
+
+concurrency:
+  group: image-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: pwsh
 
 jobs:
   integration-tests:
@@ -25,9 +31,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install test dependencies
-        shell: pwsh
         run: Install-PSResource -RequiredResourceFile requirements.psd1 -TrustRepository -Quiet
 
       - name: Run integration tests
-        shell: pwsh
         run: Invoke-Pester -Path tests/integration -CI -Output Detailed
