@@ -2,13 +2,6 @@ name: Image CI
 
 on:
   pull_request:
-    paths:
-      - image/**
-      - tests/integration/**
-      - tests/helpers/**
-      - tests/data/**
-      - requirements.psd1
-      - .github/workflows/image-ci.yml
   workflow_call:
 
 permissions:

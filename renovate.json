@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitScopeDisabled",
+    ":timezone(America/Sao_Paulo)"
+  ],
+  "schedule": ["* * * * 1"],
+  "minimumReleaseAge": "3 days",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* * * * 1"]
+  },
+  "packageRules": [
+    {
+      "description": "Image updates must be fix so git-cliff releases a new image version",
+      "matchFileNames": ["image/**"],
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Update only uv.lock and keep the ranges in pyproject.toml",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["project.dependencies"],
+      "rangeStrategy": "update-lockfile",
+      "groupName": "image python packages"
+    },
+    {
+      "description": "GHCR has no release timestamps, so minimumReleaseAge would hold these updates forever",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/**"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "A new Python version changes the image interpreter, so wait for manual approval",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major", "minor"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci",
+      "groupName": "workflow actions"
+    }
+  ]
+}
