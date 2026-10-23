@@ -3,11 +3,11 @@ name = "winplaybook-image"
 version = "0.0.0"
 requires-python = "==3.13.*"
 dependencies = [
-    "ansible-core>=2.20.0",
-    "ansible-creator>=25.9.0",
-    "ansible-lint>=25.11.0",
-    "pypsrp>=0.9.1",
-    "pywinrm>=0.5.0",
+    "ansible-core~=2.21.5",
+    "ansible-creator~=26.10.0",
+    "ansible-lint~=26.10.1",
+    "pypsrp~=0.9.1",
+    "pywinrm~=0.5.0",
 ]
 
 [tool.uv]
