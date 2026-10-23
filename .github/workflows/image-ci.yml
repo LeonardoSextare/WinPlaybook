@@ -1,0 +1,33 @@
+name: Image CI
+
+on:
+  pull_request:
+    paths: &image-paths
+      - image/**
+      - tests/integration/**
+      - tests/helpers/**
+      - tests/data/**
+      - requirements.psd1
+      - .github/workflows/image-ci.yml
+  push:
+    branches: [main]
+    paths: *image-paths
+
+permissions:
+  contents: read
+
+jobs:
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install test dependencies
+        shell: pwsh
+        run: Install-PSResource -RequiredResourceFile requirements.psd1 -TrustRepository -Quiet
+
+      - name: Run integration tests
+        shell: pwsh
+        run: Invoke-Pester -Path tests/integration -CI -Output Detailed

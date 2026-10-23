@@ -1,7 +1,7 @@
 BeforeAll {
-    . "$PSScriptRoot\..\helpers\Docker.ps1"
+    . (Join-Path $PSScriptRoot '../helpers/Docker.ps1')
     $image = Build-TestImage
-    $projectsDir = Join-Path $PSScriptRoot '..\data\projects'
+    $projectsDir = Join-Path $PSScriptRoot '../data/projects'
 }
 
 Describe 'Container runtime' {
@@ -21,18 +21,18 @@ Describe 'Container runtime' {
 
     Context 'when a project is mounted' {
         BeforeAll {
-            Copy-Item "$projectsDir\*" $TestDrive -Recurse
+            Copy-Item (Join-Path $projectsDir '*') $TestDrive -Recurse
         }
 
         It 'runs the playbook' {
-            $result = Invoke-Container $image -Project "$TestDrive\hello" -Command 'ansible-playbook', 'site.yml'
+            $result = Invoke-Container $image -Project (Join-Path $TestDrive 'hello') -Command 'ansible-playbook', 'site.yml'
 
             $result.ExitCode | Should-Be 0 -Because $result.Output
             $result.Output | Should-BeLikeString '*hello from WinPlaybook*'
         }
 
         It 'reports lint violations' {
-            $result = Invoke-Container $image -Project "$TestDrive\lint-violation" -Command 'ansible-lint', 'site.yml'
+            $result = Invoke-Container $image -Project (Join-Path $TestDrive 'lint-violation') -Command 'ansible-lint', 'site.yml'
 
             $result.ExitCode | Should-NotBe 0
             $result.Output | Should-BeLikeString '*fqcn`[action-core`]*'

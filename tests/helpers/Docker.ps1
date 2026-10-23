@@ -9,7 +9,7 @@ function Invoke-Docker([string[]] $Arguments) {
 
 function Build-TestImage {
     $image = 'winplaybook:test'
-    $imageDir = Join-Path $PSScriptRoot '..\..\image'
+    $imageDir = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../image'))
 
     $result = Invoke-Docker @('build', '--quiet', '--tag', $image, $imageDir)
     if ($result.ExitCode -ne 0) {

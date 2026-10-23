@@ -17,7 +17,7 @@ BeforeDiscovery {
 }
 
 BeforeAll {
-    . "$PSScriptRoot\..\helpers\Docker.ps1"
+    . (Join-Path $PSScriptRoot '../helpers/Docker.ps1')
     $container = Start-TestContainer (Build-TestImage)
 }
 
