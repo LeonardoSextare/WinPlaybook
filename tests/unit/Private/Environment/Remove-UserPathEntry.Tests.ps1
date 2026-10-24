@@ -1,59 +1,88 @@
-BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '../../module/WinPlaybook/WinPlaybook.psd1') -Force
-    $originalSessionPath = $env:PATH
-}
-
-AfterAll {
-    $env:PATH = $originalSessionPath
-    Remove-Module WinPlaybook
-}
-
 Describe 'Remove-UserPathEntry' {
     BeforeAll {
-        Mock Set-UserEnvironmentVariable -ModuleName WinPlaybook { }
+        Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+        . (Join-Path $PSScriptRoot '../../../helpers/Environment.ps1')
+        Clear-TestVariable
+    }
+
+    AfterAll {
+        Clear-TestVariable
+        Remove-Module WinPlaybook
+    }
+
+    BeforeEach {
+        $variableName = New-TestVariableName
     }
 
     AfterEach {
-        $env:PATH = $originalSessionPath
+        Remove-TestVariable -Name $variableName
     }
 
-    Context 'when the folder is in the user Path' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Tools;c:\shims\;C:\Other' }
-        }
+    Context 'when the folder is in the user variable' {
+        It 'removes it and keeps the other entries' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Tools;c:\shims\;%USERPROFILE%\bin'
 
-        It 'removes it from the user Path' {
-            InModuleScope WinPlaybook { Remove-UserPathEntry -Folder 'C:\Shims' }
-
-            Should-Invoke Set-UserEnvironmentVariable -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Name -eq 'Path' -and $Value -eq 'C:\Tools;C:\Other'
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
             }
+
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be 'C:\Tools;%USERPROFILE%\bin'
+        }
+
+        It 'keeps the variable as an expandable string' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Shims;%USERPROFILE%\bin'
+
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            (Get-TestUserVariable -Name $variableName).Kind | Should-Be 'ExpandString'
         }
     }
 
-    Context 'when the folder is not in the user Path' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Tools;C:\Other' }
+    Context 'when the folder is the only entry of the user variable' {
+        It 'removes the variable' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Shims'
+
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            Get-TestUserVariable -Name $variableName | Should-BeNull
         }
+    }
 
-        It 'leaves the user Path unchanged' {
-            InModuleScope WinPlaybook { Remove-UserPathEntry -Folder 'C:\Shims' }
+    Context 'when the folder is not in the user variable' {
+        It 'leaves the variable unchanged' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Tools;%USERPROFILE%\bin'
 
-            Should-NotInvoke Set-UserEnvironmentVariable -ModuleName WinPlaybook
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be 'C:\Tools;%USERPROFILE%\bin'
         }
     }
 
     Context 'when the folder is in the current session' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Tools' }
+        It 'removes it from the session variable' {
+            Set-Item -LiteralPath "Env:$variableName" -Value 'C:\Shims;C:\Windows'
+
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            (Get-Item -LiteralPath "Env:$variableName").Value | Should-Be 'C:\Windows'
         }
 
-        It 'removes it from the session Path' {
-            $env:PATH = 'C:\Shims;C:\Windows'
+        It 'removes the session variable when the folder is its only entry' {
+            Set-Item -LiteralPath "Env:$variableName" -Value 'C:\Shims'
 
-            InModuleScope WinPlaybook { Remove-UserPathEntry -Folder 'C:\Shims' }
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Remove-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
 
-            $env:PATH | Should-Be 'C:\Windows'
+            Test-Path -LiteralPath "Env:$variableName" | Should-BeFalse
         }
     }
 }

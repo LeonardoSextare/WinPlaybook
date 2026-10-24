@@ -1,87 +1,103 @@
-BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '../../module/WinPlaybook/WinPlaybook.psd1') -Force
-    $originalSessionPath = $env:PATH
-}
-
-AfterAll {
-    $env:PATH = $originalSessionPath
-    Remove-Module WinPlaybook
-}
-
 Describe 'Add-UserPathEntry' {
     BeforeAll {
-        Mock Set-UserEnvironmentVariable -ModuleName WinPlaybook { }
+        Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+        . (Join-Path $PSScriptRoot '../../../helpers/Environment.ps1')
+        Clear-TestVariable
+    }
+
+    AfterAll {
+        Clear-TestVariable
+        Remove-Module WinPlaybook
+    }
+
+    BeforeEach {
+        $variableName = New-TestVariableName
     }
 
     AfterEach {
-        $env:PATH = $originalSessionPath
+        Remove-TestVariable -Name $variableName
     }
 
-    Context 'when the folder is not in the user Path' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Tools;C:\Other' }
-        }
+    Context 'when the folder is not in the user variable' {
+        It 'puts the folder at the start' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Tools;C:\Other'
 
-        It 'puts the folder at the start of the user Path' {
-            InModuleScope WinPlaybook { Add-UserPathEntry -Folder 'C:\Shims' }
-
-            Should-Invoke Set-UserEnvironmentVariable -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Name -eq 'Path' -and $Value -eq 'C:\Shims;C:\Tools;C:\Other'
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
             }
-        }
-    }
 
-    Context 'when the user Path is empty' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { $null }
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be 'C:\Shims;C:\Tools;C:\Other'
         }
 
-        It 'creates the user Path with the folder' {
-            InModuleScope WinPlaybook { Add-UserPathEntry -Folder 'C:\Shims' }
+        It 'keeps the entries that use environment variables' {
+            Set-TestUserVariable -Name $variableName -Value '%USERPROFILE%\bin'
 
-            Should-Invoke Set-UserEnvironmentVariable -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Name -eq 'Path' -and $Value -eq 'C:\Shims'
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
             }
+
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be 'C:\Shims;%USERPROFILE%\bin'
+        }
+
+        It 'saves the variable as an expandable string' {
+            Set-TestUserVariable -Name $variableName -Value '%USERPROFILE%\bin'
+
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            (Get-TestUserVariable -Name $variableName).Kind | Should-Be 'ExpandString'
         }
     }
 
-    Context 'when the folder is already in the user Path' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Tools;c:\shims\' }
+    Context 'when the user variable does not exist' {
+        It 'creates it with the folder' {
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
+
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be 'C:\Shims'
         }
+    }
 
-        It 'leaves the user Path unchanged' {
-            InModuleScope WinPlaybook { Add-UserPathEntry -Folder 'C:\Shims' }
+    Context 'when the folder is already in the user variable' {
+        It 'leaves the variable unchanged when the entry is <Entry>' -ForEach @(
+            @{ Entry = 'c:\shims\'; Folder = 'C:\Shims' }
+            @{ Entry = '%TEMP%\winplaybook-shims'; Folder = Join-Path $env:TEMP 'winplaybook-shims' }
+        ) {
+            Set-TestUserVariable -Name $variableName -Value "C:\Tools;$Entry"
 
-            Should-NotInvoke Set-UserEnvironmentVariable -ModuleName WinPlaybook
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName; Folder = $Folder } {
+                Add-UserPathEntry -Folder $Folder -VariableName $Name
+            }
+
+            (Get-TestUserVariable -Name $variableName).Value | Should-Be "C:\Tools;$Entry"
         }
     }
 
     Context 'when the folder is not in the current session' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Shims' }
-        }
+        It 'puts the folder at the start of the session variable' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Shims'
+            Set-Item -LiteralPath "Env:$variableName" -Value 'C:\Windows'
 
-        It 'puts the folder at the start of the session Path' {
-            $env:PATH = 'C:\Windows;C:\Tools'
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
 
-            InModuleScope WinPlaybook { Add-UserPathEntry -Folder 'C:\Shims' }
-
-            $env:PATH | Should-Be 'C:\Shims;C:\Windows;C:\Tools'
+            (Get-Item -LiteralPath "Env:$variableName").Value | Should-Be 'C:\Shims;C:\Windows'
         }
     }
 
     Context 'when the folder is already in the current session' {
-        BeforeAll {
-            Mock Get-UserEnvironmentVariable -ModuleName WinPlaybook { 'C:\Shims' }
-        }
+        It 'leaves the session variable unchanged' {
+            Set-TestUserVariable -Name $variableName -Value 'C:\Shims'
+            Set-Item -LiteralPath "Env:$variableName" -Value 'C:\Windows;C:\Shims'
 
-        It 'leaves the session Path unchanged' {
-            $env:PATH = 'C:\Windows;C:\Shims'
+            InModuleScope WinPlaybook -Parameters @{ Name = $variableName } {
+                Add-UserPathEntry -Folder 'C:\Shims' -VariableName $Name
+            }
 
-            InModuleScope WinPlaybook { Add-UserPathEntry -Folder 'C:\Shims' }
-
-            $env:PATH | Should-Be 'C:\Windows;C:\Shims'
+            (Get-Item -LiteralPath "Env:$variableName").Value | Should-Be 'C:\Windows;C:\Shims'
         }
     }
 }
