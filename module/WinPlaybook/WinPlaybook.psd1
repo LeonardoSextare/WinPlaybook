@@ -8,7 +8,7 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
 
-    FunctionsToExport    = @()
+    FunctionsToExport    = @('Invoke-WinPlaybook')
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()
