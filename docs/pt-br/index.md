@@ -8,7 +8,7 @@ hide:
 hero:
   title: Ansible no Windows,
   highlight: como se estivesse instalado localmente
-  lead: O WinPlaybook roda as ferramentas do Ansible em um contêiner e as coloca no PATH do Windows.
+  lead: O WinPlaybook roda as ferramentas do Ansible em um container e as coloca no PATH do Windows.
   checks:
     - Só precisa do Docker Desktop
     - Funciona com o VS Code
