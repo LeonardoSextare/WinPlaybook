@@ -11,7 +11,8 @@
   "automerge": true,
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["* * * * 1"]
+    "schedule": ["* * * * 1"],
+    "minimumReleaseAge": null
   },
   "packageRules": [
     {

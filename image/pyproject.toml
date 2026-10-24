@@ -12,4 +12,5 @@ dependencies = [
 
 [tool.uv]
 package = false
+exclude-newer = "3 days"
 environments = ["sys_platform == 'linux'"]
