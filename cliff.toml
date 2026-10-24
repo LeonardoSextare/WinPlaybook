@@ -18,6 +18,7 @@ commit_parsers = [
     { message = "^fix", group = "<!-- 1 -->Bug fixes" },
     { message = "^perf", group = "<!-- 2 -->Performance" },
     { message = "^refactor", group = "<!-- 3 -->Refactoring" },
+    { message = "^deps", group = "<!-- 4 -->Dependencies" },
     { message = ".*", skip = true },
 ]
 

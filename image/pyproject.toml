@@ -1,15 +1,16 @@
 [project]
 name = "winplaybook-image"
 version = "0.0.0"
-requires-python = "==3.13.*"
+requires-python = ">=3.13"
 dependencies = [
-    "ansible-core~=2.21.5",
-    "ansible-creator~=26.10.0",
-    "ansible-lint~=26.10.1",
-    "pypsrp~=0.9.1",
-    "pywinrm~=0.5.0",
+    "ansible-core>=2.21.5",
+    "ansible-creator>=26.10.0",
+    "ansible-lint>=26.10.1",
+    "pypsrp>=0.9.1",
+    "pywinrm>=0.5.0",
 ]
 
 [tool.uv]
 package = false
+exclude-newer = "3 days"
 environments = ["sys_platform == 'linux'"]

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitScopeDisabled",
+    ":timezone(America/Sao_Paulo)"
+  ],
+  "schedule": ["* * * * 1"],
+  "minimumReleaseAge": "3 days",
+  "automerge": true,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* * * * 1"],
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "description": "Image updates go in one weekly deps PR, so git-cliff makes one patch release with a Dependencies section",
+      "matchFileNames": ["image/**"],
+      "semanticCommitType": "deps",
+      "groupName": "image dependencies"
+    },
+    {
+      "description": "Update only uv.lock and keep the ranges in pyproject.toml",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["project.dependencies"],
+      "rangeStrategy": "update-lockfile"
+    },
+    {
+      "description": "GHCR has no release timestamps, so minimumReleaseAge would hold these updates forever",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/**"],
+      "minimumReleaseAge": null
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci",
+      "groupName": "workflow actions"
+    }
+  ]
+}
