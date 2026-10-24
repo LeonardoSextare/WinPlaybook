@@ -7,11 +7,28 @@ AfterAll {
 }
 
 Describe 'Get-ShimFolder' {
-    It 'returns the bin folder of WinPlaybook in the local application data' {
-        $expected = Join-Path (Join-Path $env:LOCALAPPDATA 'WinPlaybook') 'bin'
+    Context 'when the shims are installed' {
+        BeforeAll {
+            Mock Get-Setting -ModuleName WinPlaybook { @{ ShimFolder = 'C:\Tools\WinPlaybook\bin'; ShimPowerShellPath = $null } }
+        }
 
-        $result = InModuleScope WinPlaybook { Get-ShimFolder }
+        It 'returns the folder saved in the settings' {
+            $result = InModuleScope WinPlaybook { Get-ShimFolder }
 
-        $result | Should-Be $expected
+            $result | Should-Be 'C:\Tools\WinPlaybook\bin'
+        }
+    }
+
+    Context 'when the shims are not installed' {
+        BeforeAll {
+            Mock Get-Setting -ModuleName WinPlaybook { @{ ShimFolder = $null; ShimPowerShellPath = $null } }
+            Mock Get-ConfigFolder -ModuleName WinPlaybook { 'C:\Users\someone\AppData\Local\WinPlaybook' }
+        }
+
+        It 'returns the bin folder inside the config folder' {
+            $result = InModuleScope WinPlaybook { Get-ShimFolder }
+
+            $result | Should-Be 'C:\Users\someone\AppData\Local\WinPlaybook\bin'
+        }
     }
 }
