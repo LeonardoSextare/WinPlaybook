@@ -35,6 +35,20 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 3 -Because $output
         }
+
+        It 'accepts a relative Windows path' {
+            $output = Invoke-WinPlaybook ansible-playbook .\site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*hello from WinPlaybook*'
+        }
+
+        It 'accepts an absolute Windows path inside the project' {
+            $output = Invoke-WinPlaybook ansible-playbook (Join-Path $project 'site.yml') 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*hello from WinPlaybook*'
+        }
     }
 
     Context 'when called from a subfolder of a repository' {

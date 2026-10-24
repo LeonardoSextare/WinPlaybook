@@ -31,7 +31,9 @@ function Invoke-AnsibleContainer {
         (Get-ImageReference)
         $Command
     )
-    $dockerArguments += $Arguments
+    foreach ($argument in $Arguments) {
+        $dockerArguments += ConvertTo-ContainerArgument -Argument $argument -ProjectRoot $projectRoot -CurrentFolder $currentFolder
+    }
 
     $isLegacyArgumentPassing = Test-LegacyArgumentPassing
     if ($isLegacyArgumentPassing) {

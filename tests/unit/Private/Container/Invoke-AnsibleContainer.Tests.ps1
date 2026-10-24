@@ -64,6 +64,16 @@ Describe 'Invoke-AnsibleContainer' {
         ($dockerArguments -join ' ') | Should-BeLikeString '* winplaybook:mock ansible'
     }
 
+    It 'converts the Windows paths of the arguments' {
+        $playbookPath = Join-Path $projectRoot 'site.yml'
+
+        $dockerArguments = InModuleScope WinPlaybook -Parameters @{ PlaybookPath = $playbookPath } {
+            Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments $PlaybookPath
+        }
+
+        ($dockerArguments -join ' ') | Should-BeLikeString '* ansible-playbook /work/site.yml'
+    }
+
     Context 'when the terminal is interactive' {
         BeforeAll {
             Mock Test-InteractiveTerminal -ModuleName WinPlaybook { $true }
