@@ -24,7 +24,6 @@ function New-CommandShim {
 
     Copy-Item -LiteralPath (Get-ShimTemplatePath) -Destination (Join-Path $Folder "$Name.exe") -Force
 
-    # The shim reads its configuration as UTF-8; the default of Windows PowerShell 5.1 is ANSI.
     Set-Content -LiteralPath (Join-Path $Folder "$Name.shim") -Encoding UTF8 -Value @(
         "path = $PowerShellPath"
         "args = -NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""

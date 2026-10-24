@@ -12,7 +12,7 @@ function Get-ShimTemplatePath {
     [OutputType([string])]
     param()
 
-    $templatePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\bin\shim.exe'))
+    $templatePath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\bin\shim.exe'))
 
     $isPackaged = Test-Path -LiteralPath $templatePath
     if (-not $isPackaged) {

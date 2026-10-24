@@ -1,5 +1,5 @@
 BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '../../module/WinPlaybook/WinPlaybook.psd1') -Force
+    Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 }
 
 AfterAll {
@@ -13,7 +13,7 @@ Describe 'Get-ShimTemplatePath' {
         }
 
         It 'returns the shim in the bin folder of the module' {
-            $expected = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../module/WinPlaybook/bin/shim.exe'))
+            $expected = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../../module/WinPlaybook/bin/shim.exe'))
 
             $result = InModuleScope WinPlaybook { Get-ShimTemplatePath }
 
