@@ -1,0 +1,87 @@
+{#-
+  Home page layout. Fills the theme's empty "hero" block, which sits between
+  the header and the page content, and drops the automatic page title.
+
+  The texts come from the "hero" front matter of each language's index.md,
+  so this template has no text of its own.
+-#}
+{% extends "main.html" %}
+{% import "partials/language.html" as lang with context %}
+
+{% block hero %}
+  {% set hero = page.meta.hero %}
+  {% set install_command = "irm " ~ config.extra.install_url ~ " | iex" %}
+  <section class="wp-hero">
+    <div class="wp-hero__inner md-grid md-typeset">
+      <div class="wp-hero__text">
+        <h1 class="wp-hero__title">
+          {{ hero.title }}
+          <span class="wp-hero__highlight">{{ hero.highlight }}</span>
+        </h1>
+        <p class="wp-hero__lead">{{ hero.lead }}</p>
+        <ul class="wp-hero__checks">
+          {% for check in hero.checks %}
+            <li>{% include ".icons/lucide/check.svg" %} {{ check }}</li>
+          {% endfor %}
+        </ul>
+
+        <div class="wp-install">
+          <code class="wp-install__command"><span class="wp-prompt">PS&gt;</span> {{ install_command }}</code>
+          <button class="wp-install__copy" data-clipboard-text="{{ install_command }}" title="{{ lang.t('clipboard.copy') }}" aria-label="{{ lang.t('clipboard.copy') }}">
+            {% include ".icons/lucide/copy.svg" %}
+          </button>
+        </div>
+        <p class="wp-install__note">{{ hero.install_note }}</p>
+      </div>
+
+      {#- A Windows Terminal window. javascripts/home.js plays the run; data-delay is the pause in ms before each line. -#}
+      <div class="wp-terminal" aria-hidden="true">
+        <div class="wp-terminal__titlebar">
+          <div class="wp-terminal__tab">
+            <svg class="wp-terminal__tab-icon" viewBox="0 0 16 16">
+              <rect width="16" height="16" rx="3" fill="#2c5591" />
+              <path d="M4 4.5 8 8l-4 3.5M8.5 11.5h4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>PowerShell</span>
+            <span class="wp-terminal__tab-close">{% include ".icons/lucide/x.svg" %}</span>
+          </div>
+          <span class="wp-terminal__button">{% include ".icons/lucide/plus.svg" %}</span>
+          <span class="wp-terminal__button">{% include ".icons/lucide/chevron-down.svg" %}</span>
+          <div class="wp-terminal__controls">
+            <span>{% include ".icons/lucide/minus.svg" %}</span>
+            <span>{% include ".icons/lucide/square.svg" %}</span>
+            <span>{% include ".icons/lucide/x.svg" %}</span>
+          </div>
+        </div>
+        <div class="wp-terminal__body">
+          {#-
+            Text is typed letter by letter; a data-tab part appears at once, as completed by
+            the Tab key. Its data-tab value lists the earlier matches that each Tab press
+            cycles through, in alphabetical order, like PowerShell does.
+          -#}
+          <div>PS C:\infra&gt; <span class="wp-terminal__command"><span class="wp-ps-command">ansible-playbook</span> <span class="wp-ps-parameter">-i</span> .\inv<span data-tab>entory\</span><span data-tab="dev.yml local.yml">prod.yml</span> .\pla<span data-tab>ybooks\</span>si<span data-tab>te.yml</span></span><span class="wp-terminal__cursor"></span></div>
+          <div class="wp-terminal__output" data-delay="900">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="0">PLAY [webservers] ********************************************************</div>
+          <div class="wp-terminal__output" data-delay="30">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="0">TASK [Gathering Facts] ***************************************************</div>
+          <div class="wp-terminal__output" data-delay="1600"><span class="wp-green">ok: [web01]</span></div>
+          <div class="wp-terminal__output" data-delay="40">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="0">TASK [Install nginx] *****************************************************</div>
+          <div class="wp-terminal__output" data-delay="2400"><span class="wp-yellow">changed: [web01]</span></div>
+          <div class="wp-terminal__output" data-delay="40">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="0">TASK [Start nginx] *******************************************************</div>
+          <div class="wp-terminal__output" data-delay="800"><span class="wp-green">ok: [web01]</span></div>
+          <div class="wp-terminal__output" data-delay="250">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="0">PLAY RECAP ***************************************************************</div>
+          <div class="wp-terminal__output" data-delay="20"><span class="wp-yellow">web01</span>  : <span class="wp-green">ok=3</span>  <span class="wp-yellow">changed=1</span>  unreachable=0  failed=0</div>
+          <div class="wp-terminal__output" data-delay="20">&nbsp;</div>
+          <div class="wp-terminal__output" data-delay="150">PS C:\infra&gt; </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block content %}
+  {{ page.content }}
+{% endblock %}
