@@ -33,5 +33,10 @@ function Invoke-AnsibleContainer {
     )
     $dockerArguments += $Arguments
 
+    $isLegacyArgumentPassing = Test-LegacyArgumentPassing
+    if ($isLegacyArgumentPassing) {
+        $dockerArguments = @(ConvertTo-LegacyNativeArgument -Argument $dockerArguments)
+    }
+
     docker @dockerArguments
 }

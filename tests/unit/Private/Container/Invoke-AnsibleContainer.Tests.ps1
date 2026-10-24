@@ -15,6 +15,7 @@ Describe 'Invoke-AnsibleContainer' {
         Mock docker -ModuleName WinPlaybook { $args }
         Mock Get-ImageReference -ModuleName WinPlaybook { 'winplaybook:mock' }
         Mock Test-InteractiveTerminal -ModuleName WinPlaybook { $false }
+        Mock Test-LegacyArgumentPassing -ModuleName WinPlaybook { $false }
 
         Push-Location (Join-Path $projectRoot 'playbooks')
     }
@@ -84,6 +85,30 @@ Describe 'Invoke-AnsibleContainer' {
             }
 
             $dockerArguments | Should-NotContainCollection '--tty'
+        }
+    }
+
+    Context 'when PowerShell passes arguments to programs in the legacy way' {
+        BeforeAll {
+            Mock Test-LegacyArgumentPassing -ModuleName WinPlaybook { $true }
+        }
+
+        It 'escapes the quotes of the arguments' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible' -Arguments '-e', '{"a": 1}'
+            }
+
+            $dockerArguments | Should-ContainCollection '{\"a\": 1}'
+        }
+    }
+
+    Context 'when PowerShell passes arguments to programs in the modern way' {
+        It 'keeps the quotes of the arguments' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible' -Arguments '-e', '{"a": 1}'
+            }
+
+            $dockerArguments | Should-ContainCollection '{"a": 1}'
         }
     }
 
