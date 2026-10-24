@@ -62,6 +62,7 @@ $steps = @(
     @{ Name = 'Checking git'; Action = { Test-GitInstalled } }
     @{ Name = 'Installing dependencies for PowerShell 7'; Action = { Install-Requirements 'PowerShell\Modules' } }
     @{ Name = 'Installing dependencies for Windows PowerShell'; Action = { Install-Requirements 'WindowsPowerShell\Modules' } }
+    @{ Name = 'Downloading the shim packaged with the module'; Action = { & (Join-Path $PSScriptRoot '..\Save-Shim.ps1') } }
 )
 
 for ($i = 0; $i -lt $steps.Count; $i++) {
