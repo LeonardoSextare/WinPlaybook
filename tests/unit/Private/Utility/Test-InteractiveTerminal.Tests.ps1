@@ -1,5 +1,5 @@
 BeforeAll {
-    $manifest = Join-Path $PSScriptRoot '../../module/WinPlaybook/WinPlaybook.psd1'
+    $manifest = Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1'
     $powershell = (Get-Process -Id $PID).Path
     Import-Module $manifest -Force
 }
