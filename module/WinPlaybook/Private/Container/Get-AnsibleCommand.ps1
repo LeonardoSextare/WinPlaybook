@@ -1,10 +1,10 @@
-function Get-ImageCommand {
+function Get-AnsibleCommand {
     <#
     .SYNOPSIS
     Lists the ansible commands found in the PATH of the image.
 
     .EXAMPLE
-    Get-ImageCommand
+    Get-AnsibleCommand
 
     Returns ansible, ansible-config, ansible-lint, ansible-playbook and the other ansible commands.
     #>

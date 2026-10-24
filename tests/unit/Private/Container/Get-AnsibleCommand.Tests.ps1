@@ -1,5 +1,5 @@
 BeforeAll {
-    Import-Module (Join-Path $PSScriptRoot '../../module/WinPlaybook/WinPlaybook.psd1') -Force
+    Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 }
 
 AfterAll {
@@ -7,7 +7,7 @@ AfterAll {
     $global:LASTEXITCODE = 0
 }
 
-Describe 'Get-ImageCommand' {
+Describe 'Get-AnsibleCommand' {
     BeforeAll {
         Mock Get-ImageReference -ModuleName WinPlaybook { 'winplaybook:mock' }
     }
@@ -21,13 +21,13 @@ Describe 'Get-ImageCommand' {
         }
 
         It 'returns the ansible commands sorted and without repetition' {
-            $result = InModuleScope WinPlaybook { Get-ImageCommand }
+            $result = InModuleScope WinPlaybook { Get-AnsibleCommand }
 
             $result | Should-BeCollection @('ansible', 'ansible-lint', 'ansible-playbook')
         }
 
         It 'asks a disposable container of the image' {
-            InModuleScope WinPlaybook { Get-ImageCommand } | Out-Null
+            InModuleScope WinPlaybook { Get-AnsibleCommand } | Out-Null
 
             Should-Invoke docker -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
                 ($args[0..2] -join ' ') -eq 'run --rm winplaybook:mock'
@@ -41,7 +41,7 @@ Describe 'Get-ImageCommand' {
         }
 
         It 'reports the image it could not run' {
-            { InModuleScope WinPlaybook { Get-ImageCommand } } | Should-Throw -ExceptionMessage '*winplaybook:mock*'
+            { InModuleScope WinPlaybook { Get-AnsibleCommand } } | Should-Throw -ExceptionMessage '*winplaybook:mock*'
         }
     }
 
@@ -54,7 +54,7 @@ Describe 'Get-ImageCommand' {
         }
 
         It 'reports that the image is not usable' {
-            { InModuleScope WinPlaybook { Get-ImageCommand } } | Should-Throw -ExceptionMessage '*no ansible commands*'
+            { InModuleScope WinPlaybook { Get-AnsibleCommand } } | Should-Throw -ExceptionMessage '*no ansible commands*'
         }
     }
 }
