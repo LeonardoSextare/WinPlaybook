@@ -16,16 +16,16 @@
   },
   "packageRules": [
     {
-      "description": "Image updates use deps so git-cliff lists them under Dependencies and releases a patch",
+      "description": "Image updates go in one weekly deps PR, so git-cliff makes one patch release with a Dependencies section",
       "matchFileNames": ["image/**"],
-      "semanticCommitType": "deps"
+      "semanticCommitType": "deps",
+      "groupName": "image dependencies"
     },
     {
       "description": "Update only uv.lock and keep the ranges in pyproject.toml",
       "matchManagers": ["pep621"],
       "matchDepTypes": ["project.dependencies"],
-      "rangeStrategy": "update-lockfile",
-      "groupName": "image python packages"
+      "rangeStrategy": "update-lockfile"
     },
     {
       "description": "GHCR has no release timestamps, so minimumReleaseAge would hold these updates forever",
