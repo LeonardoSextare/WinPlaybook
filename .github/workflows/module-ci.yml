@@ -1,0 +1,97 @@
+name: Module CI
+
+on:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: module-ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  unit-tests:
+    name: Unit tests
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install test dependencies
+        uses: ./.github/actions/install-test-dependencies
+
+      - name: Run the tests (PowerShell 7)
+        id: tests-core
+        run: Invoke-Pester -Path tests/unit -CI -Output Detailed
+
+      - name: Run the tests (Windows PowerShell 5.1)
+        if: success() || steps.tests-core.conclusion == 'failure'
+        shell: powershell
+        run: Invoke-Pester -Path tests/unit -CI -Output Detailed
+
+  integration-tests:
+    name: Integration tests
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install test dependencies
+        uses: ./.github/actions/install-test-dependencies
+
+      - name: Download the shim
+        run: ./scripts/Save-Shim.ps1
+
+      - name: Set up Docker Desktop
+        uses: ./.github/actions/setup-docker-desktop
+
+      - name: Run the tests (PowerShell 7)
+        id: tests-core
+        run: Invoke-Pester -Path tests/integration -CI -Output Detailed
+
+      - name: Run the tests (Windows PowerShell 5.1)
+        if: success() || steps.tests-core.conclusion == 'failure'
+        shell: powershell
+        run: Invoke-Pester -Path tests/integration -CI -Output Detailed
+
+      - name: Upload the Docker Desktop logs
+        if: failure()
+        uses: ./.github/actions/upload-docker-desktop-logs
+
+  e2e-tests:
+    name: E2E tests
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install test dependencies
+        uses: ./.github/actions/install-test-dependencies
+
+      - name: Download the shim
+        run: ./scripts/Save-Shim.ps1
+
+      - name: Set up Docker Desktop
+        uses: ./.github/actions/setup-docker-desktop
+
+      - name: Run the tests (PowerShell 7)
+        id: tests-core
+        run: Invoke-Pester -Path tests/e2e -CI -Output Detailed
+
+      - name: Run the tests (Windows PowerShell 5.1)
+        if: success() || steps.tests-core.conclusion == 'failure'
+        shell: powershell
+        run: Invoke-Pester -Path tests/e2e -CI -Output Detailed
+
+      - name: Upload the Docker Desktop logs
+        if: failure()
+        uses: ./.github/actions/upload-docker-desktop-logs

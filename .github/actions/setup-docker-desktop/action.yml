@@ -1,0 +1,62 @@
+name: Set up Docker Desktop
+description: Installs the pinned Docker Desktop with the WSL2 backend and waits for the Linux engine.
+
+runs:
+  using: composite
+  steps:
+    - name: Install Docker Desktop
+      shell: pwsh
+      env:
+        DOCKER_DESKTOP_BUILD: "244472"
+        DOCKER_DESKTOP_SHA256: 3d8adad4f6c86583e0b00ea19a76197c51ccf5c83437c9ed775b739756452507
+      run: |
+        $url = "https://desktop.docker.com/win/main/amd64/$env:DOCKER_DESKTOP_BUILD/Docker%20Desktop%20Installer.exe"
+        $installerPath = Join-Path $env:RUNNER_TEMP 'DockerDesktopInstaller.exe'
+        Invoke-WebRequest -Uri $url -OutFile $installerPath
+
+        $actualHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash
+        $isPinnedInstaller = $actualHash -eq $env:DOCKER_DESKTOP_SHA256
+        if (-not $isPinnedInstaller) {
+            throw "The Docker Desktop installer has the hash $actualHash, expected $env:DOCKER_DESKTOP_SHA256."
+        }
+
+        $parameters = @{
+            FilePath     = $installerPath
+            ArgumentList = 'install', '--quiet', '--accept-license', '--backend=wsl-2'
+            Wait         = $true
+            PassThru     = $true
+        }
+        $process = Start-Process @parameters
+        if ($process.ExitCode -ne 0) {
+            throw "The Docker Desktop installer failed with exit code $($process.ExitCode)."
+        }
+
+        Add-Content -LiteralPath $env:GITHUB_PATH -Value (Join-Path $env:ProgramFiles 'Docker\Docker\resources\bin')
+
+    - name: Stop the preinstalled Windows engine
+      shell: pwsh
+      run: |
+        Stop-Service -Name docker
+        Set-Service -Name docker -StartupType Disabled
+
+    - name: Start Docker Desktop
+      shell: pwsh
+      run: |
+        Start-Process -FilePath (Join-Path $env:ProgramFiles 'Docker\Docker\Docker Desktop.exe')
+        $backendLogPath = Join-Path $env:LOCALAPPDATA 'Docker\log\host\com.docker.backend.exe.log'
+
+        $maxAttempts = 120
+        for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            $osType = docker info --format '{{.OSType}}' 2>$null
+            $isLinuxEngineReady = $osType -eq 'linux'
+            if ($isLinuxEngineReady) {
+                exit 0
+            }
+
+            $crash = Select-String -LiteralPath $backendLogPath -Pattern 'backend crashed' -ErrorAction SilentlyContinue
+            if ($crash) {
+                throw "The Docker Desktop backend crashed: $($crash[0].Line)"
+            }
+            Start-Sleep -Seconds 5
+        }
+        throw "The Docker Desktop Linux engine did not start after $maxAttempts attempts, about 10 minutes."

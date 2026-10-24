@@ -1,0 +1,23 @@
+name: Upload the Docker Desktop logs
+description: Uploads the Docker Desktop logs as an artifact, to diagnose an engine that did not start.
+
+runs:
+  using: composite
+  steps:
+    - name: Collect the Docker Desktop logs
+      shell: pwsh
+      run: |
+        $logFolder = Join-Path $env:RUNNER_TEMP 'docker-desktop-logs'
+        New-Item -ItemType Directory -Path $logFolder -Force | Out-Null
+
+        $installerLogs = Join-Path $env:ProgramData 'DockerDesktop\*.txt'
+        $applicationLogFolder = Join-Path $env:LOCALAPPDATA 'Docker\log'
+        Copy-Item -Path $installerLogs -Destination $logFolder -ErrorAction SilentlyContinue
+        Copy-Item -LiteralPath $applicationLogFolder -Destination $logFolder -Recurse -ErrorAction SilentlyContinue
+
+    - name: Upload the Docker Desktop logs
+      uses: actions/upload-artifact@v7
+      with:
+        name: docker-desktop-logs-${{ github.job }}
+        path: ${{ runner.temp }}/docker-desktop-logs
+        if-no-files-found: ignore
