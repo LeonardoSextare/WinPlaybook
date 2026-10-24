@@ -49,6 +49,24 @@ Describe 'Invoke-WinPlaybook' {
             $LASTEXITCODE | Should-Be 0 -Because $output
             $output | Should-BeLikeString '*hello from WinPlaybook*'
         }
+
+        Context 'when the caller stops on errors' {
+            BeforeAll {
+                $originalErrorAction = $global:ErrorActionPreference
+                $global:ErrorActionPreference = 'Stop'
+            }
+
+            AfterAll {
+                $global:ErrorActionPreference = $originalErrorAction
+            }
+
+            It 'keeps running when the command writes to stderr' {
+                $output = Invoke-WinPlaybook sh -c 'echo warning >&2; echo finished' 2>&1 | Out-String
+
+                $LASTEXITCODE | Should-Be 0 -Because $output
+                $output | Should-BeLikeString '*finished*'
+            }
+        }
     }
 
     Context 'when called from a subfolder of a repository' {

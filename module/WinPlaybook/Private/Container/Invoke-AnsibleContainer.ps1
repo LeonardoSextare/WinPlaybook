@@ -40,5 +40,6 @@ function Invoke-AnsibleContainer {
         $dockerArguments = @(ConvertTo-LegacyNativeArgument -Argument $dockerArguments)
     }
 
+    $ErrorActionPreference = 'Continue'
     docker @dockerArguments
 }
