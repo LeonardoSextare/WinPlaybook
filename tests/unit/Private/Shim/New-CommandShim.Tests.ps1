@@ -26,7 +26,7 @@ Describe 'New-CommandShim' {
         It 'writes a script that runs the command through the module' {
             $content = Get-Content -LiteralPath (Join-Path $shimFolder 'ansible-playbook.ps1')
 
-            $content | Should-Be "WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args"
+            $content | Should-Be "WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args; exit `$LASTEXITCODE"
         }
 
         It 'copies the packaged shim as the executable' {

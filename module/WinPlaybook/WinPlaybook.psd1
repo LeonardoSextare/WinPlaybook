@@ -8,7 +8,11 @@
     PowerShellVersion    = '5.1'
     CompatiblePSEditions = @('Desktop', 'Core')
 
-    FunctionsToExport    = @('Invoke-WinPlaybook')
+    FunctionsToExport    = @(
+        'Install-WinPlaybookShim'
+        'Invoke-WinPlaybook'
+        'Uninstall-WinPlaybookShim'
+    )
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()

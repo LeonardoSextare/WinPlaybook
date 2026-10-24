@@ -20,7 +20,7 @@ function New-CommandShim {
     )
 
     $scriptPath = Join-Path $Folder "$Name.ps1"
-    Set-Content -LiteralPath $scriptPath -Value "WinPlaybook\Invoke-WinPlaybook '$Name' @args" -Encoding UTF8
+    Set-Content -LiteralPath $scriptPath -Value "WinPlaybook\Invoke-WinPlaybook '$Name' @args; exit `$LASTEXITCODE" -Encoding UTF8
 
     Copy-Item -LiteralPath (Get-ShimTemplatePath) -Destination (Join-Path $Folder "$Name.exe") -Force
 
