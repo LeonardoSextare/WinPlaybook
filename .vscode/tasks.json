@@ -6,10 +6,34 @@
             "detail": "Check Docker, uv and git, and install the development dependencies",
             "type": "process",
             "command": "pwsh",
-            "args": ["-NoProfile", "-File", "${workspaceFolder}/scripts/dev/setup.ps1"],
+            "args": [
+                "-NoProfile",
+                "-File",
+                "${workspaceFolder}/scripts/dev/setup.ps1"
+            ],
             "icon": {
                 "id": "tools",
                 "color": "terminal.ansiYellow"
+            },
+            "presentation": {
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docs: full site",
+            "detail": "Build the documentation in both languages and serve it as GitHub Pages does (no hot reload)",
+            "type": "process",
+            "command": "pwsh",
+            "args": [
+                "-NoProfile",
+                "-File",
+                "${workspaceFolder}/scripts/dev/docs.ps1"
+            ],
+            "icon": {
+                "id": "book",
+                "color": "terminal.ansiCyan"
             },
             "presentation": {
                 "panel": "dedicated",
