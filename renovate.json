@@ -16,9 +16,9 @@
   },
   "packageRules": [
     {
-      "description": "Image updates must be fix so git-cliff releases a new image version",
+      "description": "Image updates use deps so git-cliff lists them under Dependencies and releases a patch",
       "matchFileNames": ["image/**"],
-      "semanticCommitType": "fix"
+      "semanticCommitType": "deps"
     },
     {
       "description": "Update only uv.lock and keep the ranges in pyproject.toml",
