@@ -9,6 +9,14 @@
   --wp-gradient: linear-gradient(90deg, var(--wp-purple), var(--wp-cyan));
 }
 
+/* Dark scheme: the theme builds its dark colors from --md-hue, with a background of
+   5% lightness, almost black. The hue of --wp-purple tints them, and a lighter
+   background makes long reading more comfortable. */
+[data-md-color-scheme="slate"] {
+  --md-hue: 246;
+  --md-default-bg-color: hsla(var(--md-hue), 15%, 9%, 1);
+}
+
 /* Mermaid diagrams in the brand colors. The theme draws the diagrams with these
    variables, set on :root > *; this selector is more specific, so it wins. */
 .md-typeset .mermaid {
