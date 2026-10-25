@@ -7,6 +7,7 @@ on:
       - module/**
       - tests/**
       - scripts/Save-Shim.ps1
+      - scripts/Build-ModulePackage.ps1
       - requirements.psd1
       - .github/actions/**
       - .github/workflows/module-ci.yml
@@ -105,21 +106,7 @@ jobs:
       - name: Prepare the module
         id: prepare
         run: |
-          $modulePath = Join-Path $env:RUNNER_TEMP 'WinPlaybook'
-          Copy-Item -Path module/WinPlaybook -Destination $modulePath -Recurse
-          ./scripts/Save-Shim.ps1 -Destination (Join-Path $modulePath 'bin')
-
-          $manifestPath = Join-Path $modulePath 'WinPlaybook.psd1'
-          $manifest = Get-Content -LiteralPath $manifestPath -Raw 
-
-          $versionPattern = "(ModuleVersion\s*=\s*)'0\.0\.0'"
-          if ($manifest -notmatch $versionPattern) {
-              throw "WinPlaybook.psd1 must have ModuleVersion = '0.0.0'; the release writes the version."
-          }
-
-          $manifest -replace $versionPattern, "`${1}'$env:VERSION'" | Set-Content -LiteralPath $manifestPath -NoNewline
-          Test-ModuleManifest -Path $manifestPath | Format-List Name, Version
-
+          $modulePath = ./scripts/Build-ModulePackage.ps1 -Version $env:VERSION -Destination $env:RUNNER_TEMP
           "module_path=$modulePath" | Add-Content $env:GITHUB_OUTPUT
 
       - name: Publish to the PowerShell Gallery
