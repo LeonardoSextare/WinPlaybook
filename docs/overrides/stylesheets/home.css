@@ -6,12 +6,6 @@
   not affected.
 */
 
-:root {
-  --wp-purple: #7c6cff;
-  --wp-cyan: #22c3e6;
-  --wp-gradient: linear-gradient(90deg, var(--wp-purple), var(--wp-cyan));
-}
-
 /* ============================ Hero ============================ */
 
 /* The home has no content below the hero: hide the empty main area, so the hero fills the screen. */
