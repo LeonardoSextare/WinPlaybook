@@ -24,7 +24,10 @@ site_dir = "site/en"
 nav = [
   { "Home" = "index.md" },
   { "Installation" = "install.md" },
-  { "How it works" = "how-it-works.md" },
+  { "Concepts" = [
+    { "Why WinPlaybook" = "why-winplaybook.md" },
+    { "How it works" = "how-it-works.md" },
+  ] },
 ]
 
 extra_css = ["stylesheets/extra.css", "stylesheets/home.css"]
