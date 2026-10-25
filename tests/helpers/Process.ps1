@@ -1,5 +1,6 @@
 function Invoke-CommandLine([string] $FilePath, [string] $ArgumentList) {
     $outputFilePath = (New-TemporaryFile).FullName
+    $errorFilePath = (New-TemporaryFile).FullName
     try {
         $parameters = @{
             FilePath               = $FilePath
@@ -7,6 +8,7 @@ function Invoke-CommandLine([string] $FilePath, [string] $ArgumentList) {
             Wait                   = $true
             PassThru               = $true
             RedirectStandardOutput = $outputFilePath
+            RedirectStandardError  = $errorFilePath
         }
         if ($ArgumentList) {
             $parameters.ArgumentList = $ArgumentList
@@ -17,9 +19,20 @@ function Invoke-CommandLine([string] $FilePath, [string] $ArgumentList) {
         [pscustomobject]@{
             ExitCode = $process.ExitCode
             Output   = "$(Get-Content -LiteralPath $outputFilePath -Raw)".Trim()
+            Error    = "$(Get-Content -LiteralPath $errorFilePath -Raw)".Trim()
         }
     }
     finally {
-        Remove-Item -LiteralPath $outputFilePath -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $outputFilePath, $errorFilePath -ErrorAction SilentlyContinue
     }
+}
+
+function Invoke-PowerShellProcess([string] $Command, [string] $ExecutionPolicy) {
+    $bytes = [Text.Encoding]::Unicode.GetBytes("`$ErrorActionPreference = 'Stop'; $Command")
+    $arguments = '-NoProfile -NonInteractive'
+    if ($ExecutionPolicy) {
+        $arguments += " -ExecutionPolicy $ExecutionPolicy"
+    }
+    $powerShellPath = (Get-Process -Id $PID).Path
+    Invoke-CommandLine -FilePath $powerShellPath -ArgumentList "$arguments -EncodedCommand $([Convert]::ToBase64String($bytes))"
 }
