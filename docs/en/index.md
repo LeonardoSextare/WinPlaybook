@@ -7,12 +7,12 @@ hide:
 # Texts of the home page, used by overrides/home.html.
 hero:
   title: Ansible on Windows,
-  highlight: as if it were installed locally
-  lead: WinPlaybook runs the Ansible tools in a container and puts them on your Windows PATH.
+  highlight: as if it were native
+  lead: Use Ansible the way you already know it, without leaving Windows.
   checks:
     - Docker Desktop is all you need
     - Works with VS Code
     - Windows paths just work
-    - Windows PowerShell and PowerShell 7
+    - Windows PowerShell and PowerShell Core
   install_note: Run it in PowerShell to install WinPlaybook.
 ---

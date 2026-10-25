@@ -7,7 +7,7 @@
 [project]
 site_url = "https://leonardosextare.github.io/WinPlaybook/en/"
 site_name = "WinPlaybook"
-site_description = "Use Ansible on Windows as if it were installed locally."
+site_description = "Use Ansible on Windows as if it were native."
 site_author = "Leonardo Sextare"
 
 copyright = 'Copyright &copy; 2026 Leonardo Sextare. Released under the <a href="https://github.com/LeonardoSextare/WinPlaybook/blob/main/LICENSE">MIT License</a>.'
