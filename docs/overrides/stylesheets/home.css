@@ -13,13 +13,178 @@
   display: none;
 }
 
+/* isolation keeps the glows (z-index: -1) above the page background and below the content. */
 .wp-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-grow: 1;
   align-items: center;
-  background:
-    radial-gradient(50rem 25rem at 10% -10%, rgb(124 108 255 / 22%), transparent 70%),
-    radial-gradient(40rem 25rem at 95% 20%, rgb(34 195 230 / 15%), transparent 70%);
+}
+
+/* Background light (.wp-hero__light): soft glows that drift along curved paths, turn,
+   grow and shrink, while they breathe (brighten and dim). Each one has its own
+   duration, so together they almost never repeat the same picture. Every animation
+   changes only transform and opacity, which the browser runs on the GPU without
+   repainting. */
+.wp-hero__light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Each box is centered on its point; closest-side fills it with an ellipse. */
+.wp-glow {
+  position: absolute;
+  translate: -50% -50%;
+}
+
+.wp-glow--violet {
+  top: 15%;
+  left: 20%;
+  width: 70rem;
+  height: 40rem;
+  background: radial-gradient(closest-side, rgb(124 108 255 / 35%), transparent 70%);
+  animation:
+    wp-drift-violet 19s ease-in-out infinite,
+    wp-breathe 8s ease-in-out infinite;
+}
+
+.wp-glow--cyan {
+  top: 30%;
+  left: 85%;
+  width: 60rem;
+  height: 38rem;
+  background: radial-gradient(closest-side, rgb(34 195 230 / 28%), transparent 70%);
+  animation:
+    wp-drift-cyan 23s ease-in-out infinite,
+    wp-breathe 8s ease-in-out -4s infinite;
+}
+
+.wp-glow--blue {
+  top: 90%;
+  left: 50%;
+  width: 80rem;
+  height: 30rem;
+  background: radial-gradient(closest-side, rgb(80 130 255 / 25%), transparent 70%);
+  animation:
+    wp-drift-blue 29s ease-in-out infinite,
+    wp-breathe 8s ease-in-out -2s infinite;
+}
+
+/* Two glows that stay near the bottom corners, on short paths around them, so the
+   bottom never gets too dark while the other glows are away. */
+.wp-glow--bottom-left {
+  top: 100%;
+  left: 15%;
+  width: 55rem;
+  height: 24rem;
+  background: radial-gradient(closest-side, rgb(34 195 230 / 20%), transparent 70%);
+  animation:
+    wp-drift-bottom-left 21s ease-in-out infinite,
+    wp-breathe 8s ease-in-out -6s infinite;
+}
+
+.wp-glow--bottom-right {
+  top: 100%;
+  left: 85%;
+  width: 60rem;
+  height: 26rem;
+  background: radial-gradient(closest-side, rgb(124 108 255 / 22%), transparent 70%);
+  animation:
+    wp-drift-bottom-right 25s ease-in-out infinite,
+    wp-breathe 8s ease-in-out -1s infinite;
+}
+
+@keyframes wp-drift-bottom-left {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  35% {
+    transform: translate(12rem, -5rem) rotate(8deg) scale(1.1);
+  }
+
+  70% {
+    transform: translate(-6rem, -2rem) rotate(-6deg) scale(0.95);
+  }
+}
+
+@keyframes wp-drift-bottom-right {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  45% {
+    transform: translate(-14rem, -4rem) rotate(-10deg) scale(1.15);
+  }
+
+  75% {
+    transform: translate(4rem, -6rem) rotate(6deg) scale(0.9);
+  }
+}
+
+@keyframes wp-drift-violet {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  33% {
+    transform: translate(18rem, 8rem) rotate(15deg) scale(1.15);
+  }
+
+  66% {
+    transform: translate(6rem, 16rem) rotate(-10deg) scale(0.9);
+  }
+}
+
+@keyframes wp-drift-cyan {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  40% {
+    transform: translate(-20rem, 10rem) rotate(-20deg) scale(1.1);
+  }
+
+  70% {
+    transform: translate(-8rem, -6rem) rotate(10deg) scale(0.95);
+  }
+}
+
+@keyframes wp-drift-blue {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  50% {
+    transform: translate(-15rem, -8rem) rotate(8deg) scale(1.2);
+  }
+}
+
+@keyframes wp-breathe {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Respect the "reduce motion" setting of the operating system: the light stays still. */
+@media (prefers-reduced-motion: reduce) {
+  .wp-glow {
+    animation: none;
+  }
 }
 
 .wp-hero__inner {

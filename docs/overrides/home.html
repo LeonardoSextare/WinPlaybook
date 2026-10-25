@@ -12,6 +12,14 @@
   {% set hero = page.meta.hero %}
   {% set install_command = "irm " ~ config.extra.install_url ~ " | iex" %}
   <section class="wp-hero">
+    {#- Background light: glows that drift and breathe (stylesheets/home.css). -#}
+    <div class="wp-hero__light" aria-hidden="true">
+      <span class="wp-glow wp-glow--violet"></span>
+      <span class="wp-glow wp-glow--cyan"></span>
+      <span class="wp-glow wp-glow--blue"></span>
+      <span class="wp-glow wp-glow--bottom-left"></span>
+      <span class="wp-glow wp-glow--bottom-right"></span>
+    </div>
     <div class="wp-hero__inner md-grid md-typeset">
       <div class="wp-hero__text">
         <h1 class="wp-hero__title">

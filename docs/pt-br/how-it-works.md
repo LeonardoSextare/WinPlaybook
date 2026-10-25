@@ -1,108 +1,150 @@
 # Como o WinPlaybook funciona
 
-O Ansible [não tem suporte ao Windows como máquina de controle](https://docs.ansible.com/projects/ansible/latest/installation_guide/intro_installation.html#control-node-requirements),
-a máquina de onde os *playbooks* são executados. Para usar o Ansible no
-Windows, as opções comuns são o WSL, uma máquina virtual ou um servidor
-Linux, muitas vezes com as extensões
-[WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl)
-ou
-[Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-do VS Code.
-
-O WinPlaybook roda o Ansible em um *container* e coloca os comandos dele no
-`PATH` do Windows. O `ansible-playbook` fica disponível no terminal e em
-qualquer programa do Windows, como um programa instalado.
+O WinPlaybook roda o Ansible em um *container* descartável e coloca os
+comandos dele no `PATH` do Windows. Esta página mostra as peças e o caminho de
+um comando, da instalação até a execução. Para entender por que ele foi feito
+assim, veja [Por que o WinPlaybook](why-winplaybook.md).
 
 ```mermaid
 flowchart LR
     command("ansible-playbook") --> shim("Shim") --> module("WinPlaybook") --> container("Container")
 ```
 
-## Por que um container
+## Componentes
 
-No WSL ou numa máquina virtual, o Ansible fica em outro sistema. Para usá-lo,
-você trabalha nesse sistema e perde as ferramentas do Windows com que já
-trabalhava, como o PowerShell com os módulos e o perfil configurados. Os
-programas do Windows também não encontram os comandos do Ansible.
+- **Módulo PowerShell**: o módulo `WinPlaybook`, da PowerShell Gallery. Cria
+  os comandos na instalação e roda cada execução no *container*.
+- **Imagem**: `ghcr.io/leonardosextare/winplaybook`, com o Ansible, o
+  `ansible-lint` e as bibliotecas para gerenciar máquinas Windows.
+- ***Shims***: um para cada comando do Ansible. Recebem a chamada do Windows e
+  a passam para o módulo.
 
-As extensões WSL e Dev Containers levam o VS Code para dentro do Linux, com o
-terminal e os arquivos de lá. Os dois problemas continuam: no VS Code, você
-fica longe das ferramentas do Windows; fora dele, os programas do Windows não
-encontram o Ansible.
+## Shims
 
-O [Docker Desktop](https://docs.docker.com/desktop/) já roda Linux sem
-configuração extra. A imagem do WinPlaybook traz o Ansible, o `ansible-lint` e
-as bibliotecas para gerenciar máquinas Windows. Você não instala o Python nem
-o Ansible no Windows, e as versões das ferramentas são as mesmas para todos
-que usam a mesma imagem.
+Um *shim* é um executável que repassa a chamada para outro programa. Os
+*shims* do WinPlaybook ficam em
+`C:\Users\<usuário>\AppData\Local\WinPlaybook\bin`, no `PATH` do usuário. Eles
+são criados pelo `Install-WinPlaybookShim`, executado manualmente ou pelo
+script de instalação.
 
-## Shims: comandos do Windows que chamam o container
-
-Um *shim* é um executável que repassa a chamada para outro programa. Na
-instalação, o WinPlaybook lista os comandos do Ansible da imagem e cria um
-*shim* para cada um em `%LOCALAPPDATA%\WinPlaybook\bin`, a pasta padrão. Essa
-pasta entra no `PATH` do usuário.
-
-Cada comando tem dois arquivos:
-
-- `ansible-playbook.ps1`: o script que o PowerShell executa.
-- `ansible-playbook.exe`: o executável para os outros programas, como o
-  Prompt de Comando, editores e scripts em outras linguagens, que não
-  executam `.ps1`. É uma cópia do [Shim do Scoop](https://github.com/ScoopInstaller/Shim):
-  ele abre o PowerShell e executa o `.ps1`. O arquivo `ansible-playbook.shim`,
-  na mesma pasta, define qual PowerShell abrir e qual `.ps1` executar.
+O caminho até o módulo depende de quem chama o comando. O PowerShell executa
+o `.ps1` direto; os outros programas passam pelo `.exe`:
 
 ```mermaid
 flowchart LR
     pwsh("PowerShell") --> ps1("ansible-playbook.ps1")
     other("Outros programas") --> exe("ansible-playbook.exe")
-    exe --> config("ansible-playbook.shim") --> ps1
+    exe -. lê .-> config("ansible-playbook.shim")
+    exe --> ps1
+    ps1 --> module("WinPlaybook")
 ```
+
+Cada comando tem três arquivos nessa pasta:
+
+- `ansible-playbook.ps1`: o script que o PowerShell executa. Ele chama o
+  módulo, passando o nome do comando e os argumentos. No fim, devolve o código
+  de saída do comando.
+- `ansible-playbook.exe`: o executável para os outros programas, como o
+  Prompt de Comando, editores e scripts em outras linguagens, que não
+  executam `.ps1`. É o [Shim do Scoop](https://github.com/ScoopInstaller/Shim),
+  que executa o `.ps1` no PowerShell.
+- `ansible-playbook.shim`: a configuração do `.exe`. Ao ser executado, o
+  `.exe` lê esse arquivo para saber qual PowerShell abrir e com quais
+  argumentos:
+
+    ```text
+    path = C:\Program Files\PowerShell\7\pwsh.exe
+    args = -NoProfile -ExecutionPolicy Bypass -File "C:\Users\<usuário>\AppData\Local\WinPlaybook\bin\ansible-playbook.ps1"
+    ```
+
+Por padrão, o `.shim` usa o PowerShell em que o `Install-WinPlaybookShim` foi
+executado. Para usar outro, passe o parâmetro `-PowerShell` na instalação.
+
+!!! tip "Dica"
+
+    O Windows PowerShell 5.1 abre mais rápido que o PowerShell 7.
 
 ## O que acontece quando você executa um comando
 
-Exemplo: um repositório git em `C:\infra`, com o comando executado na raiz.
+No exemplo abaixo, o comando é executado na raiz de um repositório git em
+`C:\infra`:
 
 ```powershell
 PS C:\infra> ansible-playbook -i .\inventory\prod.yml .\playbooks\site.yml
 ```
 
-1. O *shim* chama o módulo WinPlaybook com o comando e os argumentos.
-2. O WinPlaybook define a pasta do projeto: a raiz do repositório git que
-   contém a pasta atual, `C:\infra`. Fora de um repositório, a pasta do
-   projeto é a própria pasta atual.
-3. Os caminhos do Windows nos argumentos viram caminhos do *container*:
-   `.\inventory\prod.yml` vira `./inventory/prod.yml`, e um caminho absoluto
-   como `C:\infra\inventory\prod.yml` vira `/work/inventory/prod.yml`.
-4. O WinPlaybook executa `docker run` com a pasta do projeto montada em
-   `/work`. A pasta de trabalho no *container* corresponde à pasta atual:
-   `C:\infra` é `/work`, e `C:\infra\playbooks` seria `/work/playbooks`.
-5. O Ansible roda no *container*, e a saída aparece no terminal.
-6. O Docker remove o *container*, e o WinPlaybook devolve o código de saída
-   do comando. Assim, scripts e outros programas sabem se o comando deu certo.
+```mermaid
+sequenceDiagram
+    actor user as Você
+    participant shim as Shim
+    participant module as Módulo WinPlaybook
+    participant docker as Docker
+    participant container as Container
 
-Cada execução usa um *container* novo. Só o que está na pasta do projeto
-permanece de uma execução para outra.
+    user->>shim: ansible-playbook ...
+    shim->>module: comando e argumentos
+    Note over module: confere o Docker<br/>acha a pasta do projeto<br/>converte os caminhos
+    module->>docker: docker run ...
+    docker->>container: cria
+    container->>container: executa o ansible-playbook
+    container-->>user: saída do Ansible
+    container-->>docker: termina
+    Note over docker,container: o container é removido
+    docker-->>user: código de saída
+```
+
+O *container* não enxerga o disco inteiro, só a pasta do projeto, que o
+WinPlaybook monta em `/work`. Dentro de um repositório git, a pasta do projeto
+é a raiz do repositório, a mesma que o git mostra:
+
+```powershell
+PS C:\infra\playbooks> git rev-parse --show-toplevel
+C:/infra
+```
+
+Por isso, `/work` é sempre a raiz do repositório, mesmo quando você executa o
+comando numa subpasta. Fora de um repositório git, não há raiz para
+encontrar, e `/work` é a pasta atual do terminal.
+
+Dentro do *container*, o comando roda na pasta que corresponde à pasta atual.
+Assim, os caminhos relativos funcionam como no Windows:
+
+| Pasta atual          | Repositório git | `/work` é          | O comando roda em |
+| -------------------- | --------------- | ------------------ | ----------------- |
+| `C:\infra`           | `C:\infra`      | `C:\infra`         | `/work`           |
+| `C:\infra\playbooks` | `C:\infra`      | `C:\infra`         | `/work/playbooks` |
+| `C:\scripts`         | nenhum          | `C:\scripts`       | `/work`           |
+| `C:\scripts\linux`   | nenhum          | `C:\scripts\linux` | `/work`           |
+
+Os caminhos do Windows nos argumentos também são convertidos para o
+*container*, conforme as regras de
+[Conversão de caminhos](#conversao-de-caminhos).
+
+## Conversão de caminhos
+
+O Linux do *container* não entende caminhos do Windows. Antes de chamar o
+Ansible, o WinPlaybook passa para o formato do Linux os argumentos que são
+caminhos de arquivo e deixa os outros como estão.
+
+Cada caminho continua apontando para o mesmo arquivo, agora visto de dentro do
+*container*: o que está na pasta do projeto fica em `/work`, e o que está fora
+dela gera um erro, porque o *container* não enxerga essa pasta. Isso vale
+também para um caminho depois de uma opção com `=` ou de um `@`.
+
+Exemplos com a pasta do projeto e a pasta atual em `C:\infra`:
+
+| Argumento                        | No *container*                 |
+| -------------------------------- | ------------------------------ |
+| `.\playbooks\site.yml`           | `./playbooks/site.yml`         |
+| `C:\infra\inventory\prod.yml`    | `/work/inventory/prod.yml`     |
+| `D:\outros\hosts.yml`            | erro: fora da pasta do projeto |
+| `--inventory=C:\infra\hosts.yml` | `--inventory=/work/hosts.yml`  |
+| `@vars\prod.yml`                 | `@vars/prod.yml`               |
+| `~web\d+`                        | `~web\d+`, não é caminho       |
 
 ## Limitações
 
-- O *container* só acessa a pasta do projeto. Um caminho fora dela, como
-  `D:\outros\hosts.yml`, gera um erro.
+- O Ansible só acessa os arquivos da pasta do projeto.
 - Cada comando cria um *container*, o que soma de 1,5 a 3 segundos ao início
   de cada execução.
-- O Docker Desktop precisa estar rodando.
-- Um caminho relativo com `\` só é convertido quando já existe. O WinPlaybook
-  confere se o caminho existe para não alterar argumentos que têm `\` mas não
-  são caminhos, como uma expressão regular. Para um arquivo que o comando
-  ainda vai criar, use `/`:
-
-    ```powershell
-    # A pasta saida existe, mas o arquivo inventario.json ainda não.
-
-    # Não funciona: o caminho chega ao container com \, que o Linux não usa
-    # como separador de pastas.
-    ansible-inventory -i .\inventory\prod.yml --list --output .\saida\inventario.json
-
-    # Funciona: o caminho já está no formato do Linux.
-    ansible-inventory -i .\inventory\prod.yml --list --output ./saida/inventario.json
-    ```
+- O Docker Desktop precisa estar em execução.
