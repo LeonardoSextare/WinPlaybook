@@ -12,6 +12,7 @@ Describe 'Invoke-AnsibleContainer' {
         New-Item -ItemType Directory -Path (Join-Path $projectRoot '.git') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $projectRoot 'playbooks') -Force | Out-Null
 
+        Mock Confirm-DockerEngine -ModuleName WinPlaybook {}
         Mock docker -ModuleName WinPlaybook { $args }
         Mock Get-ImageReference -ModuleName WinPlaybook { 'winplaybook:mock' }
         Mock Test-InteractiveTerminal -ModuleName WinPlaybook { $false }
@@ -72,6 +73,18 @@ Describe 'Invoke-AnsibleContainer' {
         }
 
         ($dockerArguments -join ' ') | Should-BeLikeString '* ansible-playbook /work/site.yml'
+    }
+
+    Context 'when Docker is not ready' {
+        BeforeAll {
+            Mock Confirm-DockerEngine -ModuleName WinPlaybook { throw 'Docker was not found.' }
+        }
+
+        It 'stops before calling docker' {
+            { InModuleScope WinPlaybook { Invoke-AnsibleContainer -Command 'ansible' } } | Should-Throw -ExceptionMessage 'Docker was not found.'
+
+            Should-Invoke docker -ModuleName WinPlaybook -Times 0 -Exactly
+        }
     }
 
     Context 'when the terminal is interactive' {
