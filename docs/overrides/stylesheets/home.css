@@ -1,0 +1,304 @@
+/*
+  Home page styles (overrides/home.html).
+
+  Loaded on every page through extra_css, because instant navigation does not
+  reload the <head>. Every rule is scoped to a wp- class, so other pages are
+  not affected.
+*/
+
+/* ============================ Hero ============================ */
+
+/* The home has no content below the hero: hide the empty main area, so the hero fills the screen. */
+.md-container:has(.wp-hero) > .md-main {
+  display: none;
+}
+
+.wp-hero {
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  background:
+    radial-gradient(50rem 25rem at 10% -10%, rgb(124 108 255 / 22%), transparent 70%),
+    radial-gradient(40rem 25rem at 95% 20%, rgb(34 195 230 / 15%), transparent 70%);
+}
+
+.wp-hero__inner {
+  display: grid;
+  flex-grow: 1;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem 0.8rem;
+}
+
+/* Sizes use clamp(minimum, preferred, maximum): the preferred value follows the
+   window width (vw), so the hero grows on large screens instead of leaving empty space. */
+@media screen and (min-width: 60em) {
+  .wp-hero__inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: clamp(2rem, 3.5vw, 5rem);
+    padding: 2rem 0.8rem;
+  }
+}
+
+.md-typeset .wp-hero__title {
+  margin: 0 0 0.6rem;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
+}
+
+@media screen and (min-width: 60em) {
+  .md-typeset .wp-hero__title {
+    font-size: clamp(2.2rem, 1rem + 2vw, 3.4rem);
+  }
+}
+
+.wp-hero__highlight {
+  background: var(--wp-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.md-typeset .wp-hero__lead {
+  margin: 0 0 1rem;
+  max-width: 32em;
+  font-size: clamp(0.95rem, 0.4rem + 0.6vw, 1.15rem);
+  color: var(--md-default-fg-color--light);
+}
+
+/* "ul." and "ul li" match the specificity of the theme's list rules, so these win. */
+/* Two columns, so the four items always break as 2 + 2; one column on phones. */
+.md-typeset ul.wp-hero__checks {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.5rem 2rem;
+  margin: 0 0 1.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.md-typeset ul.wp-hero__checks li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--md-default-fg-color--light);
+}
+
+@media screen and (max-width: 30em) {
+  .md-typeset ul.wp-hero__checks {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wp-hero__checks svg {
+  width: 1em;
+  height: 1em;
+  color: var(--wp-cyan);
+}
+
+/* ============================ Quick install ============================ */
+
+/* A size container: the command inside sizes its font by this box (cqi units), not by the window. */
+.wp-install {
+  container-type: inline-size;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.9rem;
+  border-radius: 0.5rem;
+  background: #0c0c0c;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 10%);
+}
+
+.md-typeset .wp-install__command {
+  flex: 1;
+  overflow-x: auto;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  /* Box width minus prompt, button and padding, shared by ~72 characters 0.6em wide each. */
+  font-size: clamp(0.55rem, (100cqi - 4rem) / 44, 0.75rem);
+  white-space: nowrap;
+  color: #e4e6eb;
+}
+
+.wp-prompt {
+  color: var(--wp-cyan);
+}
+
+.wp-install__copy {
+  display: flex;
+  padding: 0.35rem;
+  border-radius: 0.3rem;
+  color: #8b91a0;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.wp-install__copy:hover {
+  background-color: rgb(255 255 255 / 8%);
+  color: #fff;
+}
+
+.wp-install__copy svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.md-typeset .wp-install__note {
+  margin: 0.5rem 0 0;
+  font-size: 0.65rem;
+  color: var(--md-default-fg-color--lighter);
+}
+
+/* ============================ Terminal ============================ */
+
+/* Windows Terminal: "Campbell" color scheme and Cascadia Mono, its defaults.
+   Every size inside the window is in em, so the whole window grows with its font size. */
+.wp-terminal {
+  overflow: hidden;
+  border-radius: 0.65em;
+  background: #0c0c0c;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 12%),
+    0 2em 4em rgb(0 0 0 / 50%),
+    0 0 8em rgb(124 108 255 / 18%);
+  font-family: "Cascadia Mono", "Cascadia Code", Consolas, var(--md-code-font-family);
+  font-size: clamp(0.62rem, 0.85vw, 0.85rem);
+  line-height: 1.45;
+  color: #cccccc;
+}
+
+.wp-terminal svg {
+  width: 1.1em;
+  height: 1.1em;
+  stroke-width: 1.5;
+}
+
+.wp-terminal__titlebar {
+  display: flex;
+  align-items: flex-end;
+  height: 3.2em;
+  padding-left: 0.65em;
+  background: #202020;
+  font-family: "Segoe UI Variable Text", "Segoe UI", var(--md-text-font-family);
+  color: #ffffff;
+}
+
+.wp-terminal__tab {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  width: 14.5em;
+  height: 2.65em;
+  padding: 0 0.8em 0 1em;
+  border-radius: 0.65em 0.65em 0 0;
+  background: #0c0c0c;
+}
+
+.wp-terminal svg.wp-terminal__tab-icon {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.wp-terminal__tab-close {
+  display: flex;
+  margin-left: auto;
+  color: #cccccc;
+}
+
+.wp-terminal__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6em;
+  height: 2.65em;
+  color: #cccccc;
+}
+
+.wp-terminal__controls {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
+}
+
+.wp-terminal__controls span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.7em;
+}
+
+.wp-terminal__body {
+  overflow-x: auto;
+  padding: 0.8em 1.1em 1.3em;
+}
+
+/* Only on the lines: on the body, the line breaks of the HTML source would show up as empty lines. */
+.wp-terminal__body > div {
+  white-space: pre;
+}
+
+.wp-green {
+  color: #13a10e;
+}
+
+.wp-yellow {
+  color: #c19c00;
+}
+
+/* PSReadLine, which colors the command line of PowerShell as it is typed. */
+.wp-ps-command {
+  color: #f9f1a5;
+}
+
+.wp-ps-parameter {
+  color: #767676;
+}
+
+/* A bar, the default cursor shape of Windows Terminal. */
+.wp-terminal__cursor {
+  display: inline-block;
+  width: 0.1em;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: #ffffff;
+  animation: wp-blink 1.06s step-end infinite;
+}
+
+/* The cursor does not blink while text is being typed. */
+.wp-terminal--typing .wp-terminal__cursor {
+  animation: none;
+}
+
+@keyframes wp-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Hidden until javascripts/home.js shows them, one at a time. */
+.wp-terminal__command,
+.wp-terminal__output {
+  visibility: hidden;
+}
+
+.wp-terminal .wp-terminal--shown {
+  visibility: visible;
+}
+
+/* Respect the "reduce motion" setting of the operating system: show the finished run. */
+@media (prefers-reduced-motion: reduce) {
+  .wp-terminal__command,
+  .wp-terminal__output {
+    visibility: visible;
+  }
+}

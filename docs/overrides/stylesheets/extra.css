@@ -1,0 +1,49 @@
+/*
+  Site-wide adjustments to the theme. Home page styles are in home.css.
+*/
+
+/* Brand colors, used by the home page and by the diagrams. */
+:root {
+  --wp-purple: #7c6cff;
+  --wp-cyan: #22c3e6;
+  --wp-gradient: linear-gradient(90deg, var(--wp-purple), var(--wp-cyan));
+}
+
+/* Mermaid diagrams in the brand colors. The theme draws the diagrams with these
+   variables, set on :root > *; this selector is more specific, so it wins. */
+.md-typeset .mermaid {
+  --md-mermaid-node-bg-color: color-mix(in srgb, var(--wp-purple) 15%, transparent);
+  --md-mermaid-node-fg-color: var(--wp-purple);
+  --md-mermaid-edge-color: var(--wp-cyan);
+  --md-mermaid-label-fg-color: var(--md-default-fg-color);
+}
+
+/* Center diagrams narrower than the text column. */
+.md-typeset .mermaid {
+  display: flex;
+  justify-content: center;
+}
+
+/* Wider layout than the theme default (61rem), so large screens have less empty
+   space, with side margins that grow with the window: none on phones, where the
+   theme's own padding is enough, up to 4rem on large screens. Header, tabs,
+   content and footer all use .md-grid, so they stay aligned. */
+.md-grid {
+  --wp-gutter: clamp(0rem, 5vw - 1.5rem, 4rem);
+  max-width: min(76rem, 100% - 2 * var(--wp-gutter));
+}
+
+/* Keep the site name in the header: by default, the theme swaps it for the page
+   title when the page scrolls past its heading. */
+.md-header__title--active .md-header__topic {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  z-index: 0;
+}
+
+.md-header__title--active .md-header__topic + .md-header__topic {
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}

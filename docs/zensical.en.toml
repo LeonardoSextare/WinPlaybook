@@ -1,0 +1,137 @@
+# English documentation. Zensical builds one language per site, so the Portuguese
+# site has its own config, zensical.pt-br.toml. Keep the theme and the Markdown
+# extensions the same in both files.
+#
+# Build or preview with: uvx zensical serve -f docs/zensical.en.toml
+
+[project]
+site_url = "https://leonardosextare.github.io/WinPlaybook/en/"
+site_name = "WinPlaybook"
+site_description = "Use Ansible on Windows as if it were native."
+site_author = "Leonardo Sextare"
+
+copyright = 'Copyright &copy; 2026 Leonardo Sextare. Released under the <a href="https://github.com/LeonardoSextare/WinPlaybook/blob/main/LICENSE">MIT License</a>.'
+
+repo_url = "https://github.com/LeonardoSextare/WinPlaybook"
+repo_name = "WinPlaybook"
+edit_uri = "edit/main/docs/en/"
+
+docs_dir = "en"
+site_dir = "site/en"
+
+# Each top-level entry becomes a tab; the pages of the active tab fill the left sidebar.
+# Grows with the content: a tab is added only when there are pages for it.
+nav = [
+  { "Home" = "index.md" },
+  { "How it works" = "how-it-works.md" },
+]
+
+extra_css = ["stylesheets/extra.css", "stylesheets/home.css"]
+extra_javascript = ["javascripts/home.js"]
+
+[project.theme]
+# "modern" (default): Inter font and Lucide icons.
+# "classic": Roboto font and Material icons, the look of Material for MkDocs.
+variant = "modern"
+custom_dir = "overrides"
+# favicon = "images/favicon.png"
+language = "en"
+features = [
+  "announce.dismiss",
+  "content.action.edit",
+  # "content.action.view",
+  "content.code.annotate",
+  "content.code.copy",
+  "content.code.select",
+  "content.footnote.tooltips",
+  "content.tabs.link",
+  "content.tooltips",
+  # "header.autohide",
+  # "navigation.expand",
+  "navigation.footer",
+  "navigation.indexes",
+  "navigation.instant",
+  "navigation.instant.prefetch",
+  # "navigation.instant.progress",
+  "navigation.path",
+  # "navigation.prune",
+  "navigation.sections",
+  "navigation.tabs",
+  # Renders the tabs inside the header, so they stay above the home hero.
+  "navigation.tabs.sticky",
+  "navigation.top",
+  "navigation.tracking",
+  "search.highlight",
+  # "toc.follow",
+  # "toc.integrate",
+]
+
+# logo = "assets/logo.png"
+
+[project.theme.icon]
+logo = "lucide/terminal"
+
+# [project.theme.font]
+# text = "Inter"
+# code = "Jetbrains Mono"
+
+# Without media queries the first entry is the default, so the site opens dark.
+[[project.theme.palette]]
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[project.extra]
+# Hides the "Made with Zensical" notice in the footer.
+generator = false
+# The same in both languages: the install script is published at the root of the site.
+install_url = "https://leonardosextare.github.io/WinPlaybook/install.ps1"
+# Language selector in the header.
+alternate = [
+  { name = "English", link = "/WinPlaybook/en/", lang = "en" },
+  { name = "Português (Brasil)", link = "/WinPlaybook/pt-br/", lang = "pt" },
+]
+
+# [[project.extra.social]]
+# icon = "fontawesome/brands/github"
+# link = "https://github.com/user/repo"
+
+# [[project.extra.social]]
+# icon = "fontawesome/brands/mastodon"
+# link = "https://fosstodon.org/@user"
+
+[project.markdown_extensions]
+abbr = {}
+admonition = {}
+attr_list = {}
+def_list = {}
+footnotes = {}
+md_in_html = {}
+toc.permalink = true
+pymdownx.arithmatex.generic = true
+pymdownx.betterem = {}
+pymdownx.caret = {}
+pymdownx.details = {}
+pymdownx.emoji.emoji_generator = "zensical.extensions.emoji.to_svg"
+pymdownx.emoji.emoji_index = "zensical.extensions.emoji.twemoji"
+pymdownx.highlight.anchor_linenums = true
+pymdownx.highlight.line_spans = "__span"
+pymdownx.highlight.pygments_lang_class = true
+pymdownx.inlinehilite = {}
+pymdownx.keys = {}
+pymdownx.magiclink = {}
+pymdownx.mark = {}
+pymdownx.smartsymbols = {}
+# pymdownx.snippets.base_path = "includes"
+pymdownx.superfences.custom_fences = [
+  { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+pymdownx.tabbed.alternate_style = true
+pymdownx.tabbed.combine_header_slug = true
+pymdownx.tasklist.custom_checkbox = true
+pymdownx.tilde = {}

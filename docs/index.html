@@ -1,0 +1,22 @@
+<!doctype html>
+<!--
+  Root of the published site. Each language is a separate site (/en/ and /pt-br/);
+  this page sends visitors to the one that matches their browser language.
+  The deploy copies it to the root of the site: it is not part of either build.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WinPlaybook</title>
+    <script>
+      const language = navigator.language.toLowerCase().startsWith("pt") ? "pt-br" : "en"
+      location.replace(language + "/")
+    </script>
+    <noscript>
+      <meta http-equiv="refresh" content="0; url=en/">
+    </noscript>
+  </head>
+  <body>
+    <a href="en/">WinPlaybook documentation</a>
+  </body>
+</html>
