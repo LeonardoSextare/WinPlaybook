@@ -23,6 +23,7 @@ site_dir = "site/en"
 # Grows with the content: a tab is added only when there are pages for it.
 nav = [
   { "Home" = "index.md" },
+  { "How it works" = "how-it-works.md" },
 ]
 
 extra_css = ["stylesheets/extra.css", "stylesheets/home.css"]
