@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - docs/**
+      - installer/install.ps1
       - .github/workflows/docs.yml
   push:
     branches:
       - main
     paths:
       - docs/**
+      - installer/install.ps1
       - .github/workflows/docs.yml
   workflow_dispatch:
 
@@ -44,6 +46,7 @@ jobs:
               }
           }
           Copy-Item docs/index.html -Destination docs/site
+          Copy-Item installer/install.ps1 -Destination docs/site
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v5
