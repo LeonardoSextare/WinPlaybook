@@ -20,27 +20,9 @@ docs_dir = "en"
 site_dir = "site/en"
 
 # Each top-level entry becomes a tab; the pages of the active tab fill the left sidebar.
+# Grows with the content: a tab is added only when there are pages for it.
 nav = [
   { "Home" = "index.md" },
-  { "Getting started" = [
-    "getting-started/installation.md",
-    "getting-started/first-playbook.md",
-  ] },
-  { "Guides" = [
-    "guides/vscode.md",
-    "guides/run-commands.md",
-    "guides/customize-shims.md",
-    "guides/uninstall.md",
-  ] },
-  { "How it works" = [
-    "how-it-works/shims-and-container.md",
-    "how-it-works/project-folder.md",
-  ] },
-  { "Reference" = [
-    "reference/commands.md",
-    "reference/image.md",
-  ] },
-  { "Troubleshooting" = "troubleshooting.md" },
 ]
 
 extra_css = ["stylesheets/extra.css", "stylesheets/home.css"]
