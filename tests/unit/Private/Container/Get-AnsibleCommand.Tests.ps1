@@ -9,6 +9,7 @@ AfterAll {
 
 Describe 'Get-AnsibleCommand' {
     BeforeAll {
+        Mock Confirm-DockerEngine -ModuleName WinPlaybook {}
         Mock Get-ImageReference -ModuleName WinPlaybook { 'winplaybook:mock' }
     }
 
@@ -32,6 +33,19 @@ Describe 'Get-AnsibleCommand' {
             Should-Invoke docker -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
                 ($args[0..2] -join ' ') -eq 'run --rm winplaybook:mock'
             }
+        }
+    }
+
+    Context 'when Docker is not ready' {
+        BeforeAll {
+            Mock Confirm-DockerEngine -ModuleName WinPlaybook { throw 'Docker was not found.' }
+            Mock docker -ModuleName WinPlaybook {}
+        }
+
+        It 'stops before calling docker' {
+            { InModuleScope WinPlaybook { Get-AnsibleCommand } } | Should-Throw -ExceptionMessage 'Docker was not found.'
+
+            Should-Invoke docker -ModuleName WinPlaybook -Times 0 -Exactly
         }
     }
 

@@ -14,6 +14,8 @@ function Invoke-AnsibleContainer {
         [string[]] $Arguments = @()
     )
 
+    Confirm-DockerEngine
+
     $currentFolder = (Get-Location -PSProvider FileSystem).ProviderPath
     $projectRoot = Get-ProjectRoot -Path $currentFolder
     $workingDirectory = ConvertTo-ContainerPath -Path $currentFolder -Root $projectRoot

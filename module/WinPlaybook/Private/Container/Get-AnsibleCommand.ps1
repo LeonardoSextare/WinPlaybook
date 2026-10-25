@@ -12,6 +12,8 @@ function Get-AnsibleCommand {
     [OutputType([string[]])]
     param()
 
+    Confirm-DockerEngine
+
     $image = Get-ImageReference
     # No double quotes in the script: Windows PowerShell 5.1 drops them when calling docker.
     $listing = docker run --rm $image sh -c 'IFS=:; for folder in $PATH; do ls $folder 2>/dev/null; done'
