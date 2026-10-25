@@ -24,6 +24,7 @@ site_dir = "site/pt-br"
 # The file names are the same as in English, so the language selector keeps the page.
 nav = [
   { "Início" = "index.md" },
+  { "Instalação" = "install.md" },
   { "Como funciona" = "how-it-works.md" },
 ]
 
