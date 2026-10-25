@@ -1,6 +1,7 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot '../helpers/Docker.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Repository.ps1')
 }
 
 Describe 'install.ps1' -Skip:(-not $env:CI) {
@@ -10,46 +11,10 @@ Describe 'install.ps1' -Skip:(-not $env:CI) {
         $env:WINPLAYBOOK_IMAGE = Build-TestImage
 
         $repositoryName = 'WinPlaybookTest'
-        $repositoryPath = Join-Path $TestDrive 'repository'
-        New-Item -ItemType Directory -Path $repositoryPath | Out-Null
-        $packageScriptPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../scripts/Build-ModulePackage.ps1'))
-        & pwsh -NoProfile -Command {
-            param($PackageScriptPath, $PackageFolder, $RepositoryPath)
-            $ErrorActionPreference = 'Stop'
-            $modulePath = & $PackageScriptPath -Version 0.0.1 -Destination $PackageFolder
-            Register-PSResourceRepository -Name WinPlaybookPublish -Uri $RepositoryPath -Trusted
-            try {
-                Publish-PSResource -Path $modulePath -Repository WinPlaybookPublish
-            }
-            finally {
-                Unregister-PSResourceRepository -Name WinPlaybookPublish
-            }
-        } -args $packageScriptPath, (Join-Path $TestDrive 'package'), $repositoryPath
-        if ($LASTEXITCODE -ne 0) {
-            throw "Could not publish the module package to $repositoryPath."
-        }
-
-        $hasPSResourceGet = [bool] (Get-Command -Name Install-PSResource -ErrorAction SilentlyContinue)
-        if ($hasPSResourceGet) {
-            Register-PSResourceRepository -Name $repositoryName -Uri $repositoryPath
-        }
-        else {
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Scope CurrentUser -Force | Out-Null
-            Register-PSRepository -Name $repositoryName -SourceLocation $repositoryPath -InstallationPolicy Untrusted
-        }
+        New-TestRepository -Name $repositoryName -Path (Join-Path $TestDrive 'repository') -ModuleVersion 0.0.1
         $env:WINPLAYBOOK_REPOSITORY = $repositoryName
 
-        $powerShellPath = (Get-Process -Id $PID).Path
         $installerPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../installer/install.ps1'))
-
-        function Invoke-PowerShell([string] $Command, [string] $ExecutionPolicy) {
-            $bytes = [Text.Encoding]::Unicode.GetBytes("`$ErrorActionPreference = 'Stop'; $Command")
-            $arguments = '-NoProfile -NonInteractive'
-            if ($ExecutionPolicy) {
-                $arguments += " -ExecutionPolicy $ExecutionPolicy"
-            }
-            Invoke-CommandLine -FilePath $powerShellPath -ArgumentList "$arguments -EncodedCommand $([Convert]::ToBase64String($bytes))"
-        }
 
         function Invoke-Installer([string] $ExecutionPolicy) {
             $command = @'
@@ -62,23 +27,23 @@ catch {
 }
 "ProcessPolicy=$(Get-ExecutionPolicy -Scope Process)"
 '@
-            Invoke-PowerShell -Command $command.Replace('INSTALLER_PATH', $installerPath) -ExecutionPolicy $ExecutionPolicy
+            Invoke-PowerShellProcess -Command $command.Replace('INSTALLER_PATH', $installerPath) -ExecutionPolicy $ExecutionPolicy
         }
     }
 
     AfterAll {
-        $uninstallModule = 'Uninstall-Module -Name WinPlaybook -AllVersions'
-        if ($hasPSResourceGet) {
-            $uninstallModule = 'Uninstall-PSResource -Name WinPlaybook -Scope CurrentUser'
-        }
-        Invoke-PowerShell -Command "try { Uninstall-WinPlaybookShim } catch {}; try { $uninstallModule } catch {}" | Out-Null
+        $uninstallCommand = @'
+try { Uninstall-WinPlaybookShim } catch {}
+if (Get-Command -Name Uninstall-PSResource -ErrorAction SilentlyContinue) {
+    Uninstall-PSResource -Name WinPlaybook -Scope CurrentUser
+}
+else {
+    Uninstall-Module -Name WinPlaybook -AllVersions
+}
+'@
+        Invoke-PowerShellProcess -Command $uninstallCommand | Out-Null
 
-        if ($hasPSResourceGet) {
-            Unregister-PSResourceRepository -Name $repositoryName
-        }
-        else {
-            Unregister-PSRepository -Name $repositoryName
-        }
+        Remove-TestRepository -Name $repositoryName
         $env:WINPLAYBOOK_REPOSITORY = $originalRepository
         $env:WINPLAYBOOK_IMAGE = $originalImage
     }

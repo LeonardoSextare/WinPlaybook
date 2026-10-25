@@ -37,8 +37,6 @@ jobs:
       - name: Install test dependencies
         uses: ./.github/actions/install-test-dependencies
 
-      # The installer uses PSResourceGet when it is available and PowerShellGet
-      # otherwise: this shows which branch each edition exercises.
       - name: Show the package tools of each edition
         run: |
           $listCommand = 'Get-Module -ListAvailable PowerShellGet, Microsoft.PowerShell.PSResourceGet | Format-Table Name, Version, ModuleBase -AutoSize | Out-String -Width 200'

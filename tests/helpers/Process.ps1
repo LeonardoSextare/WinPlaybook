@@ -26,3 +26,13 @@ function Invoke-CommandLine([string] $FilePath, [string] $ArgumentList) {
         Remove-Item -LiteralPath $outputFilePath, $errorFilePath -ErrorAction SilentlyContinue
     }
 }
+
+function Invoke-PowerShellProcess([string] $Command, [string] $ExecutionPolicy) {
+    $bytes = [Text.Encoding]::Unicode.GetBytes("`$ErrorActionPreference = 'Stop'; $Command")
+    $arguments = '-NoProfile -NonInteractive'
+    if ($ExecutionPolicy) {
+        $arguments += " -ExecutionPolicy $ExecutionPolicy"
+    }
+    $powerShellPath = (Get-Process -Id $PID).Path
+    Invoke-CommandLine -FilePath $powerShellPath -ArgumentList "$arguments -EncodedCommand $([Convert]::ToBase64String($bytes))"
+}
