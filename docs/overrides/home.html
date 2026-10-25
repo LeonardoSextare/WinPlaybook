@@ -15,7 +15,8 @@
     <div class="wp-hero__inner md-grid md-typeset">
       <div class="wp-hero__text">
         <h1 class="wp-hero__title">
-          {{ hero.title }}
+          {#- The highlight always starts on its own line, in every language. -#}
+          {{ hero.title }}<br>
           <span class="wp-hero__highlight">{{ hero.highlight }}</span>
         </h1>
         <p class="wp-hero__lead">{{ hero.lead }}</p>
