@@ -1,6 +1,6 @@
 @{
     RootModule           = 'WinPlaybook.psm1'
-    ModuleVersion        = '0.1.0'
+    ModuleVersion        = '0.0.0'
     GUID                 = '1c1dda68-daf7-4f79-bf94-608727b28b2f'
     Author               = 'Leonardo Sextare'
     Copyright            = '(c) Leonardo Sextare. MIT License.'
@@ -16,4 +16,12 @@
     CmdletsToExport      = @()
     VariablesToExport    = @()
     AliasesToExport      = @()
+
+    PrivateData          = @{
+        PSData = @{
+            Tags       = @('Ansible', 'Docker', 'Windows', 'Automation')
+            ProjectUri = 'https://github.com/LeonardoSextare/WinPlaybook'
+            LicenseUri = 'https://github.com/LeonardoSextare/WinPlaybook/blob/main/LICENSE'
+        }
+    }
 }
