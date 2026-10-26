@@ -12,3 +12,16 @@ catch {
 '@
     Invoke-PowerShellProcess -Command $command.Replace('INSTALLER_PATH', $installerPath) -ExecutionPolicy $ExecutionPolicy
 }
+
+function Uninstall-TestInstallation {
+    $command = @'
+try { Uninstall-WinPlaybookShim } catch {}
+if (Get-Command -Name Uninstall-PSResource -ErrorAction SilentlyContinue) {
+    Uninstall-PSResource -Name WinPlaybook -Scope CurrentUser
+}
+else {
+    Uninstall-Module -Name WinPlaybook -AllVersions
+}
+'@
+    Invoke-PowerShellProcess -Command $command | Out-Null
+}

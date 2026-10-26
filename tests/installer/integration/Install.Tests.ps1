@@ -17,17 +17,7 @@ Describe 'install.ps1' -Skip:(-not $env:CI) {
     }
 
     AfterAll {
-        $uninstallCommand = @'
-try { Uninstall-WinPlaybookShim } catch {}
-if (Get-Command -Name Uninstall-PSResource -ErrorAction SilentlyContinue) {
-    Uninstall-PSResource -Name WinPlaybook -Scope CurrentUser
-}
-else {
-    Uninstall-Module -Name WinPlaybook -AllVersions
-}
-'@
-        Invoke-PowerShellProcess -Command $uninstallCommand | Out-Null
-
+        Uninstall-TestInstallation
         Remove-TestRepository -Name $repositoryName
         $env:WINPLAYBOOK_REPOSITORY = $originalRepository
         $env:WINPLAYBOOK_IMAGE = $originalImage
