@@ -28,7 +28,7 @@ env:
 
 jobs:
   integration-tests:
-    name: Image integration tests
+    name: Integration tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository

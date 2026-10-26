@@ -51,7 +51,7 @@ jobs:
         run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
 
   integration-tests:
-    name: Module integration tests
+    name: Integration tests
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
