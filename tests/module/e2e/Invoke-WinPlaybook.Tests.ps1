@@ -4,6 +4,7 @@ BeforeAll {
     $env:WINPLAYBOOK_IMAGE = Build-TestImage
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
     $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
+    $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
 }
 
 AfterAll {
@@ -87,6 +88,25 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $output
             $output | Should-BeLikeString '*hello from WinPlaybook*'
+        }
+    }
+
+    Context 'when the project has lint violations' {
+        BeforeAll {
+            $project = Join-Path $TestDrive 'lint-violation'
+            Copy-Item $lintViolationProject $project -Recurse
+            Push-Location $project
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'reports the violations' {
+            $output = Invoke-WinPlaybook ansible-lint site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-NotBe 0 -Because $output
+            $output | Should-BeLikeString '*fqcn`[action-core`]*'
         }
     }
 }
