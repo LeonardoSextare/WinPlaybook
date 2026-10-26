@@ -1,6 +1,7 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot '../../shared/helpers/Docker.ps1')
     . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Installer.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Repository.ps1')
 }
 
@@ -13,22 +14,6 @@ Describe 'install.ps1' -Skip:(-not $env:CI) {
         $repositoryName = 'WinPlaybookTest'
         New-TestRepository -Name $repositoryName -Path (Join-Path $TestDrive 'repository') -ModuleVersion 0.0.1
         $env:WINPLAYBOOK_REPOSITORY = $repositoryName
-
-        $installerPath = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../installer/install.ps1'))
-
-        function Invoke-Installer([string] $ExecutionPolicy) {
-            $command = @'
-try {
-    Get-Content -Raw -LiteralPath 'INSTALLER_PATH' | Invoke-Expression
-}
-catch {
-    "InstallerError=$($_.Exception.Message)"
-    exit 1
-}
-"ProcessPolicy=$(Get-ExecutionPolicy -Scope Process)"
-'@
-            Invoke-PowerShellProcess -Command $command.Replace('INSTALLER_PATH', $installerPath) -ExecutionPolicy $ExecutionPolicy
-        }
     }
 
     AfterAll {
