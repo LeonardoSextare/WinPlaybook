@@ -1,14 +1,10 @@
-BeforeDiscovery {
-    $isWindowsHost = [Environment]::OSVersion.Platform -eq 'Win32NT'
+BeforeAll {
+    . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Shim.ps1')
+    $powershellPath = (Get-Process -Id $PID).Path
 }
 
-Describe 'Shim' -Skip:(-not $isWindowsHost) {
-    BeforeAll {
-        . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
-        . (Join-Path $PSScriptRoot '../helpers/Shim.ps1')
-        $powershellPath = (Get-Process -Id $PID).Path
-    }
-
+Describe 'Shim' {
     Context 'when the target prints its arguments' {
         BeforeAll {
             $scriptPath = Join-Path $TestDrive 'print-args.ps1'
