@@ -1,4 +1,4 @@
-name: Installer CI
+name: Installer
 
 on:
   pull_request:
@@ -6,19 +6,19 @@ on:
       - installer/**
       - module/**
       - tests/installer/**
-      - tests/helpers/**
+      - tests/shared/**
       - scripts/Build-ModulePackage.ps1
       - scripts/Save-Shim.ps1
       - requirements.psd1
       - .github/actions/**
-      - .github/workflows/installer-ci.yml
+      - .github/workflows/installer.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: installer-ci-${{ github.ref }}
+  group: installer-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -50,12 +50,12 @@ jobs:
 
       - name: Run the tests (PowerShell 7)
         id: tests-core
-        run: Invoke-Pester -Path tests/installer -CI -Output Detailed
+        run: Invoke-Pester -Path tests/installer/integration -CI -Output Detailed
 
       - name: Run the tests (Windows PowerShell 5.1)
         if: success() || steps.tests-core.conclusion == 'failure'
         shell: powershell
-        run: Invoke-Pester -Path tests/installer -CI -Output Detailed
+        run: Invoke-Pester -Path tests/installer/integration -CI -Output Detailed
 
       - name: Upload the Docker Desktop logs
         if: failure()
