@@ -1,23 +1,22 @@
-name: Image release
+name: Image
 
 on:
+  pull_request:
   push:
     branches: [main]
     paths:
       - image/**
-      - tests/integration/**
-      - tests/helpers/**
-      - tests/data/**
+      - tests/image/**
+      - tests/shared/**
       - requirements.psd1
-      - .github/workflows/image-ci.yml
-      - .github/workflows/image-release.yml
+      - .github/workflows/image.yml
 
 permissions:
   contents: read
 
 concurrency:
-  group: image-release
-  cancel-in-progress: false
+  group: image-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -29,12 +28,22 @@ env:
 
 jobs:
   integration-tests:
-    name: Integration tests
-    uses: ./.github/workflows/image-ci.yml
+    name: Image integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+
+      - name: Install test dependencies
+        run: Install-PSResource -RequiredResourceFile requirements.psd1 -TrustRepository -Quiet
+
+      - name: Run integration tests
+        run: Invoke-Pester -Path tests/image/integration -CI -Output Detailed
 
   version:
     name: Version
     needs: integration-tests
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       should_release: ${{ steps.release_info.outputs.should_release }}
