@@ -17,6 +17,7 @@ BeforeAll {
     $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
     $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
     $localCollectionProject = Join-Path $PSScriptRoot '../data/projects/local-collection'
+    $projectConfigProject = Join-Path $PSScriptRoot '../data/projects/project-config'
 }
 
 AfterAll {
@@ -167,6 +168,46 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $output
             $output | Should-BeLikeString '*hello from the demo.test collection*'
+        }
+    }
+
+    Context 'when the ansible.cfg of the project sets a relative collections path' {
+        BeforeAll {
+            $project = Join-Path $TestDrive 'project-config'
+            Copy-Item $projectConfigProject $project -Recurse
+            Push-Location $project
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'finds the collections relative to the file' {
+            $output = Invoke-WinPlaybook ansible-playbook playbooks/site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*hello from the demo.test collection*'
+        }
+    }
+
+    Context 'when the user folder has a .ansible.cfg file' {
+        BeforeAll {
+            $env:USERPROFILE = Join-Path $TestDrive 'config-user'
+            New-Item -ItemType Directory -Path $env:USERPROFILE | Out-Null
+            Set-Content -LiteralPath (Join-Path $env:USERPROFILE '.ansible.cfg') -Value '[defaults]'
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:USERPROFILE = $testUserFolder
+        }
+
+        It 'uses the file' {
+            $output = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*config file = /root/.ansible.cfg*'
         }
     }
 }

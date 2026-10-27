@@ -1,8 +1,10 @@
 BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+    $originalUserFolder = $env:USERPROFILE
 }
 
 AfterAll {
+    $env:USERPROFILE = $originalUserFolder
     Remove-Module WinPlaybook
 }
 
@@ -11,6 +13,10 @@ Describe 'Invoke-AnsibleContainer' {
         $projectRoot = Join-Path $TestDrive 'project'
         New-Item -ItemType Directory -Path (Join-Path $projectRoot '.git') -Force | Out-Null
         New-Item -ItemType Directory -Path (Join-Path $projectRoot 'playbooks') -Force | Out-Null
+
+        $userFolder = Join-Path $TestDrive 'user'
+        New-Item -ItemType Directory -Path $userFolder | Out-Null
+        $env:USERPROFILE = $userFolder
 
         Mock Confirm-DockerEngine -ModuleName WinPlaybook {}
         Mock docker -ModuleName WinPlaybook { $args }
@@ -82,6 +88,64 @@ Describe 'Invoke-AnsibleContainer' {
         }
 
         ($dockerArguments -join ' ') | Should-BeLikeString '* ansible-playbook /work/site.yml'
+    }
+
+    Context 'when the current folder has an ansible.cfg file' {
+        BeforeAll {
+            $projectConfigPath = Join-Path $projectRoot 'playbooks/ansible.cfg'
+            New-Item -ItemType File -Path $projectConfigPath | Out-Null
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath $projectConfigPath
+        }
+
+        It 'points Ansible to the file' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments 'site.yml'
+            }
+
+            ($dockerArguments -join ' ') | Should-BeLikeString '* --env ANSIBLE_CONFIG=/work/playbooks/ansible.cfg *'
+        }
+    }
+
+    Context 'when the current folder has no ansible.cfg file' {
+        It 'does not point Ansible to a file' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments 'site.yml'
+            }
+
+            ($dockerArguments -join ' ') | Should-NotBeLikeString '*ANSIBLE_CONFIG*'
+        }
+    }
+
+    Context 'when the user folder has a .ansible.cfg file' {
+        BeforeAll {
+            $userConfigPath = Join-Path $userFolder '.ansible.cfg'
+            New-Item -ItemType File -Path $userConfigPath | Out-Null
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath $userConfigPath
+        }
+
+        It 'mounts the file as ~/.ansible.cfg' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments 'site.yml'
+            }
+
+            ($dockerArguments -join ' ') | Should-BeLikeString "* --volume ${userConfigPath}:/root/.ansible.cfg *"
+        }
+    }
+
+    Context 'when the user folder has no .ansible.cfg file' {
+        It 'does not mount ~/.ansible.cfg' {
+            $dockerArguments = InModuleScope WinPlaybook {
+                Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments 'site.yml'
+            }
+
+            ($dockerArguments -join ' ') | Should-NotBeLikeString '*/root/.ansible.cfg*'
+        }
     }
 
     Context 'when Docker is not ready' {

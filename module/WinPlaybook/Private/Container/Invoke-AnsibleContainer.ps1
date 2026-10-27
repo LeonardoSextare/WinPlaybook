@@ -31,6 +31,21 @@ function Invoke-AnsibleContainer {
         '--volume', "${projectRoot}:/work"
         '--volume', "$(Get-AnsibleHome):/root/.ansible"
         '--workdir', $workingDirectory
+    )
+
+    $projectConfigPath = Join-Path $currentFolder 'ansible.cfg'
+    $isProjectConfigPresent = Test-Path -LiteralPath $projectConfigPath -PathType Leaf
+    if ($isProjectConfigPresent) {
+        $dockerArguments += '--env', "ANSIBLE_CONFIG=$workingDirectory/ansible.cfg"
+    }
+
+    $userConfigPath = Join-Path $env:USERPROFILE '.ansible.cfg'
+    $isUserConfigPresent = Test-Path -LiteralPath $userConfigPath -PathType Leaf
+    if ($isUserConfigPresent) {
+        $dockerArguments += '--volume', "${userConfigPath}:/root/.ansible.cfg"
+    }
+
+    $dockerArguments += @(
         (Get-ImageReference)
         $Command
     )
