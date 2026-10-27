@@ -9,6 +9,7 @@ on:
       - tests/module/**
       - tests/shared/**
       - scripts/Save-Shim.ps1
+      - scripts/Initialize-TestWslDistribution.ps1
       - scripts/Build-ModulePackage.ps1
       - requirements.psd1
       - .github/actions/**
@@ -93,6 +94,9 @@ jobs:
 
       - name: Download the shim
         run: ./scripts/Save-Shim.ps1
+
+      - name: Prepare the WSL distribution of the tests
+        run: ./scripts/Initialize-TestWslDistribution.ps1
 
       - name: Set up Docker Desktop
         uses: ./.github/actions/setup-docker-desktop
