@@ -1,0 +1,5 @@
+- name: Use a collection from the collections path of ansible.cfg
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - demo.test.greet

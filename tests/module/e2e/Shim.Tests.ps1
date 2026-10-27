@@ -5,8 +5,13 @@ BeforeAll {
     $originalImage = $env:WINPLAYBOOK_IMAGE
     $env:WINPLAYBOOK_IMAGE = Build-TestImage
 
-    $originalAnsibleHome = $env:WINPLAYBOOK_ANSIBLE_HOME
-    $env:WINPLAYBOOK_ANSIBLE_HOME = Join-Path $TestDrive 'ansible-home'
+    $originalDockerConfig = $env:DOCKER_CONFIG
+    if (-not $env:DOCKER_CONFIG) {
+        $env:DOCKER_CONFIG = Join-Path $env:USERPROFILE '.docker'
+    }
+
+    $originalUserFolder = $env:USERPROFILE
+    $env:USERPROFILE = Join-Path $TestDrive 'user'
 
     $originalModulePath = $env:PSModulePath
     $moduleFolder = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
@@ -31,7 +36,8 @@ AfterAll {
     Remove-Module WinPlaybook
     $env:PSModulePath = $originalModulePath
     $env:WINPLAYBOOK_IMAGE = $originalImage
-    $env:WINPLAYBOOK_ANSIBLE_HOME = $originalAnsibleHome
+    $env:USERPROFILE = $originalUserFolder
+    $env:DOCKER_CONFIG = $originalDockerConfig
 }
 
 Describe 'Shim' {

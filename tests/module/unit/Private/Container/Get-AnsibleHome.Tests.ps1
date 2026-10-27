@@ -1,44 +1,26 @@
 BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
-    $originalTestFolder = $env:WINPLAYBOOK_ANSIBLE_HOME
+    $originalUserFolder = $env:USERPROFILE
     $originalAnsibleHome = $env:ANSIBLE_HOME
 }
 
 AfterAll {
-    $env:WINPLAYBOOK_ANSIBLE_HOME = $originalTestFolder
+    $env:USERPROFILE = $originalUserFolder
     $env:ANSIBLE_HOME = $originalAnsibleHome
     Remove-Module WinPlaybook
 }
 
 Describe 'Get-AnsibleHome' {
     BeforeAll {
-        $env:WINPLAYBOOK_ANSIBLE_HOME = $null
+        $env:USERPROFILE = 'C:\Users\mock'
         $env:ANSIBLE_HOME = $null
     }
 
-    Context 'when no variable is set' {
+    Context 'when ANSIBLE_HOME is not set' {
         It 'returns the .ansible folder in the user folder' {
-            $expected = Join-Path $env:USERPROFILE '.ansible'
-
             $result = InModuleScope WinPlaybook { Get-AnsibleHome }
 
-            $result | Should-Be $expected
-        }
-    }
-
-    Context 'when WINPLAYBOOK_ANSIBLE_HOME is set' {
-        BeforeAll {
-            $env:WINPLAYBOOK_ANSIBLE_HOME = 'D:\tests\ansible'
-        }
-
-        AfterAll {
-            $env:WINPLAYBOOK_ANSIBLE_HOME = $null
-        }
-
-        It 'returns the folder from the variable' {
-            $result = InModuleScope WinPlaybook { Get-AnsibleHome }
-
-            $result | Should-Be 'D:\tests\ansible'
+            $result | Should-Be 'C:\Users\mock\.ansible'
         }
     }
 
