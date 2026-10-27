@@ -15,6 +15,7 @@ Describe 'Invoke-AnsibleContainer' {
         Mock Confirm-DockerEngine -ModuleName WinPlaybook {}
         Mock docker -ModuleName WinPlaybook { $args }
         Mock Get-ImageReference -ModuleName WinPlaybook { 'winplaybook:mock' }
+        Mock Get-AnsibleHome -ModuleName WinPlaybook { 'C:\Users\mock\.ansible' }
         Mock Test-InteractiveTerminal -ModuleName WinPlaybook { $false }
         Mock Test-LegacyArgumentPassing -ModuleName WinPlaybook { $false }
 
@@ -39,6 +40,14 @@ Describe 'Invoke-AnsibleContainer' {
         }
 
         ($dockerArguments -join ' ') | Should-BeLikeString "* --volume ${projectRoot}:/work *"
+    }
+
+    It 'mounts the Ansible folder of Windows as ~/.ansible' {
+        $dockerArguments = InModuleScope WinPlaybook {
+            Invoke-AnsibleContainer -Command 'ansible-playbook' -Arguments 'site.yml'
+        }
+
+        ($dockerArguments -join ' ') | Should-BeLikeString '* --volume C:\Users\mock\.ansible:/root/.ansible *'
     }
 
     It 'works in the current folder translated to the container' {
