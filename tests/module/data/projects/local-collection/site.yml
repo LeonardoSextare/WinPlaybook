@@ -1,0 +1,5 @@
+- name: Use an installed collection
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - demo.test.greet
