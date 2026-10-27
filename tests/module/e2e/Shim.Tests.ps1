@@ -3,8 +3,12 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
 
     $originalImage = $env:WINPLAYBOOK_IMAGE
-    $originalModulePath = $env:PSModulePath
     $env:WINPLAYBOOK_IMAGE = Build-TestImage
+
+    $originalAnsibleHome = $env:WINPLAYBOOK_ANSIBLE_HOME
+    $env:WINPLAYBOOK_ANSIBLE_HOME = Join-Path $TestDrive 'ansible-home'
+
+    $originalModulePath = $env:PSModulePath
     $moduleFolder = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
     $env:PSModulePath = $moduleFolder + [IO.Path]::PathSeparator + $env:PSModulePath
     Import-Module (Join-Path $moduleFolder 'WinPlaybook/WinPlaybook.psd1') -Force
@@ -27,6 +31,7 @@ AfterAll {
     Remove-Module WinPlaybook
     $env:PSModulePath = $originalModulePath
     $env:WINPLAYBOOK_IMAGE = $originalImage
+    $env:WINPLAYBOOK_ANSIBLE_HOME = $originalAnsibleHome
 }
 
 Describe 'Shim' {

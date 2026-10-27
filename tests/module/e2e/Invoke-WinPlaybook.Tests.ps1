@@ -1,15 +1,23 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot '../../shared/helpers/Docker.ps1')
+    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+
     $originalImage = $env:WINPLAYBOOK_IMAGE
     $env:WINPLAYBOOK_IMAGE = Build-TestImage
-    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+
+    $originalAnsibleHome = $env:WINPLAYBOOK_ANSIBLE_HOME
+    $testAnsibleHome = Join-Path $TestDrive 'ansible-home'
+    $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+
     $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
     $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
+    $localCollectionProject = Join-Path $PSScriptRoot '../data/projects/local-collection'
 }
 
 AfterAll {
     Remove-Module WinPlaybook
     $env:WINPLAYBOOK_IMAGE = $originalImage
+    $env:WINPLAYBOOK_ANSIBLE_HOME = $originalAnsibleHome
 }
 
 Describe 'Invoke-WinPlaybook' {
@@ -107,6 +115,52 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-NotBe 0 -Because $output
             $output | Should-BeLikeString '*fqcn`[action-core`]*'
+        }
+    }
+
+    Context 'when the Ansible folder of Windows does not exist' {
+        BeforeAll {
+            $newAnsibleHome = Join-Path $TestDrive 'new-ansible-home'
+            $env:WINPLAYBOOK_ANSIBLE_HOME = $newAnsibleHome
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+        }
+
+        It 'creates the folder' {
+            $output = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            Test-Path -LiteralPath $newAnsibleHome -PathType Container | Should-BeTrue
+        }
+    }
+
+    Context 'when a collection was installed in a previous run' {
+        BeforeAll {
+            $env:WINPLAYBOOK_ANSIBLE_HOME = Join-Path $TestDrive 'collection-ansible-home'
+            $project = Join-Path $TestDrive 'local-collection'
+            Copy-Item $localCollectionProject $project -Recurse
+            Push-Location $project
+
+            $installOutput = Invoke-WinPlaybook ansible-galaxy collection install ./demo/test 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to install the test collection: $installOutput"
+            }
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+        }
+
+        It 'finds the collection' {
+            $output = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*hello from the demo.test collection*'
         }
     }
 }

@@ -43,4 +43,13 @@ Describe 'Container contents' {
 
         $result.ExitCode | Should-Be 0
     }
+
+    It 'keeps the Ansible files in /root/.ansible' {
+        $result = Invoke-InContainer $container -Command 'ansible-config', 'dump', '--format', 'json'
+
+        $result.ExitCode | Should-Be 0 -Because $result.Output
+        $settings = $result.Output | ConvertFrom-Json
+        $ansibleHome = ($settings | Where-Object name -eq 'ANSIBLE_HOME').value
+        $ansibleHome | Should-Be '/root/.ansible'
+    }
 }

@@ -29,6 +29,7 @@ function Invoke-AnsibleContainer {
 
     $dockerArguments += @(
         '--volume', "${projectRoot}:/work"
+        '--volume', "$(Get-AnsibleHome):/root/.ansible"
         '--workdir', $workingDirectory
         (Get-ImageReference)
         $Command
