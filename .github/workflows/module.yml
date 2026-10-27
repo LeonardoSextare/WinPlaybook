@@ -155,7 +155,8 @@ jobs:
   publish:
     name: Publish
     needs: version
-    if: needs.version.outputs.should_release == 'true'
+    # Paused while WinPlaybook moves to WSL (milestone 1.0.0): main may have unfinished versions.
+    if: false && needs.version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
 
     permissions:
