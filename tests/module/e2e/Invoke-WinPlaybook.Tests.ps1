@@ -5,9 +5,14 @@ BeforeAll {
     $originalImage = $env:WINPLAYBOOK_IMAGE
     $env:WINPLAYBOOK_IMAGE = Build-TestImage
 
-    $originalAnsibleHome = $env:WINPLAYBOOK_ANSIBLE_HOME
-    $testAnsibleHome = Join-Path $TestDrive 'ansible-home'
-    $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+    $originalDockerConfig = $env:DOCKER_CONFIG
+    if (-not $env:DOCKER_CONFIG) {
+        $env:DOCKER_CONFIG = Join-Path $env:USERPROFILE '.docker'
+    }
+
+    $originalUserFolder = $env:USERPROFILE
+    $testUserFolder = Join-Path $TestDrive 'user'
+    $env:USERPROFILE = $testUserFolder
 
     $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
     $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
@@ -17,7 +22,8 @@ BeforeAll {
 AfterAll {
     Remove-Module WinPlaybook
     $env:WINPLAYBOOK_IMAGE = $originalImage
-    $env:WINPLAYBOOK_ANSIBLE_HOME = $originalAnsibleHome
+    $env:USERPROFILE = $originalUserFolder
+    $env:DOCKER_CONFIG = $originalDockerConfig
 }
 
 Describe 'Invoke-WinPlaybook' {
@@ -120,27 +126,27 @@ Describe 'Invoke-WinPlaybook' {
 
     Context 'when the Ansible folder of Windows does not exist' {
         BeforeAll {
-            $newAnsibleHome = Join-Path $TestDrive 'new-ansible-home'
-            $env:WINPLAYBOOK_ANSIBLE_HOME = $newAnsibleHome
+            $newUserFolder = Join-Path $TestDrive 'new-user'
+            $env:USERPROFILE = $newUserFolder
             Push-Location $TestDrive
         }
 
         AfterAll {
             Pop-Location
-            $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+            $env:USERPROFILE = $testUserFolder
         }
 
         It 'creates the folder' {
             $output = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $output
-            Test-Path -LiteralPath $newAnsibleHome -PathType Container | Should-BeTrue
+            Test-Path -LiteralPath (Join-Path $newUserFolder '.ansible') -PathType Container | Should-BeTrue
         }
     }
 
     Context 'when a collection was installed in a previous run' {
         BeforeAll {
-            $env:WINPLAYBOOK_ANSIBLE_HOME = Join-Path $TestDrive 'collection-ansible-home'
+            $env:USERPROFILE = Join-Path $TestDrive 'collection-user'
             $project = Join-Path $TestDrive 'local-collection'
             Copy-Item $localCollectionProject $project -Recurse
             Push-Location $project
@@ -153,7 +159,7 @@ Describe 'Invoke-WinPlaybook' {
 
         AfterAll {
             Pop-Location
-            $env:WINPLAYBOOK_ANSIBLE_HOME = $testAnsibleHome
+            $env:USERPROFILE = $testUserFolder
         }
 
         It 'finds the collection' {
