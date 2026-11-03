@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Setup",
-            "detail": "Check Docker, WSL, uv and git, and install the development dependencies",
+            "detail": "Check WSL, uv and git, and install the development dependencies",
             "type": "process",
             "command": "pwsh",
             "args": [
