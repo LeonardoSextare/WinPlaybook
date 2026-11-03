@@ -9,7 +9,6 @@ on:
       - tests/module/**
       - tests/shared/**
       - scripts/Save-Shim.ps1
-      - scripts/Initialize-TestWslDistribution.ps1
       - scripts/Build-ModulePackage.ps1
       - requirements.psd1
       - .github/actions/**
@@ -65,9 +64,6 @@ jobs:
       - name: Download the shim
         run: ./scripts/Save-Shim.ps1
 
-      - name: Set up Docker Desktop
-        uses: ./.github/actions/setup-docker-desktop
-
       - name: Run the tests (PowerShell 7)
         id: tests-core
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
@@ -77,14 +73,12 @@ jobs:
         shell: powershell
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
 
-      - name: Upload the Docker Desktop logs
-        if: failure()
-        uses: ./.github/actions/upload-docker-desktop-logs
-
   e2e-tests:
     name: E2E tests
     runs-on: windows-2025
     timeout-minutes: 30
+    env:
+      WINPLAYBOOK_TEST_WSL_DISTRIBUTION: Ubuntu-26.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -95,11 +89,10 @@ jobs:
       - name: Download the shim
         run: ./scripts/Save-Shim.ps1
 
-      - name: Prepare the WSL distribution of the tests
-        run: ./scripts/Initialize-TestWslDistribution.ps1
-
-      - name: Set up Docker Desktop
-        uses: ./.github/actions/setup-docker-desktop
+      - name: Install the WSL distribution of the tests
+        uses: Vampire/setup-wsl@v7
+        with:
+          distribution: ${{ env.WINPLAYBOOK_TEST_WSL_DISTRIBUTION }}
 
       - name: Run the tests (PowerShell 7)
         id: tests-core
@@ -109,10 +102,6 @@ jobs:
         if: success() || steps.tests-core.conclusion == 'failure'
         shell: powershell
         run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
-
-      - name: Upload the Docker Desktop logs
-        if: failure()
-        uses: ./.github/actions/upload-docker-desktop-logs
 
   version:
     name: Version

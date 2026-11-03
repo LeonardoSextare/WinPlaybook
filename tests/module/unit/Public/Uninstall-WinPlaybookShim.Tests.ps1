@@ -13,6 +13,8 @@ Describe 'Uninstall-WinPlaybookShim' {
 
         Mock Get-ConfigFolder -ModuleName WinPlaybook { $configFolder }
         Mock Get-ShimTemplatePath -ModuleName WinPlaybook { $templatePath }
+        Mock Get-WslDistribution -ModuleName WinPlaybook { 'Ubuntu' }
+        Mock Get-WslMountRoot -ModuleName WinPlaybook { '/mnt/' }
         Mock Get-AnsibleCommand -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
         Mock Get-PowerShellPath -ModuleName WinPlaybook { 'C:\PowerShell\pwsh.exe' }
         Mock Add-UserPathEntry -ModuleName WinPlaybook { }
@@ -26,7 +28,7 @@ Describe 'Uninstall-WinPlaybookShim' {
 
     Context 'when the shims are in the default folder' {
         BeforeEach {
-            Install-WinPlaybookShim | Out-Null
+            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
         }
 
         It 'removes the shim folder' {
@@ -53,7 +55,7 @@ Describe 'Uninstall-WinPlaybookShim' {
     Context 'when the shims are in a chosen folder' {
         BeforeEach {
             $chosenFolder = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-            Install-WinPlaybookShim -Path $chosenFolder | Out-Null
+            Install-WinPlaybookShim -Distribution 'Ubuntu' -Path $chosenFolder | Out-Null
         }
 
         It 'removes the WinPlaybook folder created inside it' {
@@ -71,7 +73,7 @@ Describe 'Uninstall-WinPlaybookShim' {
 
     Context 'when called with -WhatIf' {
         BeforeEach {
-            Install-WinPlaybookShim | Out-Null
+            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
         }
 
         It 'keeps the shims' {

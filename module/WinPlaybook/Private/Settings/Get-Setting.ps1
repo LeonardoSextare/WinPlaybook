@@ -15,6 +15,8 @@ function Get-Setting {
     $settings = @{
         ShimFolder         = $null
         ShimPowerShellPath = $null
+        WslDistribution    = $null
+        WslMountRoot       = $null
     }
 
     $settingsPath = Join-Path (Get-ConfigFolder) 'settings.json'

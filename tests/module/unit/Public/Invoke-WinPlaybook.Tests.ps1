@@ -8,13 +8,13 @@ AfterAll {
 
 Describe 'Invoke-WinPlaybook' {
     BeforeAll {
-        Mock Invoke-AnsibleContainer -ModuleName WinPlaybook { }
+        Mock Invoke-WslCommand -ModuleName WinPlaybook { }
     }
 
     It 'runs the first argument as the command with the other arguments' {
         Invoke-WinPlaybook ansible-playbook -i inventory.yml site.yml --check
 
-        Should-Invoke Invoke-AnsibleContainer -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
             $Command -eq 'ansible-playbook' -and ($Arguments -join ' ') -eq '-i inventory.yml site.yml --check'
         }
     }
@@ -22,7 +22,7 @@ Describe 'Invoke-WinPlaybook' {
     It 'passes arguments with quotes and spaces unchanged' {
         Invoke-WinPlaybook ansible-playbook -e '{"name": "a b"}' site.yml
 
-        Should-Invoke Invoke-AnsibleContainer -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
             $Arguments[1] -eq '{"name": "a b"}'
         }
     }
@@ -30,7 +30,7 @@ Describe 'Invoke-WinPlaybook' {
     It 'runs a command without arguments' {
         Invoke-WinPlaybook ansible
 
-        Should-Invoke Invoke-AnsibleContainer -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
             $Command -eq 'ansible' -and $Arguments.Count -eq 0
         }
     }
