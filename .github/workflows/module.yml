@@ -7,7 +7,6 @@ on:
     paths:
       - module/**
       - tests/module/**
-      - tests/shared/**
       - scripts/Save-Shim.ps1
       - scripts/Build-ModulePackage.ps1
       - requirements.psd1

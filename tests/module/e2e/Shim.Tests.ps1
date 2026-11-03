@@ -1,6 +1,6 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Wsl.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
 
     $wslDistributionName = Initialize-TestWslDistribution
 
@@ -30,7 +30,7 @@ BeforeAll {
     $env:Path = $originalPath
 
     $project = Join-Path $TestDrive 'project'
-    Copy-Item (Join-Path $PSScriptRoot '../../shared/data/projects/hello') $project -Recurse
+    Copy-Item (Join-Path $PSScriptRoot '../data/projects/hello') $project -Recurse
     Push-Location $project
 }
 
