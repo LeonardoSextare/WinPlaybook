@@ -5,7 +5,7 @@ function ConvertTo-LegacyNativeArgument {
 
     .DESCRIPTION
     Before PowerShell 7.3, PowerShell joins the arguments into a command line without
-    escaping quotes, so a program such as docker receives {"a": 1} as {a: 1}. The rules
+    escaping quotes, so a program such as wsl receives {"a": 1} as {a: 1}. The rules
     are the ones Windows programs use to split a command line into arguments.
 
     .EXAMPLE

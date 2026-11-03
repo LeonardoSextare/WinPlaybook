@@ -37,6 +37,17 @@ function Test-UvInstalled {
     }
 }
 
+function Test-WslInstalled {
+    if (-not (Get-Command 'wsl' -ErrorAction SilentlyContinue)) {
+        throw 'WSL is not available. Install it with: wsl --install'
+    }
+
+    wsl --status *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'WSL is not installed. Install it with: wsl --install'
+    }
+}
+
 function Test-GitInstalled {
     if (-not (Get-Command 'git' -ErrorAction SilentlyContinue)) {
         throw 'git is not installed or not available in PATH. Install it with: winget install Git.Git'
@@ -58,6 +69,7 @@ Write-Host (('=' * 60) + "`n" + (' ' * 16) + 'WinPlaybook development setup' + "
 
 $steps = @(
     @{ Name = 'Checking Docker'; Action = { Test-DockerInstalled } }
+    @{ Name = 'Checking WSL'; Action = { Test-WslInstalled } }
     @{ Name = 'Checking uv'; Action = { Test-UvInstalled } }
     @{ Name = 'Checking git'; Action = { Test-GitInstalled } }
     @{ Name = 'Installing dependencies for PowerShell 7'; Action = { Install-Requirements 'PowerShell\Modules' } }

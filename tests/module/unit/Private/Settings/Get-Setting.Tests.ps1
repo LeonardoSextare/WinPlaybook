@@ -23,13 +23,25 @@ Describe 'Get-Setting' {
 
             $result.ShimPowerShellPath | Should-BeNull
         }
+
+        It 'returns no WSL distribution' {
+            $result = InModuleScope WinPlaybook { Get-Setting }
+
+            $result.WslDistribution | Should-BeNull
+        }
+
+        It 'returns no WSL mount root' {
+            $result = InModuleScope WinPlaybook { Get-Setting }
+
+            $result.WslMountRoot | Should-BeNull
+        }
     }
 
     Context 'when the settings file exists' {
         BeforeAll {
             $configFolder = Join-Path $TestDrive 'with-settings'
             New-Item -ItemType Directory -Path $configFolder | Out-Null
-            Set-Content -LiteralPath (Join-Path $configFolder 'settings.json') -Value '{ "ShimFolder": "C:\\Tools\\WinPlaybook\\bin", "ShimPowerShellPath": "C:\\PowerShell\\pwsh.exe" }'
+            Set-Content -LiteralPath (Join-Path $configFolder 'settings.json') -Value '{ "ShimFolder": "C:\\Tools\\WinPlaybook\\bin", "ShimPowerShellPath": "C:\\PowerShell\\pwsh.exe", "WslDistribution": "Ubuntu" }'
             Mock Get-ConfigFolder -ModuleName WinPlaybook { $configFolder }
         }
 
@@ -43,6 +55,12 @@ Describe 'Get-Setting' {
             $result = InModuleScope WinPlaybook { Get-Setting }
 
             $result.ShimPowerShellPath | Should-Be 'C:\PowerShell\pwsh.exe'
+        }
+
+        It 'returns the saved WSL distribution' {
+            $result = InModuleScope WinPlaybook { Get-Setting }
+
+            $result.WslDistribution | Should-Be 'Ubuntu'
         }
     }
 }

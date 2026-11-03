@@ -1,7 +1,7 @@
 function New-CommandShim {
     <#
     .SYNOPSIS
-    Creates the .ps1, .exe and .shim files that make a command of the container available on Windows.
+    Creates the .ps1, .exe and .shim files that make a command of the WSL distribution available on Windows.
 
     .DESCRIPTION
     PowerShell runs the .ps1 in its own process. Other programs run the .exe, a copy of

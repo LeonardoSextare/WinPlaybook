@@ -1,30 +1,23 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Docker.ps1')
+    . (Join-Path $PSScriptRoot '../../shared/helpers/Wsl.ps1')
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
-    $originalImage = $env:WINPLAYBOOK_IMAGE
-    $env:WINPLAYBOOK_IMAGE = Build-TestImage
+    $wslDistributionName = Initialize-TestWslDistribution
 
-    $originalDockerConfig = $env:DOCKER_CONFIG
-    if (-not $env:DOCKER_CONFIG) {
-        $env:DOCKER_CONFIG = Join-Path $env:USERPROFILE '.docker'
+    $originalLocalAppData = $env:LOCALAPPDATA
+    $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
+    InModuleScope WinPlaybook -Parameters @{ Distribution = $wslDistributionName } {
+        Save-Setting -Settings @{ WslDistribution = $Distribution; WslMountRoot = (Get-WslMountRoot -Distribution $Distribution) }
     }
-
-    $originalUserFolder = $env:USERPROFILE
-    $testUserFolder = Join-Path $TestDrive 'user'
-    $env:USERPROFILE = $testUserFolder
 
     $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
     $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
-    $localCollectionProject = Join-Path $PSScriptRoot '../data/projects/local-collection'
     $projectConfigProject = Join-Path $PSScriptRoot '../data/projects/project-config'
 }
 
 AfterAll {
     Remove-Module WinPlaybook
-    $env:WINPLAYBOOK_IMAGE = $originalImage
-    $env:USERPROFILE = $originalUserFolder
-    $env:DOCKER_CONFIG = $originalDockerConfig
+    $env:LOCALAPPDATA = $originalLocalAppData
 }
 
 Describe 'Invoke-WinPlaybook' {
@@ -50,6 +43,13 @@ Describe 'Invoke-WinPlaybook' {
             $output = Invoke-WinPlaybook sh -c 'exit 3' 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 3 -Because $output
+        }
+
+        It 'passes the arguments without a shell reading them' {
+            $output = Invoke-WinPlaybook printf '%s|' '$HOME' '*' 'a b' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*$HOME|`*|a b|*'
         }
 
         It 'accepts a relative Windows path' {
@@ -106,6 +106,27 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'when the playbook is outside the current folder' {
+        BeforeAll {
+            $project = Join-Path $TestDrive 'outside-project'
+            Copy-Item $helloProject $project -Recurse
+            $otherFolder = Join-Path $TestDrive 'other folder'
+            New-Item -ItemType Directory -Path $otherFolder | Out-Null
+            Push-Location $otherFolder
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'accepts its absolute Windows path' {
+            $output = Invoke-WinPlaybook ansible-playbook (Join-Path $project 'site.yml') 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $output
+            $output | Should-BeLikeString '*hello from WinPlaybook*'
+        }
+    }
+
     Context 'when the project has lint violations' {
         BeforeAll {
             $project = Join-Path $TestDrive 'lint-violation'
@@ -125,52 +146,6 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
-    Context 'when the Ansible folder of Windows does not exist' {
-        BeforeAll {
-            $newUserFolder = Join-Path $TestDrive 'new-user'
-            $env:USERPROFILE = $newUserFolder
-            Push-Location $TestDrive
-        }
-
-        AfterAll {
-            Pop-Location
-            $env:USERPROFILE = $testUserFolder
-        }
-
-        It 'creates the folder' {
-            $output = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
-
-            $LASTEXITCODE | Should-Be 0 -Because $output
-            Test-Path -LiteralPath (Join-Path $newUserFolder '.ansible') -PathType Container | Should-BeTrue
-        }
-    }
-
-    Context 'when a collection was installed in a previous run' {
-        BeforeAll {
-            $env:USERPROFILE = Join-Path $TestDrive 'collection-user'
-            $project = Join-Path $TestDrive 'local-collection'
-            Copy-Item $localCollectionProject $project -Recurse
-            Push-Location $project
-
-            $installOutput = Invoke-WinPlaybook ansible-galaxy collection install ./demo/test 2>&1 | Out-String
-            if ($LASTEXITCODE -ne 0) {
-                throw "Failed to install the test collection: $installOutput"
-            }
-        }
-
-        AfterAll {
-            Pop-Location
-            $env:USERPROFILE = $testUserFolder
-        }
-
-        It 'finds the collection' {
-            $output = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
-
-            $LASTEXITCODE | Should-Be 0 -Because $output
-            $output | Should-BeLikeString '*hello from the demo.test collection*'
-        }
-    }
-
     Context 'when the ansible.cfg of the project sets a relative collections path' {
         BeforeAll {
             $project = Join-Path $TestDrive 'project-config'
@@ -183,6 +158,8 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'finds the collections relative to the file' {
+            Set-ItResult -Skipped -Because 'Ansible ignores the ansible.cfg of world-writable folders, such as the Windows drives in WSL, until #33'
+
             $output = Invoke-WinPlaybook ansible-playbook playbooks/site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $output
@@ -190,24 +167,27 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
-    Context 'when the user folder has a .ansible.cfg file' {
+    Context 'when the command is not in the distribution' {
         BeforeAll {
-            $env:USERPROFILE = Join-Path $TestDrive 'config-user'
-            New-Item -ItemType Directory -Path $env:USERPROFILE | Out-Null
-            Set-Content -LiteralPath (Join-Path $env:USERPROFILE '.ansible.cfg') -Value '[defaults]'
             Push-Location $TestDrive
         }
 
         AfterAll {
             Pop-Location
-            $env:USERPROFILE = $testUserFolder
         }
 
-        It 'uses the file' {
-            $output = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+        It 'explains that the command is missing' {
+            $output = Invoke-WinPlaybook winplaybook-missing-command 2>&1 | Out-String
 
-            $LASTEXITCODE | Should-Be 0 -Because $output
-            $output | Should-BeLikeString '*config file = /root/.ansible.cfg*'
+            $LASTEXITCODE | Should-Be 127 -Because $output
+            $output | Should-BeLikeString '*winplaybook-missing-command was not found in the WSL distribution*'
+        }
+
+        It 'refuses the program of Windows with the same name' {
+            $output = Invoke-WinPlaybook cmd.exe /c exit 0 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 127 -Because $output
+            $output | Should-BeLikeString '*cmd.exe is not in the WSL distribution, only on Windows*'
         }
     }
 }

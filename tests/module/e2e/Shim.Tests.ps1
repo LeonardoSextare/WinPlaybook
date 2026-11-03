@@ -1,30 +1,33 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Docker.ps1')
     . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../../shared/helpers/Wsl.ps1')
 
-    $originalImage = $env:WINPLAYBOOK_IMAGE
-    $env:WINPLAYBOOK_IMAGE = Build-TestImage
+    $wslDistributionName = Initialize-TestWslDistribution
 
-    $originalDockerConfig = $env:DOCKER_CONFIG
-    if (-not $env:DOCKER_CONFIG) {
-        $env:DOCKER_CONFIG = Join-Path $env:USERPROFILE '.docker'
-    }
-
-    $originalUserFolder = $env:USERPROFILE
-    $env:USERPROFILE = Join-Path $TestDrive 'user'
+    $originalLocalAppData = $env:LOCALAPPDATA
+    $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
 
     $originalModulePath = $env:PSModulePath
     $moduleFolder = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
     $env:PSModulePath = $moduleFolder + [IO.Path]::PathSeparator + $env:PSModulePath
     Import-Module (Join-Path $moduleFolder 'WinPlaybook/WinPlaybook.psd1') -Force
 
+    $windowsToolFolder = Join-Path $TestDrive 'windows-tools'
+    New-Item -ItemType File -Path (Join-Path $windowsToolFolder 'ansible-windows.exe') -Force | Out-Null
+    $originalPath = $env:Path
+    $env:Path = $windowsToolFolder + [IO.Path]::PathSeparator + $env:Path
+
     $shimFolder = Join-Path $TestDrive 'shims'
     New-Item -ItemType Directory -Path $shimFolder | Out-Null
-    InModuleScope WinPlaybook -Parameters @{ Folder = $shimFolder; PowerShellPath = (Get-Process -Id $PID).Path } {
-        foreach ($command in Get-AnsibleCommand) {
+    $shimParameters = @{ Folder = $shimFolder; PowerShellPath = (Get-Process -Id $PID).Path; Distribution = $wslDistributionName }
+    InModuleScope WinPlaybook -Parameters $shimParameters {
+        $mountRoot = Get-WslMountRoot -Distribution $Distribution
+        Save-Setting -Settings @{ WslDistribution = $Distribution; WslMountRoot = $mountRoot }
+        foreach ($command in Get-AnsibleCommand -Distribution $Distribution -MountRoot $mountRoot) {
             New-CommandShim -Name $command -Folder $Folder -PowerShellPath $PowerShellPath
         }
     }
+    $env:Path = $originalPath
 
     $project = Join-Path $TestDrive 'project'
     Copy-Item (Join-Path $PSScriptRoot '../../shared/data/projects/hello') $project -Recurse
@@ -35,9 +38,7 @@ AfterAll {
     Pop-Location
     Remove-Module WinPlaybook
     $env:PSModulePath = $originalModulePath
-    $env:WINPLAYBOOK_IMAGE = $originalImage
-    $env:USERPROFILE = $originalUserFolder
-    $env:DOCKER_CONFIG = $originalDockerConfig
+    $env:LOCALAPPDATA = $originalLocalAppData
 }
 
 Describe 'Shim' {
@@ -78,6 +79,14 @@ Describe 'Shim' {
             $result = Invoke-CommandLine -FilePath (Join-Path $shimFolder 'ansible-playbook.exe') -ArgumentList 'missing.yml'
 
             $result.ExitCode | Should-Be 1 -Because $result.Output
+        }
+    }
+
+    Context 'when the Windows Path has an ansible program' {
+        It 'creates no shim for it' {
+            $shimNames = (Get-ChildItem -LiteralPath $shimFolder -Filter '*.ps1').BaseName
+
+            $shimNames | Should-NotContainCollection 'ansible-windows.exe'
         }
     }
 }

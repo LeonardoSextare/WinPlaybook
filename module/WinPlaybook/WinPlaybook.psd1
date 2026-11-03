@@ -19,7 +19,7 @@
 
     PrivateData          = @{
         PSData = @{
-            Tags       = @('Ansible', 'Docker', 'Windows', 'Automation')
+            Tags       = @('Ansible', 'WSL', 'Windows', 'Automation')
             ProjectUri = 'https://github.com/LeonardoSextare/WinPlaybook'
             LicenseUri = 'https://github.com/LeonardoSextare/WinPlaybook/blob/main/LICENSE'
         }

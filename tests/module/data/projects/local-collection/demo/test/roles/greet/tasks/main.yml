@@ -1,3 +1,0 @@
-- name: Print a greeting from the collection
-  ansible.builtin.debug:
-    msg: hello from the demo.test collection
