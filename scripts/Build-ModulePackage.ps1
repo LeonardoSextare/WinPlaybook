@@ -7,7 +7,7 @@ the shim.exe and the version.
 .DESCRIPTION
 The repository keeps ModuleVersion at 0.0.0: the module-v* tag is the source of the
 version, so it is written only in the copy. Returns the path of the copy.
-Used by the module release and by the installer tests.
+Used by the module release.
 #>
 [CmdletBinding()]
 param(
