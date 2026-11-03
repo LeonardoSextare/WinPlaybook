@@ -1,5 +1,5 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Process.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Shim.ps1')
     $powershellPath = (Get-Process -Id $PID).Path
 }

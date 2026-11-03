@@ -4,28 +4,11 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 # ============================ Settings ============================
-$DOCKER_MIN_VERSION = [version]'23.0'
 $UV_MIN_VERSION = [version]'0.11.14'
 $REQUIREMENTS_FILE = Join-Path $PSScriptRoot '..\..\requirements.psd1'
 $DOCUMENTS_DIR = [Environment]::GetFolderPath('MyDocuments')
 
 # ============================ Functions ============================
-function Test-DockerInstalled {
-    if (-not (Get-Command 'docker' -ErrorAction SilentlyContinue)) {
-        throw 'Docker is not installed or not available in PATH. Install Docker Desktop.'
-    }
-
-    $serverVersion = docker info --format '{{.ServerVersion}}' 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Docker is installed but not responding. Start Docker Desktop.'
-    }
-
-    $currentVersion = [version]($serverVersion -replace '[^\d.].*$')
-    if ($currentVersion -lt $DOCKER_MIN_VERSION) {
-        throw "Docker $currentVersion is older than the minimum required ($DOCKER_MIN_VERSION)."
-    }
-}
-
 function Test-UvInstalled {
     if (-not (Get-Command 'uv' -ErrorAction SilentlyContinue)) {
         throw 'uv is not installed or not available in PATH. Install it with: winget install astral-sh.uv'
@@ -68,7 +51,6 @@ function Install-Requirements([string] $ModulesDir) {
 Write-Host (('=' * 60) + "`n" + (' ' * 16) + 'WinPlaybook development setup' + "`n" + ('=' * 60)) -ForegroundColor DarkYellow
 
 $steps = @(
-    @{ Name = 'Checking Docker'; Action = { Test-DockerInstalled } }
     @{ Name = 'Checking WSL'; Action = { Test-WslInstalled } }
     @{ Name = 'Checking uv'; Action = { Test-UvInstalled } }
     @{ Name = 'Checking git'; Action = { Test-GitInstalled } }

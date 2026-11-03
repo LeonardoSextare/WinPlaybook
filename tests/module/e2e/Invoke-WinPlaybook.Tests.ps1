@@ -1,5 +1,5 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Wsl.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $wslDistributionName = Initialize-TestWslDistribution
@@ -10,8 +10,8 @@ BeforeAll {
         Save-Setting -Settings @{ WslDistribution = $Distribution; WslMountRoot = (Get-WslMountRoot -Distribution $Distribution) }
     }
 
-    $helloProject = Join-Path $PSScriptRoot '../../shared/data/projects/hello'
-    $lintViolationProject = Join-Path $PSScriptRoot '../../shared/data/projects/lint-violation'
+    $helloProject = Join-Path $PSScriptRoot '../data/projects/hello'
+    $lintViolationProject = Join-Path $PSScriptRoot '../data/projects/lint-violation'
     $projectConfigProject = Join-Path $PSScriptRoot '../data/projects/project-config'
 }
 
