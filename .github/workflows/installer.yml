@@ -30,6 +30,8 @@ jobs:
     name: Integration tests
     runs-on: windows-2025
     timeout-minutes: 30
+    env:
+      WINPLAYBOOK_TEST_WSL_DISTRIBUTION: Ubuntu-26.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
@@ -45,8 +47,10 @@ jobs:
           Write-Host '--- Windows PowerShell 5.1'
           powershell -NoProfile -Command $listCommand
 
-      - name: Set up Docker Desktop
-        uses: ./.github/actions/setup-docker-desktop
+      - name: Install the WSL distribution of the tests
+        uses: Vampire/setup-wsl@v7
+        with:
+          distribution: ${{ env.WINPLAYBOOK_TEST_WSL_DISTRIBUTION }}
 
       - name: Run the tests (PowerShell 7)
         id: tests-core
@@ -56,7 +60,3 @@ jobs:
         if: success() || steps.tests-core.conclusion == 'failure'
         shell: powershell
         run: Invoke-Pester -Path tests/installer/integration -CI -Output Detailed
-
-      - name: Upload the Docker Desktop logs
-        if: failure()
-        uses: ./.github/actions/upload-docker-desktop-logs

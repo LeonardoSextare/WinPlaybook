@@ -1,5 +1,5 @@
 BeforeAll {
-    . (Join-Path $PSScriptRoot '../../shared/helpers/Docker.ps1')
+    . (Join-Path $PSScriptRoot '../../shared/helpers/Wsl.ps1')
     . (Join-Path $PSScriptRoot '../../shared/helpers/Process.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Installer.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Repository.ps1')
@@ -7,9 +7,9 @@ BeforeAll {
 
 Describe 'install.ps1' -Skip:(-not $env:CI) {
     BeforeAll {
-        $originalImage = $env:WINPLAYBOOK_IMAGE
+        $originalDistribution = $env:WINPLAYBOOK_DISTRIBUTION
         $originalRepository = $env:WINPLAYBOOK_REPOSITORY
-        $env:WINPLAYBOOK_IMAGE = Build-TestImage
+        $env:WINPLAYBOOK_DISTRIBUTION = Initialize-TestWslDistribution
 
         $repositoryName = 'WinPlaybookTest'
         New-TestRepository -Name $repositoryName -Path (Join-Path $TestDrive 'repository') -ModuleVersion 0.0.1
@@ -20,7 +20,7 @@ Describe 'install.ps1' -Skip:(-not $env:CI) {
         Uninstall-TestInstallation
         Remove-TestRepository -Name $repositoryName
         $env:WINPLAYBOOK_REPOSITORY = $originalRepository
-        $env:WINPLAYBOOK_IMAGE = $originalImage
+        $env:WINPLAYBOOK_DISTRIBUTION = $originalDistribution
     }
 
     Context 'when it installs from a registered repository' {
@@ -41,6 +41,19 @@ Describe 'install.ps1' -Skip:(-not $env:CI) {
 
             $commandResult.ExitCode | Should-Be 0 -Because "$($commandResult.Output)`n$($commandResult.Error)"
             $commandResult.Output | Should-BeLikeString 'ansible `[core*'
+        }
+    }
+
+    Context 'when WINPLAYBOOK_DISTRIBUTION does not name a distribution' {
+        BeforeAll {
+            $testDistribution = $env:WINPLAYBOOK_DISTRIBUTION
+            $env:WINPLAYBOOK_DISTRIBUTION = $null
+            $result = Invoke-Installer
+            $env:WINPLAYBOOK_DISTRIBUTION = $testDistribution
+        }
+
+        It 'shows the distributions before asking which one has Ansible' {
+            $result.Output | Should-BeLikeString "*Distributions on this computer:*$testDistribution*" -Because $result.Error
         }
     }
 

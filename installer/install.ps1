@@ -79,7 +79,31 @@
         $module = Import-Module -Name WinPlaybook -PassThru
 
         try {
-            $installation = Install-WinPlaybookShim
+            $distribution = $env:WINPLAYBOOK_DISTRIBUTION
+            $isDistributionChosen = [bool] $distribution
+            if (-not $isDistributionChosen) {
+                $distributionNames = & {
+                    $ErrorActionPreference = 'Continue'
+                    $isWslInstalled = [bool] (Get-Command -Name wsl -ErrorAction SilentlyContinue)
+                    if ($isWslInstalled) {
+                        # wsl.exe writes its own messages in UTF-16 unless WSL_UTF8 is set.
+                        $originalUtf8 = $env:WSL_UTF8
+                        $env:WSL_UTF8 = '1'
+                        $listing = wsl --list --quiet 2>$null
+                        $env:WSL_UTF8 = $originalUtf8
+
+                        $isListed = $LASTEXITCODE -eq 0
+                        if ($isListed) {
+                            $listing | ForEach-Object { "$_".Trim() } | Where-Object { $_ }
+                        }
+                    }
+                }
+
+                Write-Host "WinPlaybook runs Ansible in a WSL distribution. Distributions on this computer: $(@($distributionNames) -join ', ')"
+                $distribution = Read-Host 'Which distribution has Ansible installed'
+            }
+
+            $installation = Install-WinPlaybookShim -Distribution $distribution
         }
         catch {
             Write-Host "WinPlaybook $($module.Version) is installed, but its Ansible commands are not. Fix the problem below and run this installer again." -ForegroundColor Yellow
@@ -93,7 +117,7 @@
     }
 
     Write-Host ''
-    Write-Host "WinPlaybook $($module.Version) is installed, with $($installation.Commands.Count) Ansible commands in $($installation.Folder)." -ForegroundColor Green
+    Write-Host "WinPlaybook $($module.Version) is installed, with $($installation.Commands.Count) Ansible commands of the WSL distribution $($installation.Distribution) in $($installation.Folder)." -ForegroundColor Green
     Write-Host 'Open a new terminal and try: ansible --version'
 
     if ($isScriptBlocked) {
