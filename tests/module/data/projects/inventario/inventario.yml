@@ -1,0 +1,6 @@
+servidores:
+  hosts:
+    web1:
+      ansible_connection: local
+  vars:
+    ambiente: teste

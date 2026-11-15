@@ -1,0 +1,7 @@
+- name: Falha numa tarefa
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Para com uma mensagem
+      ansible.builtin.fail:
+        msg: falha do WinPlaybook
