@@ -67,7 +67,7 @@ discutida antes de entrar no projeto.
 
 ## Ambiente de desenvolvimento
 
-A task "Setup" do VS Code, ou o `scripts/dev/setup.ps1`, confere os
+A task "Preparar o ambiente" do VS Code, ou o `scripts/dev/setup.ps1`, confere os
 requisitos e instala as dependências do desenvolvimento local.
 
 ## Comandos

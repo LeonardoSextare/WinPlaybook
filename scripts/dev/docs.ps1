@@ -1,24 +1,32 @@
 #Requires -Version 7.4
 
-# Builds the documentation in both languages and serves the full site as GitHub
-# Pages publishes it, with the language selector and the root redirect.
-# There is no hot reload: to write pages, use zensical serve, one language at a time.
+<#
+.SYNOPSIS
+Gera a documentação nos dois idiomas e serve o site completo como o GitHub Pages publica.
+
+.DESCRIPTION
+O site completo tem o seletor de idioma e o redirecionamento da raiz, em
+http://localhost:8080/WinPlaybook/. Não há hot reload: para escrever páginas, use o
+zensical serve, um idioma por vez. O zensical serve usa a porta 8000, então os dois podem
+rodar ao mesmo tempo.
+
+.EXAMPLE
+./scripts/dev/docs.ps1
+#>
+[CmdletBinding()]
+param()
 
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# ============================ Settings ============================
-$DOCS_FOLDER = (Resolve-Path (Join-Path $PSScriptRoot '..\..\docs')).Path
-$SITE_FOLDER = Join-Path $DOCS_FOLDER 'site'
-$ROOT_PAGE_PATH = Join-Path $DOCS_FOLDER 'index.html'
-$CONFIG_FILES = @('zensical.en.toml', 'zensical.pt-br.toml')
+$pastaDaDocumentacao = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..\docs')).Path
+$pastaDoSite = Join-Path $pastaDaDocumentacao 'site'
+$caminhoDaPaginaRaiz = Join-Path $pastaDaDocumentacao 'index.html'
+$arquivosDeConfiguracao = @('zensical.en.toml', 'zensical.pt-br.toml')
+$caminhoBaseNoGitHubPages = '/WinPlaybook/'
+$urlDoServidor = 'http://localhost:8080'
 
-# The site lives under /WinPlaybook/ on GitHub Pages, so the local server uses the same path.
-# Port 8080, so zensical serve (port 8000) can run at the same time.
-$BASE_PATH = '/WinPlaybook/'
-$SERVER_URL = 'http://localhost:8080'
-
-$CONTENT_TYPES = @{
+$tiposDeConteudo = @{
     '.html' = 'text/html; charset=utf-8'
     '.css'  = 'text/css; charset=utf-8'
     '.js'   = 'text/javascript; charset=utf-8'
@@ -29,117 +37,227 @@ $CONTENT_TYPES = @{
     '.ico'  = 'image/x-icon'
 }
 
-# ============================ Functions ============================
 function Build-Site {
-    if (Test-Path $SITE_FOLDER) {
-        Remove-Item $SITE_FOLDER -Recurse -Force
+    <#
+    .SYNOPSIS
+    Gera o site nos dois idiomas e copia a página raiz, que manda o visitante para o idioma dele.
+
+    .EXAMPLE
+    Build-Site
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param()
+
+    $siteJaExiste = Test-Path -LiteralPath $pastaDoSite
+    if ($siteJaExiste) {
+        Remove-Item -LiteralPath $pastaDoSite -Recurse -Force
     }
 
-    foreach ($configFile in $CONFIG_FILES) {
-        uvx zensical build --config-file (Join-Path $DOCS_FOLDER $configFile) | Out-Host
-        if ($LASTEXITCODE -ne 0) {
-            throw "The build of $configFile failed."
+    foreach ($arquivoDeConfiguracao in $arquivosDeConfiguracao) {
+        uvx zensical build --config-file (Join-Path $pastaDaDocumentacao $arquivoDeConfiguracao) | Out-Host
+        $gerouOSite = $LASTEXITCODE -eq 0
+        if (-not $gerouOSite) {
+            throw "A geração do $arquivoDeConfiguracao falhou."
         }
     }
 
-    # The root page is not part of either build: it sends visitors to their language.
-    Copy-Item $ROOT_PAGE_PATH -Destination $SITE_FOLDER
+    Copy-Item -LiteralPath $caminhoDaPaginaRaiz -Destination $pastaDoSite
 }
 
-# Returns the file in the site folder for a URL path under $BASE_PATH, or $null if there is none.
-function Get-SiteFilePath([string] $UrlPath) {
-    $relativePath = [Uri]::UnescapeDataString($UrlPath.Substring($BASE_PATH.Length))
-    $filePath = [IO.Path]::GetFullPath((Join-Path $SITE_FOLDER $relativePath))
+function Get-ArquivoDoSite {
+    <#
+    .SYNOPSIS
+    Devolve o arquivo da pasta do site para um caminho de URL dentro do caminho base, ou $null quando ele não existe.
 
-    $isInsideSite = $filePath.StartsWith($SITE_FOLDER, [StringComparison]::OrdinalIgnoreCase)
-    if (-not $isInsideSite) {
+    .DESCRIPTION
+    Uma pasta devolve o index.html dela, como guides/vscode/. Um caminho que sai da pasta
+    do site devolve $null.
+
+    .PARAMETER CaminhoDaUrl
+    O caminho da URL pedida, como /WinPlaybook/pt-br/.
+
+    .EXAMPLE
+    Get-ArquivoDoSite -CaminhoDaUrl '/WinPlaybook/pt-br/'
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)] [string] $CaminhoDaUrl
+    )
+
+    $caminhoRelativo = [Uri]::UnescapeDataString($CaminhoDaUrl.Substring($caminhoBaseNoGitHubPages.Length))
+    $caminhoDoArquivo = [IO.Path]::GetFullPath((Join-Path $pastaDoSite $caminhoRelativo))
+
+    $estaDentroDoSite = $caminhoDoArquivo.StartsWith($pastaDoSite, [StringComparison]::OrdinalIgnoreCase)
+    if (-not $estaDentroDoSite) {
         return $null
     }
 
-    # Pages are folders with an index.html, like guides/vscode/.
-    if (Test-Path $filePath -PathType Container) {
-        $filePath = Join-Path $filePath 'index.html'
+    $ehPasta = Test-Path -LiteralPath $caminhoDoArquivo -PathType Container
+    if ($ehPasta) {
+        $caminhoDoArquivo = Join-Path $caminhoDoArquivo 'index.html'
     }
 
-    if (Test-Path $filePath -PathType Leaf) {
-        return $filePath
+    $arquivoExiste = Test-Path -LiteralPath $caminhoDoArquivo -PathType Leaf
+    if ($arquivoExiste) {
+        return $caminhoDoArquivo
     }
-    $null
+
+    return $null
 }
 
-function Send-Response($Response, [int] $StatusCode, [byte[]] $Body, [string] $ContentType) {
-    $Response.StatusCode = $StatusCode
-    $Response.ContentType = $ContentType
-    $Response.ContentLength64 = $Body.Length
-    $Response.OutputStream.Write($Body, 0, $Body.Length)
-    $Response.Close()
+function Send-Resposta {
+    <#
+    .SYNOPSIS
+    Envia uma resposta com um código de status, um corpo e um tipo de conteúdo, e fecha a resposta.
+
+    .PARAMETER Resposta
+    A resposta do HttpListener.
+
+    .PARAMETER CodigoDeStatus
+    O código de status HTTP, como 200 ou 404.
+
+    .PARAMETER Corpo
+    Os bytes do corpo.
+
+    .PARAMETER TipoDeConteudo
+    O Content-Type da resposta.
+
+    .EXAMPLE
+    Send-Resposta -Resposta $resposta -CodigoDeStatus 404 -Corpo $corpo -TipoDeConteudo 'text/plain; charset=utf-8'
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [Net.HttpListenerResponse] $Resposta,
+        [Parameter(Mandatory)] [int] $CodigoDeStatus,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [byte[]] $Corpo,
+        [Parameter(Mandatory)] [string] $TipoDeConteudo
+    )
+
+    $Resposta.StatusCode = $CodigoDeStatus
+    $Resposta.ContentType = $TipoDeConteudo
+    $Resposta.ContentLength64 = $Corpo.Length
+    $Resposta.OutputStream.Write($Corpo, 0, $Corpo.Length)
+    $Resposta.Close()
 }
 
-function Send-Redirect($Response, [string] $Location) {
-    $Response.StatusCode = 301
-    $Response.RedirectLocation = $Location
-    $Response.Close()
+function Send-Redirecionamento {
+    <#
+    .SYNOPSIS
+    Redireciona permanentemente (301) para outro endereço e fecha a resposta.
+
+    .PARAMETER Resposta
+    A resposta do HttpListener.
+
+    .PARAMETER Destino
+    O endereço para onde o navegador vai.
+
+    .EXAMPLE
+    Send-Redirecionamento -Resposta $resposta -Destino '/WinPlaybook/'
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [Net.HttpListenerResponse] $Resposta,
+        [Parameter(Mandatory)] [string] $Destino
+    )
+
+    $Resposta.StatusCode = 301
+    $Resposta.RedirectLocation = $Destino
+    $Resposta.Close()
 }
 
-function Send-SiteFile($Context) {
-    $urlPath = $Context.Request.Url.AbsolutePath
-    $response = $Context.Response
+function Send-ArquivoDoSite {
+    <#
+    .SYNOPSIS
+    Responde a uma requisição com o arquivo do site que ela pede.
 
-    if (-not $urlPath.StartsWith($BASE_PATH)) {
-        Send-Redirect $response $BASE_PATH
+    .DESCRIPTION
+    Como o GitHub Pages, redireciona um endereço fora do caminho base para o caminho base,
+    e uma pasta sem a barra final para o endereço com a barra, para os links relativos da
+    página funcionarem. Um arquivo que não existe recebe 404.
+
+    .PARAMETER Contexto
+    O contexto da requisição, do HttpListener.
+
+    .EXAMPLE
+    Send-ArquivoDoSite -Contexto $contexto
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [Net.HttpListenerContext] $Contexto
+    )
+
+    $caminhoDaUrl = $Contexto.Request.Url.AbsolutePath
+    $resposta = $Contexto.Response
+
+    $estaNoCaminhoBase = $caminhoDaUrl.StartsWith($caminhoBaseNoGitHubPages, [StringComparison]::Ordinal)
+    if (-not $estaNoCaminhoBase) {
+        Send-Redirecionamento -Resposta $resposta -Destino $caminhoBaseNoGitHubPages
         return
     }
 
-    # Same as GitHub Pages: a folder without the final slash redirects to it,
-    # so the relative links of the page resolve from the right folder.
-    $filePath = Get-SiteFilePath $urlPath
-    $isFolderWithoutSlash = $filePath -and $filePath.EndsWith('index.html') -and -not $urlPath.EndsWith('/') -and -not $urlPath.EndsWith('.html')
-    if ($isFolderWithoutSlash) {
-        Send-Redirect $response "$urlPath/"
+    $caminhoDoArquivo = Get-ArquivoDoSite -CaminhoDaUrl $caminhoDaUrl
+    $ehPastaSemBarraFinal = $caminhoDoArquivo -and $caminhoDoArquivo.EndsWith('index.html') -and -not $caminhoDaUrl.EndsWith('/') -and -not $caminhoDaUrl.EndsWith('.html')
+    if ($ehPastaSemBarraFinal) {
+        Send-Redirecionamento -Resposta $resposta -Destino "$caminhoDaUrl/"
         return
     }
 
-    if (-not $filePath) {
-        $body = [Text.Encoding]::UTF8.GetBytes("Not found: $urlPath")
-        Send-Response $response 404 $body 'text/plain; charset=utf-8'
+    if (-not $caminhoDoArquivo) {
+        $corpo = [Text.Encoding]::UTF8.GetBytes("Não encontrado: $caminhoDaUrl")
+        Send-Resposta -Resposta $resposta -CodigoDeStatus 404 -Corpo $corpo -TipoDeConteudo 'text/plain; charset=utf-8'
         return
     }
 
-    $extension = [IO.Path]::GetExtension($filePath)
-    $contentType = $CONTENT_TYPES[$extension] ?? 'application/octet-stream'
-    Send-Response $response 200 ([IO.File]::ReadAllBytes($filePath)) $contentType
+    $extensao = [IO.Path]::GetExtension($caminhoDoArquivo)
+    $tipoDeConteudo = $tiposDeConteudo[$extensao] ?? 'application/octet-stream'
+    Send-Resposta -Resposta $resposta -CodigoDeStatus 200 -Corpo ([IO.File]::ReadAllBytes($caminhoDoArquivo)) -TipoDeConteudo $tipoDeConteudo
 }
 
-function Start-SiteServer {
-    $listener = [Net.HttpListener]::new()
-    $listener.Prefixes.Add("$SERVER_URL/")
-    $listener.Start()
+function Start-ServidorDoSite {
+    <#
+    .SYNOPSIS
+    Serve a pasta do site em http://localhost:8080/WinPlaybook/ e abre o navegador, até o Ctrl+C.
 
-    $siteUrl = "$SERVER_URL$BASE_PATH"
-    Write-Host "`nServing the site at $siteUrl" -ForegroundColor Green
-    Write-Host 'Press Ctrl+C to stop.'
-    Start-Process $siteUrl
+    .EXAMPLE
+    Start-ServidorDoSite
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param()
 
+    $ouvinte = [Net.HttpListener]::new()
+    $ouvinte.Prefixes.Add("$urlDoServidor/")
+    $ouvinte.Start()
+
+    $urlDoSite = "$urlDoServidor$caminhoBaseNoGitHubPages"
+    Write-Host "`nSite servido em $urlDoSite" -ForegroundColor Green
+    Write-Host 'Aperte Ctrl+C para parar.'
+    Start-Process -FilePath $urlDoSite
+
+    $intervaloParaOCtrlCEmMilissegundos = 200
     try {
-        while ($listener.IsListening) {
-            # Waits in short steps instead of blocking on GetContext(), so Ctrl+C can stop the loop.
-            $contextTask = $listener.GetContextAsync()
-            while (-not $contextTask.AsyncWaitHandle.WaitOne(200)) { }
-            Send-SiteFile $contextTask.GetAwaiter().GetResult()
+        while ($ouvinte.IsListening) {
+            $tarefaDaRequisicao = $ouvinte.GetContextAsync()
+            while (-not $tarefaDaRequisicao.AsyncWaitHandle.WaitOne($intervaloParaOCtrlCEmMilissegundos)) { }
+            Send-ArquivoDoSite -Contexto $tarefaDaRequisicao.GetAwaiter().GetResult()
         }
     }
     finally {
-        $listener.Stop()
+        $ouvinte.Stop()
     }
 }
 
-# ============================ Execution ============================
-Write-Host (('=' * 60) + "`n" + (' ' * 18) + 'WinPlaybook documentation' + "`n" + ('=' * 60)) -ForegroundColor DarkYellow
+Write-Host (('=' * 60) + "`n" + (' ' * 16) + 'Documentação do WinPlaybook' + "`n" + ('=' * 60)) -ForegroundColor DarkYellow
 
 Write-Host '[1/2]' -ForegroundColor DarkCyan -NoNewline
-Write-Host ' Building the site in both languages...'
+Write-Host ' Gerando o site nos dois idiomas...'
 Build-Site
 
 Write-Host '[2/2]' -ForegroundColor DarkCyan -NoNewline
-Write-Host ' Starting the server...'
-Start-SiteServer
+Write-Host ' Iniciando o servidor...'
+Start-ServidorDoSite

@@ -2,8 +2,8 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Setup",
-            "detail": "Check WSL, uv and git, and install the development dependencies",
+            "label": "Preparar o ambiente",
+            "detail": "Confere o WSL, o uv e o git e instala as dependências do desenvolvimento",
             "type": "process",
             "command": "pwsh",
             "args": [
@@ -22,8 +22,8 @@
             "problemMatcher": []
         },
         {
-            "label": "Docs: full site",
-            "detail": "Build the documentation in both languages and serve it as GitHub Pages does (no hot reload)",
+            "label": "Documentação: site completo",
+            "detail": "Gera a documentação nos dois idiomas e serve o site como o GitHub Pages (sem hot reload)",
             "type": "process",
             "command": "pwsh",
             "args": [

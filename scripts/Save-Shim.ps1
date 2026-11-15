@@ -1,11 +1,21 @@
 #Requires -Version 7.4
+
 <#
 .SYNOPSIS
-Downloads the shim.exe pinned in module/shim.psd1 into the module folder.
+Baixa o shim.exe fixado no module/shim.psd1 para a pasta do módulo.
 
 .DESCRIPTION
-The download is checked against the pinned SHA-256 before anything is extracted.
-Used by the development setup and, later, by the module release.
+O download é conferido contra o SHA-256 fixado antes de qualquer extração. Um hash
+diferente interrompe o script sem tocar na pasta de destino.
+
+.PARAMETER Destination
+A pasta que recebe o shim.exe. O padrão é module/WinPlaybook/bin.
+
+.EXAMPLE
+./scripts/Save-Shim.ps1
+
+.LINK
+https://github.com/ScoopInstaller/Shim
 #>
 [CmdletBinding()]
 param(
@@ -14,25 +24,25 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$pinnedRelease = Import-PowerShellDataFile (Join-Path $PSScriptRoot '../module/shim.psd1')
-$url = "https://github.com/ScoopInstaller/Shim/releases/download/$($pinnedRelease.Implementation)/v$($pinnedRelease.Version)/shim-x64.zip"
+$shimFixado = Import-PowerShellDataFile -LiteralPath (Join-Path $PSScriptRoot '../module/shim.psd1')
+$url = "https://github.com/ScoopInstaller/Shim/releases/download/$($shimFixado.Implementacao)/v$($shimFixado.Versao)/shim-x64.zip"
 
-$tempFolder = [IO.Directory]::CreateTempSubdirectory('winplaybook-shim-').FullName
+$pastaTemporaria = [IO.Directory]::CreateTempSubdirectory('winplaybook-shim-').FullName
 try {
-    $zipPath = Join-Path $tempFolder 'shim-x64.zip'
-    Invoke-WebRequest -Uri $url -OutFile $zipPath
+    $caminhoDoZip = Join-Path $pastaTemporaria 'shim-x64.zip'
+    Invoke-WebRequest -Uri $url -OutFile $caminhoDoZip
 
-    $actualHash = (Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash
-    $isPinnedZip = $actualHash -eq $pinnedRelease.Sha256
-    if (-not $isPinnedZip) {
-        throw "The SHA-256 of $url is $actualHash, but module/shim.psd1 pins $($pinnedRelease.Sha256)."
+    $hashBaixado = (Get-FileHash -LiteralPath $caminhoDoZip -Algorithm SHA256).Hash
+    $ehOZipFixado = $hashBaixado -eq $shimFixado.Sha256
+    if (-not $ehOZipFixado) {
+        throw "O SHA-256 de $url é $hashBaixado, mas o module/shim.psd1 fixa $($shimFixado.Sha256)."
     }
 
-    $extractFolder = Join-Path $tempFolder 'extracted'
-    Expand-Archive -LiteralPath $zipPath -DestinationPath $extractFolder
-    New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $extractFolder 'shim.exe') -Destination $Destination -Force
+    $pastaExtraida = Join-Path $pastaTemporaria 'extraido'
+    Expand-Archive -LiteralPath $caminhoDoZip -DestinationPath $pastaExtraida
+    $null = New-Item -ItemType Directory -Path $Destination -Force
+    Copy-Item -LiteralPath (Join-Path $pastaExtraida 'shim.exe') -Destination $Destination -Force
 }
 finally {
-    Remove-Item -LiteralPath $tempFolder -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $pastaTemporaria -Recurse -Force -ErrorAction SilentlyContinue
 }
