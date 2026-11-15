@@ -8,7 +8,7 @@ on:
       - module/**
       - tests/module/**
       - scripts/Save-Shim.ps1
-      - scripts/Build-ModulePackage.ps1
+      - scripts/Build-PacoteDoModulo.ps1
       - requirements.psd1
       - .github/actions/**
       - .github/workflows/module.yml
@@ -173,7 +173,7 @@ jobs:
       - name: Prepare the module
         id: prepare
         run: |
-          $modulePath = ./scripts/Build-ModulePackage.ps1 -Version $env:VERSION -Destination $env:RUNNER_TEMP
+          $modulePath = ./scripts/Build-PacoteDoModulo.ps1 -Versao $env:VERSION -PastaDeDestino $env:RUNNER_TEMP
           "module_path=$modulePath" | Add-Content $env:GITHUB_OUTPUT
 
       - name: Publish to the PowerShell Gallery

@@ -19,8 +19,8 @@ runs:
             foreach ($name in $requirements.Keys) {
                 $parameters = @{
                     Name            = $name
-                    Version         = $requirements[$name].version
-                    Repository      = $requirements[$name].repository
+                    Version         = $requirements[$name].versao
+                    Repository      = $requirements[$name].repositorio
                     Path            = $Path
                     TrustRepository = $true
                     Quiet           = $true
