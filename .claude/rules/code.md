@@ -19,8 +19,12 @@ paths:
   `$configuração`.
 - Abreviações comuns são bem-vindas (`$exe`, `$url`), desde que não enganem.
 - A API pública fica em inglês, porque mudar um nome dela quebra quem já usa
-  o módulo: os comandos públicos e os parâmetros deles, as chaves do
-  `settings.json` e as variáveis de ambiente `WINPLAYBOOK_*`.
+  o módulo: os comandos públicos e os parâmetros deles, as propriedades dos
+  objetos que eles devolvem, as chaves do `settings.json` e as variáveis de
+  ambiente `WINPLAYBOOK_*`.
+- O texto que o código mostra também é em português: as mensagens de erro, a
+  ajuda baseada em comentário, inclusive a dos comandos públicos, e os nomes
+  dos testes.
 
 ### Variáveis
 
