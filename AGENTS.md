@@ -203,9 +203,10 @@ O WinPlaybook segue o SemVer. A versão não fica no repositório, onde o
 manifesto guarda `0.0.0`: a fonte é a tag `v<versão>` do último release.
 
 A cada push na `main`, o CI roda os testes e o git-cliff calcula a próxima
-versão a partir dos commits desde a última tag. `feat` gera MINOR e `fix` gera
-PATCH. Enquanto o projeto está abaixo da 1.0.0, uma breaking change também
-gera MINOR.
+versão a partir dos commits desde a última tag. `feat` gera MINOR, e `fix`,
+`perf` e `refactor` geram PATCH. Assim, uma refatoração ganha uma versão
+própria, e um bug que ela trouxer aponta para essa versão. Enquanto o projeto
+está abaixo da 1.0.0, uma breaking change também gera MINOR.
 
 Quando há versão nova, o release publica o módulo na PowerShell Gallery e cria
 o release no GitHub, com as notas geradas pelo git-cliff, em português.
