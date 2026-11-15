@@ -1,4 +1,4 @@
-name: Module
+name: Módulo
 
 on:
   pull_request:
@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: module-${{ github.ref }}
+  group: modulo-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -26,141 +26,141 @@ defaults:
     shell: pwsh
 
 jobs:
-  unit-tests:
-    name: Unit tests
+  testes-unitarios:
+    name: Testes unitários
     runs-on: windows-2025
     timeout-minutes: 15
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
 
-      - name: Install test dependencies
-        uses: ./.github/actions/install-test-dependencies
+      - name: Instala as dependências de teste
+        uses: ./.github/actions/instala-dependencias-de-teste
 
-      - name: Run the tests (PowerShell 7)
-        id: tests-core
+      - name: Roda os testes (PowerShell 7)
+        id: testes-powershell-7
         run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
 
-      - name: Run the tests (Windows PowerShell 5.1)
-        if: success() || steps.tests-core.conclusion == 'failure'
+      - name: Roda os testes (Windows PowerShell 5.1)
+        if: success() || steps.testes-powershell-7.conclusion == 'failure'
         shell: powershell
         run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
 
-  integration-tests:
-    name: Integration tests
+  testes-de-integracao:
+    name: Testes de integração
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
 
-      - name: Install test dependencies
-        uses: ./.github/actions/install-test-dependencies
+      - name: Instala as dependências de teste
+        uses: ./.github/actions/instala-dependencias-de-teste
 
-      - name: Download the shim
+      - name: Baixa o shim
         run: ./scripts/Save-Shim.ps1
 
-      - name: Run the tests (PowerShell 7)
-        id: tests-core
+      - name: Roda os testes (PowerShell 7)
+        id: testes-powershell-7
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
 
-      - name: Run the tests (Windows PowerShell 5.1)
-        if: success() || steps.tests-core.conclusion == 'failure'
+      - name: Roda os testes (Windows PowerShell 5.1)
+        if: success() || steps.testes-powershell-7.conclusion == 'failure'
         shell: powershell
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
 
-  e2e-tests:
-    name: E2E tests
+  testes-e2e:
+    name: Testes e2e
     runs-on: windows-2025
     timeout-minutes: 30
     env:
       WINPLAYBOOK_TEST_WSL_DISTRIBUTION: Ubuntu-26.04
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
 
-      - name: Install test dependencies
-        uses: ./.github/actions/install-test-dependencies
+      - name: Instala as dependências de teste
+        uses: ./.github/actions/instala-dependencias-de-teste
 
-      - name: Download the shim
+      - name: Baixa o shim
         run: ./scripts/Save-Shim.ps1
 
-      - name: Install the WSL distribution of the tests
+      - name: Instala a distribuição WSL dos testes
         uses: Vampire/setup-wsl@v7
         with:
           distribution: ${{ env.WINPLAYBOOK_TEST_WSL_DISTRIBUTION }}
 
-      - name: Run the tests (PowerShell 7)
-        id: tests-core
+      - name: Roda os testes (PowerShell 7)
+        id: testes-powershell-7
         run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
 
-      - name: Run the tests (Windows PowerShell 5.1)
-        if: success() || steps.tests-core.conclusion == 'failure'
+      - name: Roda os testes (Windows PowerShell 5.1)
+        if: success() || steps.testes-powershell-7.conclusion == 'failure'
         shell: powershell
         run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
 
-  version:
-    name: Version
-    needs: [unit-tests, integration-tests, e2e-tests]
+  versao:
+    name: Versão
+    needs: [testes-unitarios, testes-de-integracao, testes-e2e]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
-      should_release: ${{ steps.release_info.outputs.should_release }}
-      tag: ${{ steps.release_info.outputs.tag }}
-      version: ${{ steps.release_info.outputs.version }}
+      deve_lancar: ${{ steps.dados_do_release.outputs.deve_lancar }}
+      tag: ${{ steps.dados_do_release.outputs.tag }}
+      versao: ${{ steps.dados_do_release.outputs.versao }}
 
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Calculate the next version
-        id: next_version
+      - name: Calcula a próxima versão
+        id: proxima_versao
         uses: orhun/git-cliff-action@v4
         with:
           args: >-
             --tag-pattern "^v[0-9]"
             --bumped-version
 
-      - name: Compare with the latest release
-        id: release_info
+      - name: Compara com o último release
+        id: dados_do_release
         env:
-          NEXT_TAG: ${{ steps.next_version.outputs.content }}
+          PROXIMA_TAG: ${{ steps.proxima_versao.outputs.content }}
         run: |
-          $tag = $env:NEXT_TAG.Trim()
-          $latest = git tag --list 'v[0-9]*' --merged HEAD --sort=-version:refname | Select-Object -First 1
-          $version = [version] ($tag -replace '^v')
-          $shouldRelease = if ($tag -eq $latest) { 'false' } else { 'true' }
+          $proximaTag = $env:PROXIMA_TAG.Trim()
+          $ultimaTag = git tag --list 'v[0-9]*' --merged HEAD --sort=-version:refname | Select-Object -First 1
+          $versao = [version] ($proximaTag -replace '^v')
+          $deveLancar = if ($proximaTag -eq $ultimaTag) { 'false' } else { 'true' }
 
-          Write-Host "Latest: $($latest ?? 'none'). Next: $tag. Should release: $shouldRelease."
+          Write-Host "Última: $($ultimaTag ?? 'nenhuma'). Próxima: $proximaTag. Deve lançar: $deveLancar."
           @(
-              "should_release=$shouldRelease"
-              "tag=$tag"
-              "version=$version"
-          ) | Add-Content $env:GITHUB_OUTPUT
+              "deve_lancar=$deveLancar"
+              "tag=$proximaTag"
+              "versao=$versao"
+          ) | Add-Content -LiteralPath $env:GITHUB_OUTPUT
 
-  publish:
-    name: Publish
-    needs: version
-    # Paused while WinPlaybook moves to WSL (milestone 1.0.0): main may have unfinished versions.
-    if: false && needs.version.outputs.should_release == 'true'
+  publicacao:
+    name: Publicação
+    needs: versao
+    # Pausada enquanto o WinPlaybook passa para o WSL (milestone 1.0.0): a main pode ter versões incompletas.
+    if: false && needs.versao.outputs.deve_lancar == 'true'
     runs-on: ubuntu-latest
 
     permissions:
       contents: write
 
     env:
-      TAG: ${{ needs.version.outputs.tag }}
-      VERSION: ${{ needs.version.outputs.version }}
+      TAG: ${{ needs.versao.outputs.tag }}
+      VERSAO: ${{ needs.versao.outputs.versao }}
 
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Generate the release notes
+      - name: Gera as notas de release
         uses: orhun/git-cliff-action@v4
         with:
           args: >-
@@ -170,19 +170,19 @@ jobs:
             --strip all
             --output release-notes.md
 
-      - name: Prepare the module
-        id: prepare
+      - name: Prepara o módulo
+        id: preparacao
         run: |
-          $modulePath = ./scripts/Build-PacoteDoModulo.ps1 -Versao $env:VERSION -PastaDeDestino $env:RUNNER_TEMP
-          "module_path=$modulePath" | Add-Content $env:GITHUB_OUTPUT
+          $caminhoDoModulo = ./scripts/Build-PacoteDoModulo.ps1 -Versao $env:VERSAO -PastaDeDestino $env:RUNNER_TEMP
+          "caminho_do_modulo=$caminhoDoModulo" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
 
-      - name: Publish to the PowerShell Gallery
+      - name: Publica na PowerShell Gallery
         env:
-          MODULE_PATH: ${{ steps.prepare.outputs.module_path }}
+          CAMINHO_DO_MODULO: ${{ steps.preparacao.outputs.caminho_do_modulo }}
           PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
-        run: Publish-PSResource -Path $env:MODULE_PATH -Repository PSGallery -ApiKey $env:PSGALLERY_API_KEY
+        run: Publish-PSResource -Path $env:CAMINHO_DO_MODULO -Repository PSGallery -ApiKey $env:PSGALLERY_API_KEY
 
-      - name: Create the GitHub release
+      - name: Cria o release no GitHub
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:TAG --title "WinPlaybook $env:VERSION" --notes-file release-notes.md --target $env:GITHUB_SHA
+        run: gh release create $env:TAG --title "WinPlaybook $env:VERSAO" --notes-file release-notes.md --target $env:GITHUB_SHA

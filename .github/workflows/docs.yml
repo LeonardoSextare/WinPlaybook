@@ -1,4 +1,4 @@
-name: Docs
+name: Documentação
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-${{ github.ref }}
+  group: documentacao-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
@@ -25,34 +25,35 @@ defaults:
     shell: pwsh
 
 jobs:
-  build:
-    name: Build
+  geracao:
+    name: Geração
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
 
-      - name: Install uv
+      - name: Instala o uv
         uses: astral-sh/setup-uv@v10.3.3
 
-      - name: Build both languages
+      - name: Gera os dois idiomas
         run: |
-          foreach ($configFile in 'docs/zensical.en.toml', 'docs/zensical.pt-br.toml') {
-              uvx zensical build --config-file $configFile
-              if ($LASTEXITCODE -ne 0) {
-                  throw "The build of $configFile failed."
+          foreach ($arquivoDeConfiguracao in 'docs/zensical.en.toml', 'docs/zensical.pt-br.toml') {
+              uvx zensical build --config-file $arquivoDeConfiguracao
+              $gerouOSite = $LASTEXITCODE -eq 0
+              if (-not $gerouOSite) {
+                  throw "A geração do $arquivoDeConfiguracao falhou."
               }
           }
-          Copy-Item docs/index.html -Destination docs/site
+          Copy-Item -LiteralPath docs/index.html -Destination docs/site
 
-      - name: Upload the site
+      - name: Envia o site
         uses: actions/upload-pages-artifact@v5
         with:
           path: docs/site
 
-  deploy:
-    name: Deploy
-    needs: build
+  publicacao:
+    name: Publicação
+    needs: geracao
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
 
@@ -62,9 +63,9 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.publicacao.outputs.page_url }}
 
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Publica no GitHub Pages
+        id: publicacao
         uses: actions/deploy-pages@v5

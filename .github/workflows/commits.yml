@@ -15,17 +15,17 @@ defaults:
     shell: pwsh
 
 jobs:
-  commit-titles:
-    name: Commit titles
+  titulos-dos-commits:
+    name: Títulos dos commits
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check out the repository
+      - name: Baixa o repositório
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Check the commit titles
+      - name: Confere os títulos dos commits
         env:
-          RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
-        run: ./scripts/Test-TituloDeCommit.ps1 -Intervalo $env:RANGE
+          INTERVALO: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
+        run: ./scripts/Test-TituloDeCommit.ps1 -Intervalo $env:INTERVALO
