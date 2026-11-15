@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 }
 
@@ -8,34 +8,34 @@ AfterAll {
 
 Describe 'Invoke-WinPlaybook' {
     BeforeAll {
-        Mock Invoke-WslCommand -ModuleName WinPlaybook { }
+        Mock Invoke-ComandoNoWsl -ModuleName WinPlaybook { }
     }
 
-    It 'runs the first argument as the command with the other arguments' {
+    It 'executa o primeiro argumento como o comando, com os outros argumentos' {
         Invoke-WinPlaybook ansible-playbook -i inventory.yml site.yml --check
 
-        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-            $Command -eq 'ansible-playbook' -and ($Arguments -join ' ') -eq '-i inventory.yml site.yml --check'
+        Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $Comando -eq 'ansible-playbook' -and ($Argumentos -join ' ') -eq '-i inventory.yml site.yml --check'
         }
     }
 
-    It 'passes arguments with quotes and spaces unchanged' {
+    It 'passa argumentos com aspas e espaços sem mudança' {
         Invoke-WinPlaybook ansible-playbook -e '{"name": "a b"}' site.yml
 
-        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-            $Arguments[1] -eq '{"name": "a b"}'
+        Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $Argumentos[1] -eq '{"name": "a b"}'
         }
     }
 
-    It 'runs a command without arguments' {
+    It 'executa um comando sem argumentos' {
         Invoke-WinPlaybook ansible
 
-        Should-Invoke Invoke-WslCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-            $Command -eq 'ansible' -and $Arguments.Count -eq 0
+        Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $Comando -eq 'ansible' -and $Argumentos.Count -eq 0
         }
     }
 
-    It 'rejects a call without a command' {
-        { Invoke-WinPlaybook } | Should-Throw -ExceptionMessage '*command to run*'
+    It 'recusa uma chamada sem comando' {
+        { Invoke-WinPlaybook } | Should-Throw -ExceptionMessage 'Informe o comando*'
     }
 }

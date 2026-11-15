@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 }
 
@@ -8,221 +8,232 @@ AfterAll {
 
 Describe 'Install-WinPlaybookShim' {
     BeforeAll {
-        $templatePath = Join-Path $TestDrive 'template.exe'
-        Set-Content -LiteralPath $templatePath -Value 'template shim'
+        $caminhoDoModelo = Join-Path $TestDrive 'modelo.exe'
+        Set-Content -LiteralPath $caminhoDoModelo -Value 'shim modelo'
 
-        Mock Get-ConfigFolder -ModuleName WinPlaybook { $configFolder }
-        Mock Get-ShimTemplatePath -ModuleName WinPlaybook { $templatePath }
-        Mock Get-WslDistribution -ModuleName WinPlaybook { 'Ubuntu', 'Debian' }
-        Mock Get-WslMountRoot -ModuleName WinPlaybook { '/mnt/' }
-        Mock Get-AnsibleCommand -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
-        $currentPowerShellPath = Join-Path $TestDrive 'current/pwsh.exe'
-        $desktopPowerShellPath = Join-Path $TestDrive 'desktop/powershell.exe'
-        New-Item -ItemType File -Path $currentPowerShellPath, $desktopPowerShellPath -Force | Out-Null
-        Mock Get-PowerShellPath -ModuleName WinPlaybook { $currentPowerShellPath }
-        Mock Get-PowerShellPath -ModuleName WinPlaybook -ParameterFilter { $Edition -eq 'Desktop' } { $desktopPowerShellPath }
+        Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { $pastaDeConfiguracao }
+        Mock Get-CaminhoDoModeloDeShim -ModuleName WinPlaybook { $caminhoDoModelo }
+        Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu', 'Debian' }
+        Mock Get-RaizDeMontagemDoWsl -ModuleName WinPlaybook { '/mnt/' }
+        Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
+        $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
+        $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
+        $null = New-Item -ItemType File -Path $powerShellAtual, $powerShellDesktop -Force
+        Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook { $powerShellAtual }
+        Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook -ParameterFilter { $Edicao -eq 'Desktop' } { $powerShellDesktop }
 
-        Mock Add-UserPathEntry -ModuleName WinPlaybook { }
-        Mock Remove-UserPathEntry -ModuleName WinPlaybook { }
+        Mock Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook { }
+        Mock Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook { }
 
-        function Get-SavedSetting {
-            Get-Content -LiteralPath (Join-Path $configFolder 'settings.json') -Raw | ConvertFrom-Json
+        function Get-ConfiguracaoSalva {
+            <#
+            .SYNOPSIS
+            Devolve o settings.json que a instalação gravou na pasta de configuração do teste.
+
+            .EXAMPLE
+            (Get-ConfiguracaoSalva).ShimFolder
+            #>
+            [CmdletBinding()]
+            [OutputType([pscustomobject])]
+            param()
+
+            return Get-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'settings.json') -Raw | ConvertFrom-Json
         }
     }
 
     BeforeEach {
-        $configFolder = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-        $defaultShimFolder = Join-Path $configFolder 'bin'
+        $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
     }
 
-    Context 'when installing in the default folder' {
-        It 'creates a shim for each command of the distribution' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+    Context 'quando instala na pasta padrão' {
+        It 'cria um shim para cada comando da distribuição' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            (Get-ChildItem -LiteralPath $defaultShimFolder -Filter '*.ps1').BaseName | Should-BeCollection @('ansible', 'ansible-playbook')
+            (Get-ChildItem -LiteralPath $pastaPadraoDosShims -Filter '*.ps1').BaseName | Should-BeCollection @('ansible', 'ansible-playbook')
         }
 
-        It 'puts the shim folder in the user Path' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+        It 'coloca a pasta dos shims no Path do usuário' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            Should-Invoke Add-UserPathEntry -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Folder -eq $defaultShimFolder
+            Should-Invoke Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Pasta -eq $pastaPadraoDosShims
             }
         }
 
-        It 'saves the shim folder in the settings' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+        It 'salva a pasta dos shims na configuração' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            (Get-SavedSetting).ShimFolder | Should-Be $defaultShimFolder
+            (Get-ConfiguracaoSalva).ShimFolder | Should-Be $pastaPadraoDosShims
         }
 
-        It 'returns the shim folder' {
-            $result = Install-WinPlaybookShim -Distribution 'Ubuntu'
+        It 'devolve a pasta dos shims' {
+            $resultado = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            $result.Folder | Should-Be $defaultShimFolder
+            $resultado.Folder | Should-Be $pastaPadraoDosShims
         }
     }
 
-    Context 'when a distribution is chosen' {
-        It 'creates the shims from the commands of that distribution' {
-            Install-WinPlaybookShim -Distribution 'Debian' | Out-Null
+    Context 'quando uma distribuição é escolhida' {
+        It 'cria os shims a partir dos comandos dessa distribuição' {
+            $null = Install-WinPlaybookShim -Distribution 'Debian'
 
-            Should-Invoke Get-AnsibleCommand -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Distribution -eq 'Debian' -and $MountRoot -eq '/mnt/'
+            Should-Invoke Get-ComandoDoAnsible -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Distribuicao -eq 'Debian' -and $RaizDeMontagem -eq '/mnt/'
             }
         }
 
-        It 'saves the distribution in the settings' {
-            Install-WinPlaybookShim -Distribution 'Debian' | Out-Null
+        It 'salva a distribuição na configuração' {
+            $null = Install-WinPlaybookShim -Distribution 'Debian'
 
-            (Get-SavedSetting).WslDistribution | Should-Be 'Debian'
+            (Get-ConfiguracaoSalva).WslDistribution | Should-Be 'Debian'
         }
 
-        It 'saves where the distribution mounts the Windows drives' {
-            Install-WinPlaybookShim -Distribution 'Debian' | Out-Null
+        It 'salva onde a distribuição monta as unidades do Windows' {
+            $null = Install-WinPlaybookShim -Distribution 'Debian'
 
-            (Get-SavedSetting).WslMountRoot | Should-Be '/mnt/'
+            (Get-ConfiguracaoSalva).WslMountRoot | Should-Be '/mnt/'
         }
 
-        It 'returns the distribution' {
-            $result = Install-WinPlaybookShim -Distribution 'Debian'
+        It 'devolve a distribuição' {
+            $resultado = Install-WinPlaybookShim -Distribution 'Debian'
 
-            $result.Distribution | Should-Be 'Debian'
+            $resultado.Distribution | Should-Be 'Debian'
         }
     }
 
-    Context 'when no distribution is chosen' {
-        It 'keeps the distribution chosen in a previous install' {
-            Install-WinPlaybookShim -Distribution 'Debian' | Out-Null
+    Context 'quando nenhuma distribuição é escolhida' {
+        It 'mantém a distribuição escolhida numa instalação anterior' {
+            $null = Install-WinPlaybookShim -Distribution 'Debian'
 
-            Install-WinPlaybookShim | Out-Null
+            $null = Install-WinPlaybookShim
 
-            (Get-SavedSetting).WslDistribution | Should-Be 'Debian'
+            (Get-ConfiguracaoSalva).WslDistribution | Should-Be 'Debian'
         }
 
-        It 'fails on the first install without creating the shim folder' {
+        It 'falha na primeira instalação sem criar a pasta dos shims' {
             { Install-WinPlaybookShim } | Should-Throw -ExceptionMessage '*Install-WinPlaybookShim -Distribution*'
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
     }
 
-    Context 'when the chosen distribution does not exist' {
-        It 'fails without creating the shim folder' {
-            { Install-WinPlaybookShim -Distribution 'Missing' } | Should-Throw -ExceptionMessage '*distribution Missing does not exist*'
+    Context 'quando a distribuição escolhida não existe' {
+        It 'falha sem criar a pasta dos shims' {
+            { Install-WinPlaybookShim -Distribution 'Inexistente' } | Should-Throw -ExceptionMessage '*distribuição WSL Inexistente não existe*'
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
     }
 
-    Context 'when a folder is chosen' {
-        It 'creates the shims in a WinPlaybook folder inside it' {
-            $chosenFolder = Join-Path $TestDrive 'tools'
+    Context 'quando uma pasta é escolhida' {
+        It 'cria os shims numa pasta WinPlaybook dentro dela' {
+            $pastaEscolhida = Join-Path $TestDrive 'ferramentas'
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -Path $chosenFolder | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -Path $pastaEscolhida
 
-            Test-Path -LiteralPath (Join-Path $chosenFolder 'WinPlaybook/bin/ansible-playbook.ps1') | Should-BeTrue
+            Test-Path -LiteralPath (Join-Path $pastaEscolhida 'WinPlaybook/bin/ansible-playbook.ps1') | Should-BeTrue
         }
     }
 
-    Context 'when the distribution no longer has a command' {
-        It 'removes the shim of that command' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
-            Mock Get-AnsibleCommand -ModuleName WinPlaybook { 'ansible' }
+    Context 'quando a distribuição não tem mais um comando' {
+        It 'apaga o shim desse comando' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
+            Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { 'ansible' }
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            Test-Path -LiteralPath (Join-Path $defaultShimFolder 'ansible-playbook.ps1') | Should-BeFalse
+            Test-Path -LiteralPath (Join-Path $pastaPadraoDosShims 'ansible-playbook.ps1') | Should-BeFalse
         }
     }
 
-    Context 'when the shim folder exists and was not created by WinPlaybook' {
-        It 'refuses to install and keeps the files of the folder' {
-            New-Item -ItemType Directory -Path $defaultShimFolder -Force | Out-Null
-            Set-Content -LiteralPath (Join-Path $defaultShimFolder 'mine.txt') -Value 'mine'
+    Context 'quando a pasta dos shims existe e não foi criada pelo WinPlaybook' {
+        It 'recusa a instalação e mantém os arquivos da pasta' {
+            $null = New-Item -ItemType Directory -Path $pastaPadraoDosShims -Force
+            Set-Content -LiteralPath (Join-Path $pastaPadraoDosShims 'meu.txt') -Value 'meu'
 
-            { Install-WinPlaybookShim -Distribution 'Ubuntu' } | Should-Throw -ExceptionMessage '*not created by WinPlaybook*'
+            { Install-WinPlaybookShim -Distribution 'Ubuntu' } | Should-Throw -ExceptionMessage '*não foi criada pelo WinPlaybook*'
 
-            Test-Path -LiteralPath (Join-Path $defaultShimFolder 'mine.txt') | Should-BeTrue
+            Test-Path -LiteralPath (Join-Path $pastaPadraoDosShims 'meu.txt') | Should-BeTrue
         }
     }
 
-    Context 'when the shims were installed in another folder' {
-        It 'removes the previous shims' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+    Context 'quando os shims foram instalados em outra pasta' {
+        It 'apaga os shims anteriores' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -Path (Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))) | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -Path (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
 
-        It 'removes the previous folder from the user Path' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+        It 'tira a pasta anterior do Path do usuário' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -Path (Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))) | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -Path (Join-Path $TestDrive ([guid]::NewGuid().ToString('N')))
 
-            Should-Invoke Remove-UserPathEntry -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Folder -eq $defaultShimFolder
+            Should-Invoke Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Pasta -eq $pastaPadraoDosShims
             }
         }
     }
 
-    Context 'when the commands of the distribution cannot be listed' {
+    Context 'quando os comandos da distribuição não podem ser listados' {
         BeforeAll {
-            Mock Get-AnsibleCommand -ModuleName WinPlaybook { throw 'wsl is not running' }
+            Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { throw 'o wsl não está rodando' }
         }
 
-        It 'fails without creating the shim folder' {
-            { Install-WinPlaybookShim -Distribution 'Ubuntu' } | Should-Throw -ExceptionMessage '*wsl is not running*'
+        It 'falha sem criar a pasta dos shims' {
+            { Install-WinPlaybookShim -Distribution 'Ubuntu' } | Should-Throw -ExceptionMessage '*o wsl não está rodando*'
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
     }
 
-    Context 'when called with -WhatIf' {
-        It 'creates no shim folder' {
+    Context 'quando é chamado com -WhatIf' {
+        It 'não cria a pasta dos shims' {
             Install-WinPlaybookShim -Distribution 'Ubuntu' -WhatIf
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
 
-        It 'leaves the user Path unchanged' {
+        It 'deixa o Path do usuário como está' {
             Install-WinPlaybookShim -Distribution 'Ubuntu' -WhatIf
 
-            Should-NotInvoke Add-UserPathEntry -ModuleName WinPlaybook
+            Should-NotInvoke Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook
         }
     }
 
-    Context 'when a PowerShell edition is chosen' {
-        It 'saves that edition for the executable shims' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -PowerShell 'Desktop' | Out-Null
+    Context 'quando uma edição do PowerShell é escolhida' {
+        It 'salva essa edição para os shims executáveis' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -PowerShell 'Desktop'
 
-            (Get-SavedSetting).ShimPowerShellPath | Should-Be $desktopPowerShellPath
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
         }
     }
 
-    Context 'when no PowerShell edition is chosen' {
-        It 'uses the PowerShell that is running on the first install' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+    Context 'quando nenhuma edição do PowerShell é escolhida' {
+        It 'usa o PowerShell em execução na primeira instalação' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            (Get-SavedSetting).ShimPowerShellPath | Should-Be $currentPowerShellPath
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
         }
 
-        It 'keeps the PowerShell chosen in a previous install' {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -PowerShell 'Desktop' | Out-Null
+        It 'mantém o PowerShell escolhido numa instalação anterior' {
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -PowerShell 'Desktop'
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            (Get-SavedSetting).ShimPowerShellPath | Should-Be $desktopPowerShellPath
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
         }
 
-        It 'uses the PowerShell that is running when the saved one no longer exists' {
-            New-Item -ItemType Directory -Path $configFolder | Out-Null
-            Set-Content -LiteralPath (Join-Path $configFolder 'settings.json') -Value '{ "ShimPowerShellPath": "C:\\Missing\\pwsh.exe" }'
+        It 'usa o PowerShell em execução quando o salvo não existe mais' {
+            $null = New-Item -ItemType Directory -Path $pastaDeConfiguracao
+            Set-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'settings.json') -Value '{ "ShimPowerShellPath": "C:\\Inexistente\\pwsh.exe" }'
 
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 
-            (Get-SavedSetting).ShimPowerShellPath | Should-Be $currentPowerShellPath
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
         }
     }
 }

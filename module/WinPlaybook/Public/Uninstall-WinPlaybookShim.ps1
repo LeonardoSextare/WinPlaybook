@@ -1,20 +1,25 @@
-function Uninstall-WinPlaybookShim {
+﻿function Uninstall-WinPlaybookShim {
     <#
     .SYNOPSIS
-    Removes the command shims created by Install-WinPlaybookShim, and their folder from the user Path.
+    Apaga os shims de comando criados pelo Install-WinPlaybookShim e tira a pasta deles do Path do usuário.
+
+    .DESCRIPTION
+    Também apaga a configuração do WinPlaybook. A pasta escolhida com o -Path do
+    Install-WinPlaybookShim fica, e só a pasta WinPlaybook criada dentro dela é apagada.
 
     .EXAMPLE
     Uninstall-WinPlaybookShim
     #>
     [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([void])]
     param()
 
-    $shimFolder = Get-ShimFolder
-    $isConfirmed = $PSCmdlet.ShouldProcess($shimFolder, 'Remove the WinPlaybook command shims')
-    if (-not $isConfirmed) {
+    $pastaDosShims = Get-PastaDosShims
+    $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, 'Apagar os shims de comando do WinPlaybook')
+    if (-not $confirmou) {
         return
     }
 
-    Remove-ShimFolder -Folder $shimFolder
-    Remove-Setting
+    Remove-PastaDosShims -Pasta $pastaDosShims
+    Remove-Configuracao
 }

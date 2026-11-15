@@ -1,0 +1,37 @@
+﻿function Get-Configuracao {
+    <#
+    .SYNOPSIS
+    Devolve a configuração do WinPlaybook, com valores vazios no que ainda não foi salvo.
+
+    .DESCRIPTION
+    As chaves são ShimFolder, ShimPowerShellPath, WslDistribution e WslMountRoot.
+
+    .EXAMPLE
+    (Get-Configuracao).ShimFolder
+
+    Devolve a pasta onde os shims foram instalados, ou $null.
+    #>
+    [CmdletBinding()]
+    [OutputType([hashtable])]
+    param()
+
+    $configuracao = @{
+        ShimFolder         = $null
+        ShimPowerShellPath = $null
+        WslDistribution    = $null
+        WslMountRoot       = $null
+    }
+
+    $caminhoDoArquivo = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'settings.json'
+    $existeArquivo = Test-Path -LiteralPath $caminhoDoArquivo
+    if (-not $existeArquivo) {
+        return $configuracao
+    }
+
+    $configuracaoSalva = Get-Content -LiteralPath $caminhoDoArquivo -Raw | ConvertFrom-Json
+    foreach ($propriedade in $configuracaoSalva.PSObject.Properties) {
+        $configuracao[$propriedade.Name] = $propriedade.Value
+    }
+
+    return $configuracao
+}

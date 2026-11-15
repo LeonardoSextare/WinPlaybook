@@ -22,14 +22,21 @@ bugs, e como o código lida com cada um.
 ## Windows PowerShell 5.1
 
 - O 5.1 não escapa as aspas internas dos argumentos passados a programas
-  externos. Os argumentos passam por `ConvertTo-LegacyNativeArgument` quando
-  `Test-LegacyArgumentPassing` é verdadeiro.
+  externos. Os argumentos passam por `ConvertTo-ArgumentoNativoLegado` quando
+  `Test-PassagemDeArgumentosLegada` é verdadeiro.
 - No 5.1, com o stderr redirecionado e `Stop` no escopo global, a primeira
   linha de aviso de um programa interrompe o comando. Antes de chamar o
   programa, defina `$ErrorActionPreference = 'Continue'` dentro da função que
   o chama, sem `$global:` nem `$script:`. Assim a mudança vale só para essa
   função e não altera a sessão do usuário. Decida se o programa falhou pelo
   `$LASTEXITCODE`, não pelo stderr.
+- O 5.1 lê um `.ps1`, `.psm1` ou `.psd1` sem BOM como ANSI, e os acentos viram
+  lixo (`não` vira `nÃ£o`). Arquivo do módulo ou dos testes com texto não
+  ASCII é gravado em UTF-8 com BOM. O `tests/module/unit/Codificacao.Tests.ps1`
+  confere todos.
+- No 5.1, o `Get-ChildItem -LiteralPath` ignora o `-Include` e devolve todos
+  os arquivos. Filtre pela extensão com `Where-Object`
+  (`$_.Extension -in '.ps1', '.psd1'`).
 
 ## WSL
 
