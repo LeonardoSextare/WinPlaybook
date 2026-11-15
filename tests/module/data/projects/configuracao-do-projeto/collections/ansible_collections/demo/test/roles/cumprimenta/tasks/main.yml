@@ -1,0 +1,3 @@
+- name: Mostra um cumprimento da collection
+  ansible.builtin.debug:
+    msg: oi da collection demo.test

@@ -1,0 +1,7 @@
+- name: Diz oi
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Mostra um cumprimento
+      ansible.builtin.debug:
+        msg: oi do WinPlaybook

@@ -10,9 +10,9 @@
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
     }
 
-    $projetoHello = Join-Path $PSScriptRoot '../data/projects/hello'
-    $projetoComViolacoesDeLint = Join-Path $PSScriptRoot '../data/projects/lint-violation'
-    $projetoComConfiguracao = Join-Path $PSScriptRoot '../data/projects/project-config'
+    $projetoOla = Join-Path $PSScriptRoot '../data/projects/ola'
+    $projetoComViolacoesDeLint = Join-Path $PSScriptRoot '../data/projects/violacao-de-lint'
+    $projetoComConfiguracao = Join-Path $PSScriptRoot '../data/projects/configuracao-do-projeto'
 }
 
 AfterAll {
@@ -24,7 +24,7 @@ Describe 'Invoke-WinPlaybook' {
     Context 'quando é chamado da pasta do projeto' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'projeto'
-            Copy-Item $projetoHello $projeto -Recurse
+            Copy-Item $projetoOla $projeto -Recurse
             Push-Location $projeto
         }
 
@@ -36,7 +36,7 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
 
         It 'propaga o código de saída do comando' {
@@ -56,14 +56,14 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook .\site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
 
         It 'aceita um caminho absoluto do Windows dentro do projeto' {
             $saida = Invoke-WinPlaybook ansible-playbook (Join-Path $projeto 'site.yml') 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
 
         Context 'quando quem chama para nos erros' {
@@ -88,7 +88,7 @@ Describe 'Invoke-WinPlaybook' {
     Context 'quando é chamado de uma subpasta de um repositório' {
         BeforeAll {
             $repositorio = Join-Path $TestDrive 'repositorio'
-            Copy-Item $projetoHello $repositorio -Recurse
+            Copy-Item $projetoOla $repositorio -Recurse
             $null = New-Item -ItemType Directory -Path (Join-Path $repositorio '.git') -Force
             $null = New-Item -ItemType Directory -Path (Join-Path $repositorio 'playbooks') -Force
             Push-Location (Join-Path $repositorio 'playbooks')
@@ -102,14 +102,14 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook ../site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
     }
 
     Context 'quando o playbook está fora da pasta atual' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'projeto-de-fora'
-            Copy-Item $projetoHello $projeto -Recurse
+            Copy-Item $projetoOla $projeto -Recurse
             $outraPasta = Join-Path $TestDrive 'outra pasta'
             $null = New-Item -ItemType Directory -Path $outraPasta
             Push-Location $outraPasta
@@ -123,13 +123,13 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook (Join-Path $projeto 'site.yml') 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
     }
 
     Context 'quando o projeto tem violações de lint' {
         BeforeAll {
-            $projeto = Join-Path $TestDrive 'lint-violation'
+            $projeto = Join-Path $TestDrive 'violacao-de-lint'
             Copy-Item $projetoComViolacoesDeLint $projeto -Recurse
             Push-Location $projeto
         }
@@ -148,7 +148,7 @@ Describe 'Invoke-WinPlaybook' {
 
     Context 'quando o ansible.cfg do projeto define um caminho relativo para as collections' {
         BeforeAll {
-            $projeto = Join-Path $TestDrive 'project-config'
+            $projeto = Join-Path $TestDrive 'configuracao-do-projeto'
             Copy-Item $projetoComConfiguracao $projeto -Recurse
             Push-Location $projeto
         }
@@ -163,7 +163,7 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook playbooks/site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from the demo.test collection*'
+            $saida | Should-BeLikeString '*oi da collection demo.test*'
         }
     }
 
