@@ -5,7 +5,7 @@ Prepares the module folder that gets published: a copy of module/WinPlaybook wit
 the shim.exe and the version.
 
 .DESCRIPTION
-The repository keeps ModuleVersion at 0.0.0: the module-v* tag is the source of the
+The repository keeps ModuleVersion at 0.0.0: the v<version> tag is the source of the
 version, so it is written only in the copy. Returns the path of the copy.
 Used by the module release.
 #>

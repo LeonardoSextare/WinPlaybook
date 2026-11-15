@@ -25,9 +25,6 @@ defaults:
   run:
     shell: pwsh
 
-env:
-  GIT_CLIFF__BUMP__INITIAL_TAG: module-v0.1.0
-
 jobs:
   unit-tests:
     name: Unit tests
@@ -123,8 +120,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           args: >-
-            --include-path "module/**"
-            --tag-pattern "^module-v"
+            --tag-pattern "^v[0-9]"
             --bumped-version
 
       - name: Compare with the latest release
@@ -133,8 +129,8 @@ jobs:
           NEXT_TAG: ${{ steps.next_version.outputs.content }}
         run: |
           $tag = $env:NEXT_TAG.Trim()
-          $latest = git tag --list 'module-v*' --merged HEAD --sort=-version:refname | Select-Object -First 1
-          $version = [version] ($tag -replace '^module-v')
+          $latest = git tag --list 'v[0-9]*' --merged HEAD --sort=-version:refname | Select-Object -First 1
+          $version = [version] ($tag -replace '^v')
           $shouldRelease = if ($tag -eq $latest) { 'false' } else { 'true' }
 
           Write-Host "Latest: $($latest ?? 'none'). Next: $tag. Should release: $shouldRelease."
@@ -168,8 +164,7 @@ jobs:
         uses: orhun/git-cliff-action@v4
         with:
           args: >-
-            --include-path "module/**"
-            --tag-pattern "^module-v"
+            --tag-pattern "^v[0-9]"
             --unreleased
             --bump
             --strip all
@@ -190,4 +185,4 @@ jobs:
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:TAG --title "Module $env:VERSION" --notes-file release-notes.md --target $env:GITHUB_SHA
+        run: gh release create $env:TAG --title "WinPlaybook $env:VERSION" --notes-file release-notes.md --target $env:GITHUB_SHA
