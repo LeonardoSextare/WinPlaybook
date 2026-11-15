@@ -30,7 +30,7 @@
     $env:Path = $pathOriginal
 
     $projeto = Join-Path $TestDrive 'projeto'
-    Copy-Item (Join-Path $PSScriptRoot '../data/projects/hello') $projeto -Recurse
+    Copy-Item (Join-Path $PSScriptRoot '../data/projects/ola') $projeto -Recurse
     Push-Location $projeto
 }
 
@@ -47,14 +47,14 @@ Describe 'Shim' {
             $saida = & (Join-Path $pastaDosShims 'ansible-playbook.ps1') site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
 
         It 'passa variáveis extras em JSON sem mudança' {
-            $saida = & (Join-Path $pastaDosShims 'ansible.ps1') localhost -m ansible.builtin.debug -a 'msg={{ greeting }}' -e '{"greeting": "hello world"}' 2>&1 | Out-String
+            $saida = & (Join-Path $pastaDosShims 'ansible.ps1') localhost -m ansible.builtin.debug -a 'msg={{ saudacao }}' -e '{"saudacao": "oi mundo"}' 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*"msg": "hello world"*'
+            $saida | Should-BeLikeString '*"msg": "oi mundo"*'
         }
     }
 
@@ -63,16 +63,16 @@ Describe 'Shim' {
             $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible-playbook.exe') -Argumentos 'site.yml'
 
             $resultado.CodigoDeSaida | Should-Be 0 -Because $resultado.Saida
-            $resultado.Saida | Should-BeLikeString '*hello from WinPlaybook*'
+            $resultado.Saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
 
         It 'passa variáveis extras em JSON sem mudança' {
-            $argumentos = 'localhost -m ansible.builtin.debug -a "msg={{ greeting }}" -e "{\"greeting\": \"hello world\"}"'
+            $argumentos = 'localhost -m ansible.builtin.debug -a "msg={{ saudacao }}" -e "{\"saudacao\": \"oi mundo\"}"'
 
             $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible.exe') -Argumentos $argumentos
 
             $resultado.CodigoDeSaida | Should-Be 0 -Because $resultado.Saida
-            $resultado.Saida | Should-BeLikeString '*"msg": "hello world"*'
+            $resultado.Saida | Should-BeLikeString '*"msg": "oi mundo"*'
         }
 
         It 'propaga o código de saída do comando' {

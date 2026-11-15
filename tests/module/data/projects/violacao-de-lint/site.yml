@@ -1,0 +1,7 @@
+- name: Usa um nome curto de modulo
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Mostra um cumprimento
+      debug:
+        msg: oi

@@ -9,7 +9,7 @@ AfterAll {
 Describe 'ConvertTo-ArgumentoNativoLegado' {
     It 'converte <Descricao>' -ForEach @(
         @{ Descricao = 'um argumento sem caracteres especiais'; Argumento = 'site.yml'; Esperado = 'site.yml' }
-        @{ Descricao = 'aspas'; Argumento = '{"greeting": "hello world"}'; Esperado = '{\"greeting\": \"hello world\"}' }
+        @{ Descricao = 'aspas'; Argumento = '{"saudacao": "oi mundo"}'; Esperado = '{\"saudacao\": \"oi mundo\"}' }
         @{ Descricao = 'uma barra invertida antes de aspas'; Argumento = 'a\"b'; Esperado = 'a\\\"b' }
         @{ Descricao = 'uma barra invertida no fim de um argumento com espaços'; Argumento = 'C:\My Folder\'; Esperado = 'C:\My Folder\\' }
         @{ Descricao = 'uma barra invertida no fim de um argumento sem espaços'; Argumento = 'C:\Folder\'; Esperado = 'C:\Folder\' }

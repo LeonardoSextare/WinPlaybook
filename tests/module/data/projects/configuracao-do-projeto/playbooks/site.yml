@@ -1,0 +1,5 @@
+- name: Usa uma collection do collections_path do ansible.cfg
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - demo.test.cumprimenta
