@@ -10,7 +10,8 @@ Toda tarefa segue as etapas abaixo, na ordem.
 
 - Dentro da branch da tarefa, você tem autonomia total: implementar, testar,
   commitar, reescrever o histórico, enviar e abrir o PR.
-- O mantenedor revisa e faz o merge de todo PR.
+- O mantenedor revisa todo PR. O merge é dele, a não ser que ele peça para
+  você completar o PR (etapa 10).
 - A exceção é a stack: mudança ou adição de ferramenta ou dependência é
   discutida com o mantenedor antes de entrar no código.
 - Uma tarefa por vez: ao abrir o PR, reporte o resultado e espere a próxima.
@@ -121,10 +122,33 @@ Ao abrir o PR, ou ao parar numa etapa que espera o mantenedor, informe:
 - as decisões tomadas sem consulta e o motivo;
 - o que ficou pendente e o que foi notado fora do escopo.
 
+## 10. Completar o PR
+
+Só quando o mantenedor pede, como em "pode completar o PR".
+
+- Confira que todos os checks passaram e que o PR não tem conflito.
+- Faça o merge pelo próprio PR, por rebase, que é o único método que a `main`
+  aceita:
+
+  ```powershell
+  gh pr merge <número> --rebase
+  ```
+
+- Traga a `main` local para o estado novo:
+
+  ```powershell
+  git switch main
+  git pull --ff-only
+  ```
+
+- Confirme com `git log --oneline` que os commits do PR chegaram à `main` e
+  reporte ao mantenedor.
+
 ## Nunca
 
 - Commitar ou reescrever a `main`.
-- Fazer o merge de um PR.
+- Fazer o merge de um PR sem o pedido do mantenedor, ou fora do PR, com push
+  direto na `main`.
 - Pular, desativar ou enfraquecer testes, checks ou hooks para o CI passar
   (`--no-verify`, `-Skip`, apagar asserções).
 - Alterar workflows do CI para contornar uma falha.
