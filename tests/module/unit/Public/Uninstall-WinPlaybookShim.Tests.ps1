@@ -1,4 +1,4 @@
-BeforeAll {
+﻿BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 }
 
@@ -8,78 +8,78 @@ AfterAll {
 
 Describe 'Uninstall-WinPlaybookShim' {
     BeforeAll {
-        $templatePath = Join-Path $TestDrive 'template.exe'
-        Set-Content -LiteralPath $templatePath -Value 'template shim'
+        $caminhoDoModelo = Join-Path $TestDrive 'modelo.exe'
+        Set-Content -LiteralPath $caminhoDoModelo -Value 'shim modelo'
 
-        Mock Get-ConfigFolder -ModuleName WinPlaybook { $configFolder }
-        Mock Get-ShimTemplatePath -ModuleName WinPlaybook { $templatePath }
-        Mock Get-WslDistribution -ModuleName WinPlaybook { 'Ubuntu' }
-        Mock Get-WslMountRoot -ModuleName WinPlaybook { '/mnt/' }
-        Mock Get-AnsibleCommand -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
-        Mock Get-PowerShellPath -ModuleName WinPlaybook { 'C:\PowerShell\pwsh.exe' }
-        Mock Add-UserPathEntry -ModuleName WinPlaybook { }
-        Mock Remove-UserPathEntry -ModuleName WinPlaybook { }
+        Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { $pastaDeConfiguracao }
+        Mock Get-CaminhoDoModeloDeShim -ModuleName WinPlaybook { $caminhoDoModelo }
+        Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu' }
+        Mock Get-RaizDeMontagemDoWsl -ModuleName WinPlaybook { '/mnt/' }
+        Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
+        Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook { 'C:\PowerShell\pwsh.exe' }
+        Mock Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook { }
+        Mock Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook { }
     }
 
     BeforeEach {
-        $configFolder = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-        $defaultShimFolder = Join-Path $configFolder 'bin'
+        $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
     }
 
-    Context 'when the shims are in the default folder' {
+    Context 'quando os shims estão na pasta padrão' {
         BeforeEach {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
         }
 
-        It 'removes the shim folder' {
+        It 'apaga a pasta dos shims' {
             Uninstall-WinPlaybookShim
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
 
-        It 'removes the shim folder from the user Path' {
+        It 'tira a pasta dos shims do Path do usuário' {
             Uninstall-WinPlaybookShim
 
-            Should-Invoke Remove-UserPathEntry -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Folder -eq $defaultShimFolder
+            Should-Invoke Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Pasta -eq $pastaPadraoDosShims
             }
         }
 
-        It 'removes the settings and the config folder' {
+        It 'apaga a configuração e a pasta de configuração' {
             Uninstall-WinPlaybookShim
 
-            Test-Path -LiteralPath $configFolder | Should-BeFalse
+            Test-Path -LiteralPath $pastaDeConfiguracao | Should-BeFalse
         }
     }
 
-    Context 'when the shims are in a chosen folder' {
+    Context 'quando os shims estão numa pasta escolhida' {
         BeforeEach {
-            $chosenFolder = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-            Install-WinPlaybookShim -Distribution 'Ubuntu' -Path $chosenFolder | Out-Null
+            $pastaEscolhida = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu' -Path $pastaEscolhida
         }
 
-        It 'removes the WinPlaybook folder created inside it' {
+        It 'apaga a pasta WinPlaybook criada dentro dela' {
             Uninstall-WinPlaybookShim
 
-            Test-Path -LiteralPath (Join-Path $chosenFolder 'WinPlaybook') | Should-BeFalse
+            Test-Path -LiteralPath (Join-Path $pastaEscolhida 'WinPlaybook') | Should-BeFalse
         }
 
-        It 'keeps the chosen folder' {
+        It 'mantém a pasta escolhida' {
             Uninstall-WinPlaybookShim
 
-            Test-Path -LiteralPath $chosenFolder | Should-BeTrue
+            Test-Path -LiteralPath $pastaEscolhida | Should-BeTrue
         }
     }
 
-    Context 'when called with -WhatIf' {
+    Context 'quando é chamado com -WhatIf' {
         BeforeEach {
-            Install-WinPlaybookShim -Distribution 'Ubuntu' | Out-Null
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
         }
 
-        It 'keeps the shims' {
+        It 'mantém os shims' {
             Uninstall-WinPlaybookShim -WhatIf
 
-            Test-Path -LiteralPath $defaultShimFolder | Should-BeTrue
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeTrue
         }
     }
 }

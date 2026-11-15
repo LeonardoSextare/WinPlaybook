@@ -1,47 +1,47 @@
-BeforeAll {
-    . (Join-Path $PSScriptRoot '../helpers/Process.ps1')
+﻿BeforeAll {
+    . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Shim.ps1')
-    $powershellPath = (Get-Process -Id $PID).Path
+    $caminhoDoPowerShell = (Get-Process -Id $PID).Path
 }
 
 Describe 'Shim' {
-    Context 'when the target prints its arguments' {
+    Context 'quando o alvo mostra os argumentos que recebeu' {
         BeforeAll {
-            $scriptPath = Join-Path $TestDrive 'print-args.ps1'
-            Set-Content -LiteralPath $scriptPath -Value '$args | ForEach-Object { "[$_]" }'
-            $shimPath = New-TestShim -Folder $TestDrive -Name 'print-args' -TargetPath $powershellPath `
-                -TargetArguments "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+            $caminhoDoScript = Join-Path $TestDrive 'mostra-argumentos.ps1'
+            Set-Content -LiteralPath $caminhoDoScript -Value '$args | ForEach-Object { "[$_]" }'
+            $caminhoDoShim = New-ShimDeTeste -Pasta $TestDrive -Nome 'mostra-argumentos' -CaminhoDoAlvo $caminhoDoPowerShell `
+                -ArgumentosDoAlvo "-NoProfile -ExecutionPolicy Bypass -File `"$caminhoDoScript`""
         }
 
-        It 'passes <Description> unchanged' -ForEach @(
-            @{ Description = 'JSON with quotes and spaces'; Arguments = '"{\"x\": \"y z\"}"'; Expected = '[{"x": "y z"}]' }
-            @{ Description = 'a percent sign'; Arguments = 'discount=50%PATH%'; Expected = '[discount=50%PATH%]' }
-            @{ Description = 'a caret'; Arguments = 'a^b'; Expected = '[a^b]' }
-            @{ Description = 'an ampersand'; Arguments = 'a&b'; Expected = '[a&b]' }
-            @{ Description = 'a path with spaces'; Arguments = '"folder with spaces\site.yml"'; Expected = '[folder with spaces\site.yml]' }
+        It 'passa <Descricao> sem mudança' -ForEach @(
+            @{ Descricao = 'JSON com aspas e espaços'; Argumentos = '"{\"x\": \"y z\"}"'; Esperado = '[{"x": "y z"}]' }
+            @{ Descricao = 'um sinal de porcentagem'; Argumentos = 'discount=50%PATH%'; Esperado = '[discount=50%PATH%]' }
+            @{ Descricao = 'um acento circunflexo'; Argumentos = 'a^b'; Esperado = '[a^b]' }
+            @{ Descricao = 'um e comercial'; Argumentos = 'a&b'; Esperado = '[a&b]' }
+            @{ Descricao = 'um caminho com espaços'; Argumentos = '"folder with spaces\site.yml"'; Esperado = '[folder with spaces\site.yml]' }
         ) {
-            $result = Invoke-CommandLine -FilePath $shimPath -ArgumentList $Arguments
+            $resultado = Invoke-LinhaDeComando -Programa $caminhoDoShim -Argumentos $Argumentos
 
-            $result.Output | Should-Be $Expected
+            $resultado.Saida | Should-Be $Esperado
         }
 
-        It 'passes several arguments in order' {
-            $result = Invoke-CommandLine -FilePath $shimPath -ArgumentList '-i inventory.yml site.yml'
+        It 'passa vários argumentos na ordem' {
+            $resultado = Invoke-LinhaDeComando -Programa $caminhoDoShim -Argumentos '-i inventory.yml site.yml'
 
-            $result.Output -split '\r?\n' | Should-BeCollection @('[-i]', '[inventory.yml]', '[site.yml]')
+            $resultado.Saida -split '\r?\n' | Should-BeCollection @('[-i]', '[inventory.yml]', '[site.yml]')
         }
     }
 
-    Context 'when the target exits with a code' {
+    Context 'quando o alvo sai com um código' {
         BeforeAll {
-            $shimPath = New-TestShim -Folder $TestDrive -Name 'exit-with' -TargetPath $powershellPath `
-                -TargetArguments '-NoProfile -Command exit 7'
+            $caminhoDoShim = New-ShimDeTeste -Pasta $TestDrive -Nome 'sai-com' -CaminhoDoAlvo $caminhoDoPowerShell `
+                -ArgumentosDoAlvo '-NoProfile -Command exit 7'
         }
 
-        It 'propagates the exit code of the target' {
-            $result = Invoke-CommandLine -FilePath $shimPath
+        It 'propaga o código de saída do alvo' {
+            $resultado = Invoke-LinhaDeComando -Programa $caminhoDoShim
 
-            $result.ExitCode | Should-Be 7
+            $resultado.CodigoDeSaida | Should-Be 7
         }
     }
 }

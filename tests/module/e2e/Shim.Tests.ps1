@@ -1,92 +1,92 @@
-BeforeAll {
-    . (Join-Path $PSScriptRoot '../helpers/Process.ps1')
+﻿BeforeAll {
+    . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
 
-    $wslDistributionName = Initialize-TestWslDistribution
+    $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
 
-    $originalLocalAppData = $env:LOCALAPPDATA
+    $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
 
-    $originalModulePath = $env:PSModulePath
-    $moduleFolder = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
-    $env:PSModulePath = $moduleFolder + [IO.Path]::PathSeparator + $env:PSModulePath
-    Import-Module (Join-Path $moduleFolder 'WinPlaybook/WinPlaybook.psd1') -Force
+    $psModulePathOriginal = $env:PSModulePath
+    $pastaDosModulos = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
+    $env:PSModulePath = $pastaDosModulos + [IO.Path]::PathSeparator + $env:PSModulePath
+    Import-Module (Join-Path $pastaDosModulos 'WinPlaybook/WinPlaybook.psd1') -Force
 
-    $windowsToolFolder = Join-Path $TestDrive 'windows-tools'
-    New-Item -ItemType File -Path (Join-Path $windowsToolFolder 'ansible-windows.exe') -Force | Out-Null
-    $originalPath = $env:Path
-    $env:Path = $windowsToolFolder + [IO.Path]::PathSeparator + $env:Path
+    $pastaDeProgramasDoWindows = Join-Path $TestDrive 'programas-do-windows'
+    $null = New-Item -ItemType File -Path (Join-Path $pastaDeProgramasDoWindows 'ansible-windows.exe') -Force
+    $pathOriginal = $env:Path
+    $env:Path = $pastaDeProgramasDoWindows + [IO.Path]::PathSeparator + $env:Path
 
-    $shimFolder = Join-Path $TestDrive 'shims'
-    New-Item -ItemType Directory -Path $shimFolder | Out-Null
-    $shimParameters = @{ Folder = $shimFolder; PowerShellPath = (Get-Process -Id $PID).Path; Distribution = $wslDistributionName }
-    InModuleScope WinPlaybook -Parameters $shimParameters {
-        $mountRoot = Get-WslMountRoot -Distribution $Distribution
-        Save-Setting -Settings @{ WslDistribution = $Distribution; WslMountRoot = $mountRoot }
-        foreach ($command in Get-AnsibleCommand -Distribution $Distribution -MountRoot $mountRoot) {
-            New-CommandShim -Name $command -Folder $Folder -PowerShellPath $PowerShellPath
+    $pastaDosShims = Join-Path $TestDrive 'shims'
+    $null = New-Item -ItemType Directory -Path $pastaDosShims
+    $parametrosDosShims = @{ Pasta = $pastaDosShims; CaminhoDoPowerShell = (Get-Process -Id $PID).Path; Distribuicao = $nomeDaDistribuicao }
+    InModuleScope WinPlaybook -Parameters $parametrosDosShims {
+        $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+        Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
+        foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
+            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell
         }
     }
-    $env:Path = $originalPath
+    $env:Path = $pathOriginal
 
-    $project = Join-Path $TestDrive 'project'
-    Copy-Item (Join-Path $PSScriptRoot '../data/projects/hello') $project -Recurse
-    Push-Location $project
+    $projeto = Join-Path $TestDrive 'projeto'
+    Copy-Item (Join-Path $PSScriptRoot '../data/projects/hello') $projeto -Recurse
+    Push-Location $projeto
 }
 
 AfterAll {
     Pop-Location
     Remove-Module WinPlaybook
-    $env:PSModulePath = $originalModulePath
-    $env:LOCALAPPDATA = $originalLocalAppData
+    $env:PSModulePath = $psModulePathOriginal
+    $env:LOCALAPPDATA = $localAppDataOriginal
 }
 
 Describe 'Shim' {
-    Context 'when called from PowerShell' {
-        It 'runs the playbook' {
-            $output = & (Join-Path $shimFolder 'ansible-playbook.ps1') site.yml 2>&1 | Out-String
+    Context 'quando é chamado pelo PowerShell' {
+        It 'executa o playbook' {
+            $saida = & (Join-Path $pastaDosShims 'ansible-playbook.ps1') site.yml 2>&1 | Out-String
 
-            $LASTEXITCODE | Should-Be 0 -Because $output
-            $output | Should-BeLikeString '*hello from WinPlaybook*'
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*hello from WinPlaybook*'
         }
 
-        It 'passes JSON extra variables unchanged' {
-            $output = & (Join-Path $shimFolder 'ansible.ps1') localhost -m ansible.builtin.debug -a 'msg={{ greeting }}' -e '{"greeting": "hello world"}' 2>&1 | Out-String
+        It 'passa variáveis extras em JSON sem mudança' {
+            $saida = & (Join-Path $pastaDosShims 'ansible.ps1') localhost -m ansible.builtin.debug -a 'msg={{ greeting }}' -e '{"greeting": "hello world"}' 2>&1 | Out-String
 
-            $LASTEXITCODE | Should-Be 0 -Because $output
-            $output | Should-BeLikeString '*"msg": "hello world"*'
-        }
-    }
-
-    Context 'when called by another program' {
-        It 'runs the playbook' {
-            $result = Invoke-CommandLine -FilePath (Join-Path $shimFolder 'ansible-playbook.exe') -ArgumentList 'site.yml'
-
-            $result.ExitCode | Should-Be 0 -Because $result.Output
-            $result.Output | Should-BeLikeString '*hello from WinPlaybook*'
-        }
-
-        It 'passes JSON extra variables unchanged' {
-            $arguments = 'localhost -m ansible.builtin.debug -a "msg={{ greeting }}" -e "{\"greeting\": \"hello world\"}"'
-
-            $result = Invoke-CommandLine -FilePath (Join-Path $shimFolder 'ansible.exe') -ArgumentList $arguments
-
-            $result.ExitCode | Should-Be 0 -Because $result.Output
-            $result.Output | Should-BeLikeString '*"msg": "hello world"*'
-        }
-
-        It 'propagates the exit code of the command' {
-            $result = Invoke-CommandLine -FilePath (Join-Path $shimFolder 'ansible-playbook.exe') -ArgumentList 'missing.yml'
-
-            $result.ExitCode | Should-Be 1 -Because $result.Output
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"msg": "hello world"*'
         }
     }
 
-    Context 'when the Windows Path has an ansible program' {
-        It 'creates no shim for it' {
-            $shimNames = (Get-ChildItem -LiteralPath $shimFolder -Filter '*.ps1').BaseName
+    Context 'quando é chamado por outro programa' {
+        It 'executa o playbook' {
+            $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible-playbook.exe') -Argumentos 'site.yml'
 
-            $shimNames | Should-NotContainCollection 'ansible-windows.exe'
+            $resultado.CodigoDeSaida | Should-Be 0 -Because $resultado.Saida
+            $resultado.Saida | Should-BeLikeString '*hello from WinPlaybook*'
+        }
+
+        It 'passa variáveis extras em JSON sem mudança' {
+            $argumentos = 'localhost -m ansible.builtin.debug -a "msg={{ greeting }}" -e "{\"greeting\": \"hello world\"}"'
+
+            $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible.exe') -Argumentos $argumentos
+
+            $resultado.CodigoDeSaida | Should-Be 0 -Because $resultado.Saida
+            $resultado.Saida | Should-BeLikeString '*"msg": "hello world"*'
+        }
+
+        It 'propaga o código de saída do comando' {
+            $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible-playbook.exe') -Argumentos 'inexistente.yml'
+
+            $resultado.CodigoDeSaida | Should-Be 1 -Because $resultado.Saida
+        }
+    }
+
+    Context 'quando o Path do Windows tem um programa ansible' {
+        It 'não cria shim para ele' {
+            $nomesDosShims = (Get-ChildItem -LiteralPath $pastaDosShims -Filter '*.ps1').BaseName
+
+            $nomesDosShims | Should-NotContainCollection 'ansible-windows.exe'
         }
     }
 }

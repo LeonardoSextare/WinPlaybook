@@ -1,0 +1,122 @@
+﻿BeforeAll {
+    Import-Module (Join-Path $PSScriptRoot '../../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+}
+
+AfterAll {
+    Remove-Module WinPlaybook
+}
+
+Describe 'Invoke-ComandoNoWsl' {
+    BeforeAll {
+        $pastaDoProjeto = Join-Path $TestDrive 'projeto'
+        $null = New-Item -ItemType Directory -Path (Join-Path $pastaDoProjeto 'playbooks') -Force
+
+        Mock wsl -ModuleName WinPlaybook { $args }
+        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/' } }
+        Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
+
+        Push-Location $pastaDoProjeto
+    }
+
+    AfterAll {
+        Pop-Location
+    }
+
+    It 'executa na distribuição escolhida na instalação' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        ($argumentosDoWsl[0..1] -join ' ') | Should-Be '--distribution Ubuntu'
+    }
+
+    It 'começa na pasta atual' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        ($argumentosDoWsl[2..3] -join ' ') | Should-Be "--cd $pastaDoProjeto"
+    }
+
+    It 'executa um login shell sem interpretar os argumentos como código de shell' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        ($argumentosDoWsl[4..6] -join ' ') | Should-Be '--exec sh -lc'
+    }
+
+    It 'passa a raiz de montagem, o comando e os argumentos dele ao script do shell' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '-i', 'inventory.yml', 'site.yml' }
+
+        ($argumentosDoWsl[8..12] -join ' ') | Should-Be '/mnt/ ansible-playbook -i inventory.yml site.yml'
+    }
+
+    It 'executa um comando sem argumentos' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+        ($argumentosDoWsl[8..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be '/mnt/ ansible'
+    }
+
+    It 'converte os caminhos do Windows dos argumentos' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'D:\repo\site.yml' }
+
+        $argumentosDoWsl[-1] | Should-Be '/mnt/d/repo/site.yml'
+    }
+
+    Context 'quando a pasta atual está num drive do PowerShell' {
+        BeforeAll {
+            Push-Location 'TestDrive:/projeto/playbooks'
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'começa na pasta real do drive' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $argumentosDoWsl[3] | Should-Be (Join-Path $pastaDoProjeto 'playbooks')
+        }
+    }
+
+    Context 'quando o PowerShell passa argumentos a programas na forma legada' {
+        BeforeAll {
+            Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $true }
+        }
+
+        It 'escapa as aspas dos argumentos' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' -Argumentos '-e', '{"a": 1}' }
+
+            $argumentosDoWsl | Should-ContainCollection '{\"a\": 1}'
+        }
+    }
+
+    Context 'quando o PowerShell passa argumentos a programas na forma moderna' {
+        It 'mantém as aspas dos argumentos' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' -Argumentos '-e', '{"a": 1}' }
+
+            $argumentosDoWsl | Should-ContainCollection '{"a": 1}'
+        }
+    }
+
+    Context 'quando nenhuma distribuição foi escolhida' {
+        BeforeAll {
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null } }
+        }
+
+        It 'explica como escolher uma' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*Install-WinPlaybookShim -Distribution*'
+        }
+
+        It 'para antes de chamar o wsl' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw
+
+            Should-Invoke wsl -ModuleName WinPlaybook -Times 0 -Exactly
+        }
+    }
+
+    Context 'quando o WSL não está instalado' {
+        BeforeAll {
+            Mock Get-Command -ModuleName WinPlaybook -ParameterFilter { $Name -eq 'wsl' } { }
+        }
+
+        It 'explica como instalar o WSL' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage 'O WSL não foi encontrado*wsl --install*'
+        }
+    }
+}

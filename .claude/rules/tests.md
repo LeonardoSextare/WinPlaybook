@@ -43,7 +43,7 @@ mantenedor antes de virar padrão.
 - Arquivo `<Assunto>.Tests.ps1` em PascalCase; para teste unitário, o assunto é
   o nome da função.
 - Cada arquivo é autossuficiente: a preparação fica no `BeforeAll` do próprio
-  arquivo (inclusive `Initialize-TestWslDistribution`, que reaproveita a
+  arquivo (inclusive `Initialize-DistribuicaoWslDeTeste`, que reaproveita a
   distribuição já preparada).
 - Nada solto fora dos blocos: preparação em `BeforeAll`, dados que geram testes
   em `BeforeDiscovery`.
@@ -74,17 +74,17 @@ mantenedor antes de virar padrão.
 
 - Usam o `module/WinPlaybook/bin/shim.exe` baixado por `scripts/Save-Shim.ps1`
   (o `setup.ps1` chama); o teste não baixa nada.
-- Chamam o `.exe` como um programa externo, com `Invoke-CommandLine` de
-  `tests/helpers/Process.ps1` (linha de comando em texto bruto via
+- Chamam o `.exe` como um programa externo, com `Invoke-LinhaDeComando` de
+  `tests/helpers/Processo.ps1` (linha de comando em texto bruto via
   `Start-Process`), nunca `&`, que no 5.1 altera aspas antes de chegar ao shim.
 
 ## Variáveis de ambiente nos testes
 
-- Nunca no `Path` real: as funções recebem `-VariableName`, e o teste usa
+- Nunca no `Path` real: as funções recebem `-NomeDaVariavel`, e o teste usa
   uma variável descartável `WINPLAYBOOK_TEST_<guid>` (helpers de
-  `tests/helpers/Environment.ps1`).
-- `Clear-TestVariable` no `BeforeAll` e no `AfterAll` apaga as sobras de
-  execuções interrompidas; `Remove-TestVariable` no `AfterEach` apaga a do
+  `tests/helpers/Ambiente.ps1`).
+- `Clear-VariavelDeTeste` no `BeforeAll` e no `AfterAll` apaga as sobras de
+  execuções interrompidas; `Remove-VariavelDeTeste` no `AfterEach` apaga a do
   teste.
 - O `Path` real só é alterado em máquina descartável (CI, Windows Sandbox).
 
@@ -104,7 +104,7 @@ mantenedor antes de virar padrão.
 ## Testes e2e
 
 - Usam uma distro WSL só de testes, nunca as do desenvolvedor:
-  `Initialize-TestWslDistribution` (`tests/helpers/Wsl.ps1`) no `BeforeAll`
+  `Initialize-DistribuicaoWslDeTeste` (`tests/helpers/Wsl.ps1`) no `BeforeAll`
   cria ou reaproveita a `WinPlaybookTest` e devolve o nome. No CI, a action
   `Vampire/setup-wsl` instala a distro, e a variável
   `WINPLAYBOOK_TEST_WSL_DISTRIBUTION` do job passa o nome dela à action e aos
@@ -112,7 +112,7 @@ mantenedor antes de virar padrão.
   primeira vez, com internet; os testes em si não usam internet.
 - Usam uma configuração no `$TestDrive`: o teste troca o `$env:LOCALAPPDATA`
   por uma pasta no `$TestDrive`, grava ali a distro de testes com
-  `Save-Setting` e restaura o valor original no `AfterAll`. Sem isso, o teste
+  `Save-Configuracao` e restaura o valor original no `AfterAll`. Sem isso, o teste
   leria e alteraria a configuração do desenvolvedor.
 - Chamam o módulo como o usuário, a partir de uma cópia do projeto no
   `$TestDrive` (`Push-Location`/`Pop-Location`), e verificam saída e
