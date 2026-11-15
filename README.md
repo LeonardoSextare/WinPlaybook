@@ -1,21 +1,21 @@
 # WinPlaybook
 
-Use Ansible on Windows as if it were installed locally.
+Use o Ansible no Windows como se ele estivesse instalado localmente.
 
-WinPlaybook runs the Ansible command-line tools in a WSL distribution and puts
-`ansible-playbook`, `ansible-lint`, and the other Ansible commands on your
-Windows `PATH`, where your terminal and tools like the VS Code Ansible extension
-can use them.
+O WinPlaybook executa as ferramentas de linha de comando do Ansible numa
+distribuição WSL e coloca o `ansible-playbook`, o `ansible-lint` e os outros
+comandos do Ansible no `PATH` do Windows, onde o terminal e ferramentas como a
+extensão Ansible do VS Code podem usá-los.
 
-> **Status:** early development. The project is at version 0, so any release
-> can bring breaking changes.
+> **Status:** em desenvolvimento inicial. O projeto está na versão 0, então
+> qualquer release pode trazer breaking changes.
 
-## Requirements
+## Requisitos
 
-- Windows 10 or 11
-- Windows PowerShell 5.1 or PowerShell 7.4 or later
-- WSL, with a distribution that has Ansible installed
+- Windows 10 ou 11
+- Windows PowerShell 5.1 ou PowerShell 7.4 em diante
+- WSL, com uma distribuição que tenha o Ansible instalado
 
-## License
+## Licença
 
 [MIT](LICENSE)
