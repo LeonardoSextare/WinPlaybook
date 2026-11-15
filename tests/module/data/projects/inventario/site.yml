@@ -1,0 +1,7 @@
+- name: Usa os hosts do grupo servidores
+  hosts: servidores
+  gather_facts: false
+  tasks:
+    - name: Mostra a mensagem e o ambiente
+      ansible.builtin.debug:
+        msg: "{{ mensagem | default('sem mensagem') }} em {{ ambiente }}"

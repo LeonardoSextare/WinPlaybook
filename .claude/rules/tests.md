@@ -124,6 +124,21 @@ mantenedor antes de virar padrão.
 - Argumentos com aspas, como JSON, são testados de ponta a ponta: só o
   `wsl.exe` real mostra o que o PowerShell 5.1 faz com eles.
 
+## Comparação com o Ansible nativo
+
+- O `e2e/ComportamentoNativo.Tests.ps1` confere que o WinPlaybook entrega o
+  mesmo que o Ansible instalado no Linux. Cada cenário roda direto na distro
+  de testes, com o projeto copiado para o disco do Linux, e pelos shims,
+  chamados pelo PowerShell e por outro programa.
+- O teste compara o código de saída, a saída, os erros e os arquivos que
+  ficam no projeto, com a pasta do projeto trocada por `<projeto>`. O Ansible
+  é o mesmo dos dois lados, então qualquer diferença vem do WinPlaybook.
+- O lado nativo usa o `tests/helpers/AnsibleNativo.ps1`: a cópia para o disco
+  do Linux tem as permissões de um projeto criado lá, e o comando roda num
+  login shell, sem que um shell interprete os argumentos.
+- Um comportamento do Ansible que o WinPlaybook passa a reproduzir entra como
+  cenário nesse arquivo, no mesmo commit da mudança.
+
 ## Execução
 
 - `Invoke-Pester -Path tests/<camada> -Output Detailed`, ou `tests` para todas
