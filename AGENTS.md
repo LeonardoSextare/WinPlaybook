@@ -108,6 +108,11 @@ Os comandos rodam na raiz do repositório, no PowerShell 7.
 
 As regras detalhadas estão em [.claude/rules/code.md](.claude/rules/code.md).
 
+As armadilhas ficam em [.claude/rules/armadilhas.md](.claude/rules/armadilhas.md).
+São comportamentos do PowerShell, do Windows e das ferramentas que já causaram
+bugs. Cada uma vem com a forma de evitá-la e com um teste que impede que ela
+volte.
+
 ## Testes
 
 Os testes usam o Pester 6 e ficam em `tests/`, em três camadas, que diferem
