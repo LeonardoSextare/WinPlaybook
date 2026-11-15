@@ -1,0 +1,28 @@
+name: Instala as dependências de teste
+description: Salva os módulos do requirements.psd1 para o PowerShell 7 e para o Windows PowerShell 5.1.
+
+runs:
+  using: composite
+  steps:
+    - name: Instala as dependências de teste
+      shell: pwsh
+      run: |
+        $requisitos = Import-PowerShellDataFile -LiteralPath requirements.psd1
+        $pastaDeDocumentos = [Environment]::GetFolderPath('MyDocuments')
+        $pastaDosModulosDoPowerShell7 = 'PowerShell\Modules'
+        $pastaDosModulosDoWindowsPowerShell = 'WindowsPowerShell\Modules'
+
+        foreach ($pastaDosModulos in $pastaDosModulosDoPowerShell7, $pastaDosModulosDoWindowsPowerShell) {
+            $Path = New-Item -ItemType Directory -Path (Join-Path $pastaDeDocumentos $pastaDosModulos) -Force
+            foreach ($nome in $requisitos.Keys) {
+                $parametros = @{
+                    Name            = $nome
+                    Version         = $requisitos[$nome].versao
+                    Repository      = $requisitos[$nome].repositorio
+                    Path            = $Path
+                    TrustRepository = $true
+                    Quiet           = $true
+                }
+                Save-PSResource @parametros
+            }
+        }

@@ -191,7 +191,7 @@ Particularidades do projeto:
   então todo commit do PR chega à `main`. Correções de algo que o próprio PR
   introduziu, como um typo num commit anterior, são fundidas a esse commit
   antes do merge, e não viram um commit `fix` separado.
-- **Conferência no CI:** o check "Commit titles" roda o
+- **Conferência no CI:** o check "Títulos dos commits" roda o
   `scripts/Test-TituloDeCommit.ps1` em todo PR e recusa título fora do
   formato, com escopo, com tipo desconhecido ou com descrição que começa com
   maiúscula, termina com ponto ou passa de 72 caracteres. Um commit fora da
