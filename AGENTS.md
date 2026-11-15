@@ -208,4 +208,4 @@ PATCH. Enquanto o projeto está abaixo da 1.0.0, uma breaking change também
 gera MINOR.
 
 Quando há versão nova, o release publica o módulo na PowerShell Gallery e cria
-o release no GitHub, com as notas geradas pelo git-cliff.
+o release no GitHub, com as notas geradas pelo git-cliff, em português.
