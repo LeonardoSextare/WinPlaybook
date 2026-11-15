@@ -80,6 +80,7 @@ Os comandos rodam na raiz do repositório, no PowerShell 7.
 | Rodar uma camada de testes                      | `Invoke-Pester -Path tests/<camada> -Output Detailed`                                  |
 | Rodar todos os testes                           | `Invoke-Pester -Path tests -Output Detailed`                                           |
 | Rodar os testes no Windows PowerShell 5.1       | `powershell -NoProfile -Command "Invoke-Pester -Path tests/<camada> -Output Detailed"` |
+| Conferir os títulos dos commits da branch       | `./scripts/Test-TituloDeCommit.ps1`                                                    |
 | Ver a documentação de um idioma, com hot reload | `uvx zensical serve -f docs/zensical.pt-br.toml`                                       |
 | Ver o site completo, com o seletor de idioma    | `./scripts/dev/docs.ps1`                                                               |
 
@@ -173,6 +174,9 @@ Os commits seguem o [Conventional Commits](https://www.conventionalcommits.org/)
 e o git-cliff gera as versões e as notas de release a partir deles.
 Particularidades do projeto:
 
+- **Tipos:** `feat`, `fix`, `perf`, `refactor`, `docs`, `style`, `test`,
+  `build`, `ci`, `chore` e `revert`, com `!` depois do tipo numa breaking
+  change (`feat!: ...`).
 - **Sem escopo:** `fix: ...`, nunca `fix(shim): ...`.
 - **Descrição em português:** começa com um verbo no presente e em
   minúscula, sem ponto final e com até 72 caracteres, como em
@@ -187,6 +191,11 @@ Particularidades do projeto:
   então todo commit do PR chega à `main`. Correções de algo que o próprio PR
   introduziu, como um typo num commit anterior, são fundidas a esse commit
   antes do merge, e não viram um commit `fix` separado.
+- **Conferência no CI:** o check "Commit titles" roda o
+  `scripts/Test-TituloDeCommit.ps1` em todo PR e recusa título fora do
+  formato, com escopo, com tipo desconhecido ou com descrição que começa com
+  maiúscula, termina com ponto ou passa de 72 caracteres. Um commit fora da
+  convenção sumiria do changelog sem aviso.
 
 ## Versionamento e releases
 

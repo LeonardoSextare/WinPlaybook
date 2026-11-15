@@ -81,6 +81,8 @@ Antes de abrir o PR:
 
 - Confira com `git log --oneline origin/main..HEAD` que cada commit é uma
   mudança completa, com uma mensagem que faça sentido no changelog.
+- Confira os títulos com `./scripts/Test-TituloDeCommit.ps1`, o mesmo check
+  que o CI roda no PR.
 - Depois de reescrever o histórico de uma branch já enviada, use
   `git push --force-with-lease`. Nunca use `--force`.
 
