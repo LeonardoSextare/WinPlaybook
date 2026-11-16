@@ -36,35 +36,35 @@ por inteiro.
 O projeto usa as ferramentas abaixo. Qualquer mudança ou adição na stack é
 discutida antes de entrar no projeto.
 
-| Item               | Uso                         | Versão                                   |
-| ------------------ | --------------------------- | ---------------------------------------- |
-| Windows            | Sistema operacional         | 10 ou 11                                 |
-| PowerShell         | Módulo e scripts            | 7.4 ou mais recente                      |
-| Windows PowerShell | Módulo                      | 5.1                                      |
-| WSL                | Execução do Ansible         | Mais recente                             |
-| Pester             | Testes                      | 6                                        |
-| Zensical           | Site de documentação        | Mais recente                             |
-| uv                 | Execução do Zensical        | 0.11.14 ou mais recente                  |
-| git                | Controle de versão          | Mais recente                             |
-| git-cliff          | Versões e notas de release  | Mais recente                             |
-| GitHub Actions     | CI e releases               | Runners `windows-2025` e `ubuntu-latest` |
-| Renovate           | Atualização de dependências | Mais recente                             |
+| Item                | Uso                         | Versão                                   |
+| ------------------- | --------------------------- | ---------------------------------------- |
+| Windows             | Sistema operacional         | 10 ou 11                                 |
+| PowerShell          | Módulo e scripts            | 7.4 ou mais recente                      |
+| Windows PowerShell  | Módulo                      | 5.1                                      |
+| WSL                 | Execução do Ansible         | Mais recente                             |
+| C# (.NET Framework) | Executável dos shims        | O compilador que vem no Windows (4.x)    |
+| Pester              | Testes                      | 6                                        |
+| Zensical            | Site de documentação        | Mais recente                             |
+| uv                  | Execução do Zensical        | 0.11.14 ou mais recente                  |
+| git                 | Controle de versão          | Mais recente                             |
+| git-cliff           | Versões e notas de release  | Mais recente                             |
+| GitHub Actions      | CI e releases               | Runners `windows-2025` e `ubuntu-latest` |
+| Renovate            | Atualização de dependências | Mais recente                             |
 
 ## Estrutura do repositório
 
-| Caminho                | Conteúdo                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `module/WinPlaybook/`  | O módulo publicado: manifesto, `.psm1` e as funções em `Public/` e `Private/` |
-| `module/shim.psd1`     | A versão e o hash do `shim.exe` empacotado com o módulo                       |
-| `tests/`               | Os testes do módulo, separados por camada                                     |
-| `scripts/`             | Scripts do CI e do release, como baixar o `shim.exe` e montar o pacote        |
-| `scripts/dev/`         | Scripts de desenvolvimento: preparação do ambiente e preview da documentação  |
-| `docs/`                | O site de documentação, em português e inglês                                 |
-| `.github/`             | Os workflows do CI e as actions locais                                        |
-| `.claude/`             | Instruções específicas para o Claude Code                                     |
-| `requirements.psd1`    | Os módulos PowerShell usados no desenvolvimento, como o Pester                |
-| `cliff.toml`           | A configuração do git-cliff, que gera versões e notas de release              |
-| `renovate.json`        | A configuração do Renovate, que atualiza as dependências                      |
+| Caminho               | Conteúdo                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `module/WinPlaybook/` | O módulo publicado: manifesto, `.psm1`, as funções em `Public/` e `Private/` e o `Shim.cs` |
+| `tests/`              | Os testes do módulo, separados por camada                                                  |
+| `scripts/`            | Scripts do CI e do release, como montar o pacote e conferir os commits                     |
+| `scripts/dev/`        | Scripts de desenvolvimento: preparação do ambiente e preview da documentação               |
+| `docs/`               | O site de documentação, em português e inglês                                              |
+| `.github/`            | Os workflows do CI e as actions locais                                                     |
+| `.claude/`            | Instruções específicas para o Claude Code                                                  |
+| `requirements.psd1`   | Os módulos PowerShell usados no desenvolvimento, como o Pester                             |
+| `cliff.toml`          | A configuração do git-cliff, que gera versões e notas de release                           |
+| `renovate.json`       | A configuração do Renovate, que atualiza as dependências                                   |
 
 ## Ambiente de desenvolvimento
 
@@ -125,8 +125,8 @@ no quanto do sistema real participa do teste.
   testada é mockado, então os testes são rápidos e não tocam o sistema. Cada
   função do módulo tem teste unitário, inclusive as privadas.
 - `integration/`: o código do WinPlaybook com outros sistemas de verdade,
-  como o sistema operacional, o sistema de arquivos ou o `shim.exe`. Os mocks
-  ficam só para sistemas externos que são caros de testar.
+  como o sistema operacional, o sistema de arquivos ou o executável dos shims.
+  Os mocks ficam só para sistemas externos que são caros de testar.
 - `e2e/`: o sistema completo, de ponta a ponta, como o usuário usaria de
   verdade. Nada é mockado, e é aqui que ficam os testes caros. Eles rodam
   numa distribuição WSL só de testes, para não mexer nas do desenvolvedor.

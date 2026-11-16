@@ -3,6 +3,7 @@
     CaminhoNaoAbsoluto         = 'The path ''{0}'' is not an absolute Windows path.'
     ComandoAusenteNoWsl        = 'WinPlaybook: the command {0} is missing in the WSL distribution. Run Install-WinPlaybook to update the commands.'
     ComandosNaoListados        = 'Could not list the commands of the WSL distribution {0} (wsl exit code: {1}).'
+    CompiladorNaoEncontrado    = 'The .NET Framework C# compiler is not in {0}. WinPlaybook compiles the .exe shims with it. Install .NET Framework 4.8 (https://dotnet.microsoft.com/download/dotnet-framework/net48) and run Install-WinPlaybook again.'
     DesinstalarWinPlaybook     = 'Delete the WSL distribution {0}, with everything in it, and the command shims in {1}'
     DistribuicaoNaoCriada      = 'Could not create the WSL distribution {0}. Check the internet connection and whether WSL is up to date (wsl --update). WSL said: {1}'
     DistribuicaoNaoEscolhida   = 'WinPlaybook is not installed. Install it with: Install-WinPlaybook'
@@ -15,7 +16,7 @@
     PastaDeOutroDono           = 'The folder {0} already exists and wasn''t created by WinPlaybook. Choose another -Path, or delete the folder.'
     PowerShell7NaoInstalado    = 'PowerShell 7 (pwsh) is not installed. Install it with: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Could not find where the WSL distribution {0} mounts the Windows drives (wsl exit code: {1}).'
-    ShimNaoEmpacotado          = 'shim.exe is not in {0}. Reinstall WinPlaybook, or run scripts/Save-Shim.ps1 in a clone of the repository.'
+    ShimNaoCompilado           = 'Could not compile the shim executable. The compiler said: {0}'
     WslNaoEncontrado           = 'WSL was not found. WinPlaybook runs Ansible in a WSL distribution: install WSL with wsl --install and try again.'
     WslNaoInstalado            = 'WSL is not installed. Install it with: wsl --install --no-distribution (it asks for administrator permission and may ask you to restart Windows), and run Install-WinPlaybook again.'
 }

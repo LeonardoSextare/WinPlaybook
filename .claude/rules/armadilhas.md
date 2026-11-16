@@ -85,12 +85,15 @@ bugs, e como o código lida com cada um.
 
 ## Shims
 
-- Aberto com `-File`, o PowerShell trata como parâmetro do script o argumento
-  que começa com `-` e tem `:`. O PowerShell 7 separa
-  `--inventory=C:\hosts.yml` em `--inventory=C` e `\hosts.yml`, e as duas
-  edições separam `-i:valor`. O `Invoke-WinPlaybook` pega os argumentos do
-  processo (`Get-ArgumentoDoShim`), que chegam intactos, quando o shim foi
-  aberto pelo `.exe`.
+- Aberto com `-File`, o PowerShell interpreta os argumentos do script que
+  começam com `-`. O PowerShell 7 separa `--inventory=C:\hosts.yml` em
+  `--inventory=C` e `\hosts.yml`, as duas edições separam `-i:valor`, e o 5.1
+  recusa um argumento que é só `-` (`ansible-vault decrypt --output - -`)
+  antes de o script rodar, mesmo depois de um `--`. O executável dos shims
+  (`Shim.cs`) passa cada argumento como `x` seguido do texto em Base64, que o
+  `-File` não interpreta, e o `exe\<comando>.ps1` decodifica. O
+  `tests/module/integration/Shim.Tests.ps1` confere esses argumentos nas duas
+  edições.
 - Chamado pelo `.exe` com `-File`, o PowerShell sai com 0 mesmo quando o
   comando falha. O `.ps1` gerado para cada shim termina com
   `exit $LASTEXITCODE`.
@@ -135,7 +138,7 @@ bugs, e como o código lida com cada um.
 
 - O `$PSScriptRoot` de uma função depende do arquivo onde ela está, e o pacote
   publicado junta as funções num `.psm1` só. Para achar um arquivo do módulo,
-  como o `bin\shim.exe`, parta da pasta do módulo
+  como o `Shim.cs`, parta da pasta do módulo
   (`$ExecutionContext.SessionState.Module.ModuleBase`), nunca do
   `$PSScriptRoot`.
 

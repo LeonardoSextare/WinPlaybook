@@ -7,7 +7,6 @@ on:
     paths:
       - module/**
       - tests/module/**
-      - scripts/Save-Shim.ps1
       - scripts/Build-PacoteDoModulo.ps1
       - requirements.psd1
       - .github/actions/**
@@ -75,9 +74,6 @@ jobs:
 
       - name: Instala as dependências de teste
         uses: ./.github/actions/instala-dependencias-de-teste
-
-      - name: Baixa o shim
-        run: ./scripts/Save-Shim.ps1
 
       - name: Roda os testes (PowerShell 7)
         id: testes-powershell-7

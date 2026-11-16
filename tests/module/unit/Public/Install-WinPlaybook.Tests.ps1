@@ -9,11 +9,8 @@ AfterAll {
 
 Describe 'Install-WinPlaybook' {
     BeforeAll {
-        $caminhoDoModelo = Join-Path $TestDrive 'modelo.exe'
-        Set-Content -LiteralPath $caminhoDoModelo -Value 'shim modelo'
-
         Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { $pastaDeConfiguracao }
-        Mock Get-CaminhoDoModeloDeShim -ModuleName WinPlaybook { $caminhoDoModelo }
+        Mock New-ExecutavelDeShim -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'shim modelo' -Force }
         Mock Test-WslInstalado -ModuleName WinPlaybook { $true }
         Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu' }
         Mock New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
@@ -89,6 +86,20 @@ Describe 'Install-WinPlaybook' {
             $null = Install-WinPlaybook
 
             Get-Content -LiteralPath (Join-Path $pastaPadraoDosShims 'ansible.ps1') | Should-BeLikeString "Import-Module '$pastaDoModulo'*"
+        }
+
+        It 'cria os .exe com o executável compilado na instalação' {
+            $null = Install-WinPlaybook
+
+            Get-Content -LiteralPath (Join-Path $pastaPadraoDosShims 'ansible.exe') | Should-Be 'shim modelo'
+        }
+
+        It 'apaga o executável compilado depois de copiá-lo' {
+            $null = Install-WinPlaybook
+
+            Should-Invoke New-ExecutavelDeShim -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                -not (Test-Path -LiteralPath (Split-Path -Path $Caminho -Parent))
+            }
         }
 
         It 'coloca a pasta dos shims no Path do usuário' {
@@ -172,6 +183,19 @@ Describe 'Install-WinPlaybook' {
 
         It 'falha sem criar a distribuição nem a pasta dos shims' {
             { Install-WinPlaybook } | Should-Throw
+
+            Should-Invoke New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 0 -Exactly
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
+        }
+    }
+
+    Context 'quando o executável dos shims não compila' {
+        BeforeAll {
+            Mock New-ExecutavelDeShim -ModuleName WinPlaybook { throw 'sem compilador' }
+        }
+
+        It 'falha antes de criar a distribuição e a pasta dos shims' {
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem compilador*'
 
             Should-Invoke New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 0 -Exactly
             Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse

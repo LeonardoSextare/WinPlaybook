@@ -28,7 +28,8 @@ mantenedor antes de virar padrão.
     `WINPLAYBOOK_TEST_`); o resto (o `wsl.exe`, o `Path` real) via `Mock`.
     Espelha as pastas do módulo: `unit/Public/` e `unit/Private/<assunto>/`,
     para o teste de cada função ficar no mesmo caminho dela
-  - `tests/integration/`: o `shim.exe` empacotado, executado de verdade
+  - `tests/integration/`: o executável dos shims, compilado e executado de
+    verdade
   - `tests/e2e/`: o módulo e uma distribuição WSL de verdade, como o usuário
     usa
 - `tests/helpers/<Assunto>.ps1`: funções reutilizáveis, carregadas com
@@ -73,8 +74,10 @@ mantenedor antes de virar padrão.
 
 ## Shim nos testes
 
-- Usam o `module/WinPlaybook/bin/shim.exe` baixado por `scripts/Save-Shim.ps1`
-  (o `setup.ps1` chama); o teste não baixa nada.
+- Compilam o executável dos shims com o `New-ExecutavelDeShim` do módulo,
+  pelo `New-ExecutavelDeShimDeTeste` de `tests/helpers/Shim.ps1`, como o
+  `Install-WinPlaybook` faz. Os testes de integração usam o módulo falso do
+  `New-ModuloFalso`, que responde sem o WSL.
 - Chamam o `.exe` como um programa externo, com `Invoke-LinhaDeComando` de
   `tests/helpers/Processo.ps1` (linha de comando em texto bruto via
   `Start-Process`), nunca `&`, que no 5.1 altera aspas antes de chegar ao shim.
@@ -155,4 +158,4 @@ mantenedor antes de virar padrão.
   só no pacote, que é o que o usuário recebe. Para isso, o job troca o
   `module/WinPlaybook` pelo pacote do `scripts/Build-PacoteDoModulo.ps1`. Um
   teste que depende de um arquivo do módulo além do manifesto, dos
-  `Mensagens.psd1` e do `bin\shim.exe` quebra no pacote.
+  `Mensagens.psd1` e do `Shim.cs` quebra no pacote.

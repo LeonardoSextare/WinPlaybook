@@ -1,60 +1,65 @@
-﻿function Get-CaminhoDoShimEmpacotado {
+﻿function New-ExecutavelDeShimDeTeste {
     <#
     .SYNOPSIS
-    Devolve o caminho do shim.exe que o scripts/Save-Shim.ps1 baixa para a pasta do módulo.
+    Compila o executável dos shims com o New-ExecutavelDeShim do módulo e devolve o caminho dele.
 
-    .EXAMPLE
-    Get-CaminhoDoShimEmpacotado
-    #>
-    [CmdletBinding()]
-    [OutputType([string])]
-    param()
-
-    $caminhoDoShim = [IO.Path]::GetFullPath((Join-Path -Path $PSScriptRoot -ChildPath '../../../module/WinPlaybook/bin/shim.exe'))
-
-    $shimFoiBaixado = Test-Path -LiteralPath $caminhoDoShim
-    if (-not $shimFoiBaixado) {
-        throw "O shim.exe não está em $caminhoDoShim. Rode antes o scripts/Save-Shim.ps1."
-    }
-
-    return $caminhoDoShim
-}
-
-function New-ShimDeTeste {
-    <#
-    .SYNOPSIS
-    Cria um shim que executa um programa qualquer e devolve o caminho do .exe dele.
+    .DESCRIPTION
+    O módulo WinPlaybook precisa estar importado.
 
     .PARAMETER Pasta
-    A pasta onde o .exe e o .shim são criados.
-
-    .PARAMETER Nome
-    O nome do shim, sem extensão.
-
-    .PARAMETER CaminhoDoAlvo
-    O programa que o shim executa.
-
-    .PARAMETER ArgumentosDoAlvo
-    Os argumentos que o shim passa ao programa antes dos que ele recebe.
+    A pasta onde o executável é criado.
 
     .EXAMPLE
-    New-ShimDeTeste -Pasta $TestDrive -Nome 'sai-com' -CaminhoDoAlvo $caminhoDoPowerShell -ArgumentosDoAlvo '-NoProfile -Command exit 7'
+    $caminhoDoExecutavel = New-ExecutavelDeShimDeTeste -Pasta (Join-Path $TestDrive 'executavel')
     #>
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [Parameter(Mandatory)] [string] $Pasta,
-        [Parameter(Mandatory)] [string] $Nome,
-        [Parameter(Mandatory)] [string] $CaminhoDoAlvo,
-        [Parameter(Mandatory)] [string] $ArgumentosDoAlvo
+        [Parameter(Mandatory)] [string] $Pasta
     )
 
-    $caminhoDoExe = Join-Path -Path $Pasta -ChildPath "$Nome.exe"
-    Copy-Item -LiteralPath (Get-CaminhoDoShimEmpacotado) -Destination $caminhoDoExe
-    Set-Content -LiteralPath (Join-Path -Path $Pasta -ChildPath "$Nome.shim") -Value @(
-        "path = $CaminhoDoAlvo"
-        "args = $ArgumentosDoAlvo"
+    $caminhoDoExecutavel = Join-Path -Path $Pasta -ChildPath 'shim.exe'
+    InModuleScope WinPlaybook -Parameters @{ Caminho = $caminhoDoExecutavel } { New-ExecutavelDeShim -Caminho $Caminho }
+
+    return $caminhoDoExecutavel
+}
+
+function New-ModuloFalso {
+    <#
+    .SYNOPSIS
+    Cria um módulo WinPlaybook falso, para os shims rodarem sem o WSL, e devolve a pasta dele.
+
+    .DESCRIPTION
+    O Invoke-WinPlaybook falso responde conforme o comando: mostra-argumentos escreve cada
+    argumento entre colchetes, sai-com sai com o código do primeiro argumento, e le-a-entrada
+    escreve o que chegou pela entrada padrão. A saída é em UTF-8.
+
+    .PARAMETER Pasta
+    A pasta onde a pasta WinPlaybook do módulo falso é criada.
+
+    .EXAMPLE
+    $pastaDoModuloFalso = New-ModuloFalso -Pasta (Join-Path $TestDrive 'modulo-falso')
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)] [string] $Pasta
     )
 
-    return $caminhoDoExe
+    $pastaDoModulo = Join-Path -Path $Pasta -ChildPath 'WinPlaybook'
+    $null = New-Item -ItemType Directory -Path $pastaDoModulo -Force
+    Set-Content -LiteralPath (Join-Path -Path $pastaDoModulo -ChildPath 'WinPlaybook.psm1') -Encoding UTF8 -Value @'
+function Invoke-WinPlaybook {
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $global:LASTEXITCODE = 0
+    $argumentos = @($args | Select-Object -Skip 1)
+    switch ($args[0]) {
+        'mostra-argumentos' { $argumentos | ForEach-Object { "[$_]" } }
+        'sai-com' { $global:LASTEXITCODE = [int] $argumentos[0] }
+        'le-a-entrada' { "entrada=[$([Console]::In.ReadToEnd().Trim())]" }
+    }
+}
+'@
+
+    return $pastaDoModulo
 }

@@ -15,7 +15,8 @@
     distribuição usa um ~/.ssh próprio; rode de novo depois de criá-la.
 
     Para cada comando do Ansible, cria um .ps1, que o PowerShell executa, e um .exe, que os
-    outros programas executam, e coloca a pasta deles no Path do usuário. A pasta também é
+    outros programas executam, e coloca a pasta deles no Path do usuário. O .exe é compilado
+    na instalação pelo compilador de C# do .NET Framework, que vem no Windows. A pasta também é
     do WinPlaybook: uma nova instalação substitui tudo o que há nela. Os shims carregam o
     módulo pela pasta onde ele está instalado, então funcionam nas duas edições do
     PowerShell e acompanham as atualizações do módulo nessa pasta.
@@ -106,58 +107,67 @@
         return
     }
 
-    $pastaDaDistribuicao = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro'
-    $distribuicaoJaExistia = $distribuicao -in @(Get-DistribuicaoDoWsl)
-    if (-not $distribuicaoJaExistia) {
-        New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
-    }
-
+    $pastaDoExecutavel = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-$([guid]::NewGuid().ToString('N'))"
+    $caminhoDoExecutavel = Join-Path -Path $pastaDoExecutavel -ChildPath 'shim.exe'
     try {
-        Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh (Join-Path -Path ([Environment]::GetFolderPath('UserProfile')) -ChildPath '.ssh')
-        Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
-        $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
-        $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
-    }
-    catch {
+        New-ExecutavelDeShim -Caminho $caminhoDoExecutavel
+
+        $pastaDaDistribuicao = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro'
+        $distribuicaoJaExistia = $distribuicao -in @(Get-DistribuicaoDoWsl)
         if (-not $distribuicaoJaExistia) {
-            Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
+            New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
         }
-        throw
-    }
 
-    $caminhoDoPowerShell = $configuracao.ShimPowerShellPath
-    $edicaoFoiEscolhida = [bool] $PowerShell
-    if ($edicaoFoiEscolhida) {
-        $caminhoDoPowerShell = Get-CaminhoDoPowerShell -Edicao $PowerShell
-    }
+        try {
+            Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh (Join-Path -Path ([Environment]::GetFolderPath('UserProfile')) -ChildPath '.ssh')
+            Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
+            $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
+            $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
+        }
+        catch {
+            if (-not $distribuicaoJaExistia) {
+                Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
+            }
+            throw
+        }
 
-    $powerShellExiste = $caminhoDoPowerShell -and (Test-Path -LiteralPath $caminhoDoPowerShell)
-    if (-not $powerShellExiste) {
-        $caminhoDoPowerShell = Get-CaminhoDoPowerShell
-    }
+        $caminhoDoPowerShell = $configuracao.ShimPowerShellPath
+        $edicaoFoiEscolhida = [bool] $PowerShell
+        if ($edicaoFoiEscolhida) {
+            $caminhoDoPowerShell = Get-CaminhoDoPowerShell -Edicao $PowerShell
+        }
 
-    $pastaDoModulo = Get-PastaDoModulo
+        $powerShellExiste = $caminhoDoPowerShell -and (Test-Path -LiteralPath $caminhoDoPowerShell)
+        if (-not $powerShellExiste) {
+            $caminhoDoPowerShell = Get-CaminhoDoPowerShell
+        }
 
-    $estaMudandoDePasta = $pastaAnterior -and -not $ehAPastaAnterior
-    if ($estaMudandoDePasta) {
-        Remove-PastaDosShims -Pasta $pastaAnterior
-    }
+        $pastaDoModulo = Get-PastaDoModulo
 
-    Remove-Item -LiteralPath $pastaDosShims -Recurse -Force -ErrorAction SilentlyContinue
-    $null = New-Item -ItemType Directory -Path $pastaDosShims -Force
-    Save-Configuracao -Configuracao @{
-        ShimFolder         = $pastaDosShims
-        ShimPowerShellPath = $caminhoDoPowerShell
-        WslDistribution    = $distribuicao
-        WslMountRoot       = $raizDeMontagem
-        AnsibleVersion     = $versaoDoAnsible
-        PythonPackages     = $pacotesPython
-    }
+        $estaMudandoDePasta = $pastaAnterior -and -not $ehAPastaAnterior
+        if ($estaMudandoDePasta) {
+            Remove-PastaDosShims -Pasta $pastaAnterior
+        }
 
-    foreach ($comando in $comandos) {
-        New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell -PastaDoModulo $pastaDoModulo
+        Remove-Item -LiteralPath $pastaDosShims -Recurse -Force -ErrorAction SilentlyContinue
+        $null = New-Item -ItemType Directory -Path $pastaDosShims -Force
+        Save-Configuracao -Configuracao @{
+            ShimFolder         = $pastaDosShims
+            ShimPowerShellPath = $caminhoDoPowerShell
+            WslDistribution    = $distribuicao
+            WslMountRoot       = $raizDeMontagem
+            AnsibleVersion     = $versaoDoAnsible
+            PythonPackages     = $pacotesPython
+        }
+
+        foreach ($comando in $comandos) {
+            New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell -PastaDoModulo $pastaDoModulo -CaminhoDoExecutavel $caminhoDoExecutavel
+        }
+        Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
     }
-    Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
+    finally {
+        Remove-Item -LiteralPath $pastaDoExecutavel -Recurse -Force -ErrorAction SilentlyContinue
+    }
 
     return [pscustomobject]@{
         Folder       = $pastaDosShims

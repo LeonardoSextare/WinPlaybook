@@ -2,7 +2,7 @@
 
 <#
 .SYNOPSIS
-Prepara a pasta do módulo que é publicada: uma cópia de module/WinPlaybook com as funções num .psm1 só, o shim.exe e a versão.
+Prepara a pasta do módulo que é publicada: uma cópia de module/WinPlaybook com as funções num .psm1 só e a versão.
 
 .DESCRIPTION
 No repositório, cada função fica num arquivo próprio em Private/ e Public/. Na cópia, as
@@ -41,7 +41,6 @@ if ($moduloJaExiste) {
 
 $null = New-Item -ItemType Directory -Path $PastaDeDestino -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../module/WinPlaybook') -Destination $caminhoDoModulo -Recurse
-& (Join-Path $PSScriptRoot 'Save-Shim.ps1') -Destination (Join-Path $caminhoDoModulo 'bin')
 
 $pastasDasFuncoes = @('Private', 'Public') | ForEach-Object { Join-Path $caminhoDoModulo $_ }
 $arquivosDasFuncoes = foreach ($pasta in $pastasDasFuncoes) {

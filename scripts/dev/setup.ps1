@@ -5,9 +5,9 @@
 Confere os requisitos e instala as dependências do desenvolvimento local.
 
 .DESCRIPTION
-Confere o WSL, o uv e o git, instala os módulos do requirements.psd1 para o PowerShell 7
-e para o Windows PowerShell 5.1 e baixa o shim.exe empacotado com o módulo. Para no
-primeiro passo que falhar, com o motivo e o que fazer.
+Confere o WSL, o uv e o git e instala os módulos do requirements.psd1 para o PowerShell 7
+e para o Windows PowerShell 5.1. Para no primeiro passo que falhar, com o motivo e o que
+fazer.
 
 .EXAMPLE
 ./scripts/dev/setup.ps1
@@ -121,7 +121,6 @@ $passos = @(
     @{ Nome = 'Conferindo o git'; Acao = { Confirm-Git } }
     @{ Nome = 'Instalando as dependências do PowerShell 7'; Acao = { Install-Requisito -PastaDosModulos 'PowerShell\Modules' } }
     @{ Nome = 'Instalando as dependências do Windows PowerShell'; Acao = { Install-Requisito -PastaDosModulos 'WindowsPowerShell\Modules' } }
-    @{ Nome = 'Baixando o shim empacotado com o módulo'; Acao = { & (Join-Path $PSScriptRoot '..\Save-Shim.ps1') } }
 )
 
 for ($indice = 0; $indice -lt $passos.Count; $indice++) {

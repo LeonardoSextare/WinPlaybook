@@ -9,11 +9,8 @@ AfterAll {
 
 Describe 'Uninstall-WinPlaybook' {
     BeforeAll {
-        $caminhoDoModelo = Join-Path $TestDrive 'modelo.exe'
-        Set-Content -LiteralPath $caminhoDoModelo -Value 'shim modelo'
-
         Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { $pastaDeConfiguracao }
-        Mock Get-CaminhoDoModeloDeShim -ModuleName WinPlaybook { $caminhoDoModelo }
+        Mock New-ExecutavelDeShim -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'shim modelo' -Force }
         Mock Test-WslInstalado -ModuleName WinPlaybook { $true }
         Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'WinPlaybook' }
         Mock Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }

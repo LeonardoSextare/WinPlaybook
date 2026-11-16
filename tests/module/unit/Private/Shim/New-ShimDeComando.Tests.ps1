@@ -8,9 +8,8 @@ AfterAll {
 
 Describe 'New-ShimDeComando' {
     BeforeAll {
-        $caminhoDoModelo = Join-Path $TestDrive 'modelo.exe'
-        Set-Content -LiteralPath $caminhoDoModelo -Value 'shim modelo'
-        Mock Get-CaminhoDoModeloDeShim -ModuleName WinPlaybook { $caminhoDoModelo }
+        $caminhoDoExecutavel = Join-Path $TestDrive 'shim.exe'
+        Set-Content -LiteralPath $caminhoDoExecutavel -Value 'executável compilado'
     }
 
     Context 'quando um shim é criado' {
@@ -18,8 +17,8 @@ Describe 'New-ShimDeComando' {
             $pastaDosShims = Join-Path $TestDrive 'shims'
             $null = New-Item -ItemType Directory -Path $pastaDosShims
 
-            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims } {
-                New-ShimDeComando -Nome 'ansible-playbook' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo 'C:\Modules\WinPlaybook'
+            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims; CaminhoDoExecutavel = $caminhoDoExecutavel } {
+                New-ShimDeComando -Nome 'ansible-playbook' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo 'C:\Modules\WinPlaybook' -CaminhoDoExecutavel $CaminhoDoExecutavel
             }
         }
 
@@ -29,16 +28,16 @@ Describe 'New-ShimDeComando' {
             $conteudo | Should-Be "Import-Module 'C:\Modules\WinPlaybook' -ErrorAction Stop; `$input | WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args; exit `$LASTEXITCODE"
         }
 
-        It 'grava o script do executável sem ler a entrada padrão' {
+        It 'grava o script do executável, que decodifica os argumentos e não lê a entrada padrão' {
             $conteudo = Get-Content -LiteralPath (Join-Path $pastaDosShims 'exe/ansible-playbook.ps1')
 
-            $conteudo | Should-Be "Import-Module 'C:\Modules\WinPlaybook' -ErrorAction Stop; WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args; exit `$LASTEXITCODE"
+            $conteudo | Should-Be "Import-Module 'C:\Modules\WinPlaybook' -ErrorAction Stop; `$argumentos = @(`$args | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(`$_.Substring(1))) }); WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @argumentos; exit `$LASTEXITCODE"
         }
 
-        It 'copia o shim empacotado como o executável' {
+        It 'copia o executável compilado como o executável do comando' {
             $conteudo = Get-Content -LiteralPath (Join-Path $pastaDosShims 'ansible-playbook.exe')
 
-            $conteudo | Should-Be 'shim modelo'
+            $conteudo | Should-Be 'executável compilado'
         }
 
         It 'aponta o executável para o script dele pelo PowerShell escolhido' {
@@ -59,8 +58,8 @@ Describe 'New-ShimDeComando' {
             $pastaDosShims = Join-Path $TestDrive $nomeDaPasta
             $null = New-Item -ItemType Directory -Path $pastaDosShims
 
-            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims } {
-                New-ShimDeComando -Nome 'ansible' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo 'C:\Modules\WinPlaybook'
+            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims; CaminhoDoExecutavel = $caminhoDoExecutavel } {
+                New-ShimDeComando -Nome 'ansible' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo 'C:\Modules\WinPlaybook' -CaminhoDoExecutavel $CaminhoDoExecutavel
             }
         }
 
@@ -76,8 +75,8 @@ Describe 'New-ShimDeComando' {
             $pastaDosShims = Join-Path $TestDrive 'shims-aspas'
             $null = New-Item -ItemType Directory -Path $pastaDosShims
 
-            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims } {
-                New-ShimDeComando -Nome 'ansible' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo "C:\Users\O'Brien\Modules\WinPlaybook"
+            InModuleScope WinPlaybook -Parameters @{ Pasta = $pastaDosShims; CaminhoDoExecutavel = $caminhoDoExecutavel } {
+                New-ShimDeComando -Nome 'ansible' -Pasta $Pasta -CaminhoDoPowerShell 'C:\PowerShell\pwsh.exe' -PastaDoModulo "C:\Users\O'Brien\Modules\WinPlaybook" -CaminhoDoExecutavel $CaminhoDoExecutavel
             }
         }
 
