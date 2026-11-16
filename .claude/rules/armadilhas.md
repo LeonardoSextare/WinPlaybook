@@ -47,6 +47,11 @@ bugs, e como o código lida com cada um.
 
 - O `wsl.exe` escreve as próprias mensagens em UTF-16. Para ler a saída dele,
   defina `$env:WSL_UTF8 = '1'` e restaure o valor original no `finally`.
+- O PowerShell decodifica a saída de um programa com o
+  `[Console]::OutputEncoding`, que no Windows é a página de código OEM (850 em
+  português), e a saída em UTF-8 do Linux perde os acentos quando o PowerShell
+  a captura. O `Invoke-ComandoNoWsl` usa UTF-8 no console enquanto o `wsl`
+  roda e restaura o valor original no `finally`.
 
 ## Ansible
 

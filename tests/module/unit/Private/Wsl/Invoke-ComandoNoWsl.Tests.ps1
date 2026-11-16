@@ -100,6 +100,30 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando o console usa a página de código do Windows' {
+        BeforeAll {
+            $codificacaoOriginal = [Console]::OutputEncoding
+            [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(850)
+            Mock wsl -ModuleName WinPlaybook { [Console]::OutputEncoding.CodePage }
+        }
+
+        AfterAll {
+            [Console]::OutputEncoding = $codificacaoOriginal
+        }
+
+        It 'lê a saída do wsl em UTF-8' {
+            $paginaDeCodigo = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $paginaDeCodigo | Should-Be 65001
+        }
+
+        It 'restaura a codificação do console no fim' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            [Console]::OutputEncoding.CodePage | Should-Be 850
+        }
+    }
+
     Context 'quando nenhuma distribuição foi escolhida' {
         BeforeAll {
             Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null } }

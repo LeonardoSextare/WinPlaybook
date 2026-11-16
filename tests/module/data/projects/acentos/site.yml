@@ -1,0 +1,7 @@
+- name: Mostra acentos
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Mostra uma frase com acentos
+      ansible.builtin.debug:
+        msg: não é ação, é reação

@@ -22,6 +22,13 @@
             NoWindows = @('inexistente.yml')
         }
         @{
+            Descricao = 'a saída tem acentos'
+            Projeto   = 'acentos'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('site.yml')
+            NoWindows = @('site.yml')
+        }
+        @{
             Descricao = 'o comando mostra a versão'
             Projeto   = 'ola'
             Comando   = 'ansible'
@@ -239,7 +246,8 @@ BeforeAll {
 
         .DESCRIPTION
         Com PastaDoProjeto = DiscoDoLinux, a cópia fica no disco do Linux da distribuição, e o
-        Windows a vê pelo caminho \\wsl.localhost. Devolve um objeto com CodigoDeSaida, Saida,
+        Windows a vê pelo caminho \\wsl.localhost. Pelo PowerShell, o console usa a página de
+        código do Windows, como num terminal novo. Devolve um objeto com CodigoDeSaida, Saida,
         Erro e Arquivos, com a pasta do projeto trocada por <projeto>.
 
         .PARAMETER Cenario
@@ -274,12 +282,15 @@ BeforeAll {
 
             $ehChamadoPeloPowerShell = $Chamador -eq 'PowerShell'
             if ($ehChamadoPeloPowerShell) {
+                $codificacaoDoConsole = [Console]::OutputEncoding
+                [Console]::OutputEncoding = [Text.Encoding]::GetEncoding([Globalization.CultureInfo]::CurrentCulture.TextInfo.OEMCodePage)
                 Push-Location -LiteralPath $projeto
                 try {
                     $resultado = Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims "$($Cenario.Comando).ps1") -Argumentos $argumentos
                 }
                 finally {
                     Pop-Location
+                    [Console]::OutputEncoding = $codificacaoDoConsole
                 }
             }
             else {
