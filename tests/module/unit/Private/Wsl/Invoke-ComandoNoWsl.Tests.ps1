@@ -58,6 +58,12 @@ Describe 'Invoke-ComandoNoWsl' {
         $argumentosDoWsl[-1] | Should-Be '/mnt/d/repo/site.yml'
     }
 
+    It 'converte os caminhos do disco do Linux da distribuição escolhida' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '\\wsl.localhost\Ubuntu\home\eu\site.yml' }
+
+        $argumentosDoWsl[-1] | Should-Be '/home/eu/site.yml'
+    }
+
     Context 'quando a pasta atual está num drive do PowerShell' {
         BeforeAll {
             Push-Location 'TestDrive:/projeto/playbooks'
