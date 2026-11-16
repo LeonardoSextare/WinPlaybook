@@ -7,25 +7,35 @@
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
 
-    $psModulePathOriginal = $env:PSModulePath
-    $pastaDosModulos = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
-    $env:PSModulePath = $pastaDosModulos + [IO.Path]::PathSeparator + $env:PSModulePath
-    Import-Module (Join-Path $pastaDosModulos 'WinPlaybook/WinPlaybook.psd1') -Force
+    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $pastaDeProgramasDoWindows = Join-Path $TestDrive 'programas-do-windows'
     $null = New-Item -ItemType File -Path (Join-Path $pastaDeProgramasDoWindows 'ansible-windows.exe') -Force
     $pathOriginal = $env:Path
     $env:Path = $pastaDeProgramasDoWindows + [IO.Path]::PathSeparator + $env:Path
 
+    $outraEdicao = 'Desktop'
+    if ($PSVersionTable.PSEdition -eq 'Desktop') {
+        $outraEdicao = 'Core'
+    }
+
     $pastaDosShims = Join-Path $TestDrive 'shims'
-    $null = New-Item -ItemType Directory -Path $pastaDosShims
-    $parametrosDosShims = @{ Pasta = $pastaDosShims; CaminhoDoPowerShell = (Get-Process -Id $PID).Path; Distribuicao = $nomeDaDistribuicao }
+    $pastaDosShimsDaOutraEdicao = Join-Path $TestDrive 'shims-da-outra-edicao'
+    $null = New-Item -ItemType Directory -Path $pastaDosShims, $pastaDosShimsDaOutraEdicao
+    $parametrosDosShims = @{
+        Pasta               = $pastaDosShims
+        PastaDaOutraEdicao  = $pastaDosShimsDaOutraEdicao
+        OutraEdicao         = $outraEdicao
+        CaminhoDoPowerShell = (Get-Process -Id $PID).Path
+        Distribuicao        = $nomeDaDistribuicao
+    }
     InModuleScope WinPlaybook -Parameters $parametrosDosShims {
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
         foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
-            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell
+            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo)
         }
+        New-ShimDeComando -Nome 'ansible-playbook' -Pasta $PastaDaOutraEdicao -CaminhoDoPowerShell (Get-CaminhoDoPowerShell -Edicao $OutraEdicao) -PastaDoModulo (Get-PastaDoModulo)
     }
     $env:Path = $pathOriginal
 
@@ -37,7 +47,6 @@
 AfterAll {
     Pop-Location
     Remove-Module WinPlaybook
-    $env:PSModulePath = $psModulePathOriginal
     $env:LOCALAPPDATA = $localAppDataOriginal
 }
 
@@ -79,6 +88,15 @@ Describe 'Shim' {
             $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims 'ansible-playbook.exe') -Argumentos 'inexistente.yml'
 
             $resultado.CodigoDeSaida | Should-Be 1 -Because $resultado.Saida
+        }
+    }
+
+    Context 'quando o executável abre a outra edição do PowerShell' {
+        It 'executa o playbook com o módulo da pasta onde ele está' {
+            $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShimsDaOutraEdicao 'ansible-playbook.exe') -Argumentos 'site.yml'
+
+            $resultado.CodigoDeSaida | Should-Be 0 -Because $resultado.Erro
+            $resultado.Saida | Should-BeLikeString '*oi do WinPlaybook*'
         }
     }
 

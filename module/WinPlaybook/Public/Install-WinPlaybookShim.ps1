@@ -9,7 +9,10 @@
     pasta é do WinPlaybook: uma nova instalação substitui tudo o que há nela, e a
     desinstalação a apaga.
 
-    Instale de novo depois de instalar ou remover comandos do Ansible na distribuição.
+    Os shims carregam o módulo pela pasta onde ele está instalado, então funcionam nas duas
+    edições do PowerShell e acompanham as atualizações do módulo nessa pasta. Instale de
+    novo depois de instalar ou remover comandos do Ansible na distribuição, ou depois de
+    mudar o módulo de pasta.
 
     Devolve um objeto com a pasta dos shims (Folder), a distribuição (Distribution) e os
     comandos (Commands).
@@ -94,6 +97,8 @@
         $caminhoDoPowerShell = Get-CaminhoDoPowerShell
     }
 
+    $pastaDoModulo = Get-PastaDoModulo
+
     $estaMudandoDePasta = $pastaAnterior -and -not $ehAPastaAnterior
     if ($estaMudandoDePasta) {
         Remove-PastaDosShims -Pasta $pastaAnterior
@@ -109,7 +114,7 @@
     }
 
     foreach ($comando in $comandos) {
-        New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell
+        New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell -PastaDoModulo $pastaDoModulo
     }
     Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
 

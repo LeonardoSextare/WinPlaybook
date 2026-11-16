@@ -78,6 +78,11 @@ bugs, e como o código lida com cada um.
 - Chamado pelo `.exe` com `-File`, o PowerShell sai com 0 mesmo quando o
   comando falha. O `.ps1` gerado para cada shim termina com
   `exit $LASTEXITCODE`.
+- Cada edição do PowerShell procura os módulos nas próprias pastas
+  (`Documents\WindowsPowerShell\Modules` no 5.1 e `Documents\PowerShell\Modules`
+  no 7), e um shim que chama o módulo pelo nome falha na outra edição. Os
+  scripts dos shims importam o módulo pela pasta sem a versão
+  (`Get-PastaDoModulo`), e o `Import-Module` carrega a versão mais nova dela.
 - Aberto com `-File` e com a entrada padrão redirecionada, o PowerShell lê a
   entrada para o `$input` do script quando ele cita `$input`, mesmo num trecho
   que não roda, e o programa que o script chama recebe a entrada vazia. O

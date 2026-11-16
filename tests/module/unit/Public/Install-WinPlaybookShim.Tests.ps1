@@ -53,6 +53,14 @@ Describe 'Install-WinPlaybookShim' {
             (Get-ChildItem -LiteralPath $pastaPadraoDosShims -Filter '*.ps1').BaseName | Should-BeCollection @('ansible', 'ansible-playbook')
         }
 
+        It 'cria shims que carregam o módulo pela pasta dele' {
+            $pastaDoModulo = InModuleScope WinPlaybook { Get-PastaDoModulo }
+
+            $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
+
+            Get-Content -LiteralPath (Join-Path $pastaPadraoDosShims 'ansible.ps1') | Should-BeLikeString "Import-Module '$pastaDoModulo'*"
+        }
+
         It 'coloca a pasta dos shims no Path do usuário' {
             $null = Install-WinPlaybookShim -Distribution 'Ubuntu'
 

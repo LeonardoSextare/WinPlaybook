@@ -191,10 +191,7 @@ BeforeAll {
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
 
-    $psModulePathOriginal = $env:PSModulePath
-    $pastaDosModulos = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../../module'))
-    $env:PSModulePath = $pastaDosModulos + [IO.Path]::PathSeparator + $env:PSModulePath
-    Import-Module (Join-Path $pastaDosModulos 'WinPlaybook/WinPlaybook.psd1') -Force
+    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $pastaDosShims = Join-Path $TestDrive 'shims'
     $null = New-Item -ItemType Directory -Path $pastaDosShims
@@ -203,7 +200,7 @@ BeforeAll {
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
         foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
-            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell
+            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo)
         }
     }
 
@@ -338,7 +335,6 @@ BeforeAll {
 
 AfterAll {
     Remove-Module WinPlaybook
-    $env:PSModulePath = $psModulePathOriginal
     $env:LOCALAPPDATA = $localAppDataOriginal
 }
 
