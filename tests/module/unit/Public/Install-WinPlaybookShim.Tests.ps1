@@ -116,6 +116,10 @@ Describe 'Install-WinPlaybookShim' {
 
             Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
         }
+
+        It 'mostra as distribuições instaladas na primeira instalação' {
+            { Install-WinPlaybookShim } | Should-Throw -ExceptionMessage '*distribuições instaladas são: Ubuntu, Debian.'
+        }
     }
 
     Context 'quando a distribuição escolhida não existe' {
@@ -123,6 +127,14 @@ Describe 'Install-WinPlaybookShim' {
             { Install-WinPlaybookShim -Distribution 'Inexistente' } | Should-Throw -ExceptionMessage '*distribuição WSL Inexistente não existe*'
 
             Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
+        }
+
+        It 'mostra as distribuições instaladas' {
+            { Install-WinPlaybookShim -Distribution 'Inexistente' } | Should-Throw -ExceptionMessage '*Escolha uma das distribuições instaladas: Ubuntu, Debian.'
+        }
+
+        It 'falha também com -WhatIf' {
+            { Install-WinPlaybookShim -Distribution 'Inexistente' -WhatIf } | Should-Throw -ExceptionMessage '*distribuição WSL Inexistente não existe*'
         }
     }
 
