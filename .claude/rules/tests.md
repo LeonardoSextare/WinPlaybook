@@ -100,6 +100,10 @@ mantenedor antes de virar padrão.
 - Mocks de algo que o módulo chama (inclusive o executável `wsl`) levam
   `-ModuleName WinPlaybook`. `Mock wsl -ModuleName WinPlaybook { $args }`
   devolve os argumentos montados sem chamar o WSL.
+- Um teste que confere o texto de uma mensagem fixa o português com
+  `Mock Get-CulturaDaInterface -ModuleName WinPlaybook { 'pt-BR' }`, para
+  passar em qualquer idioma do Windows. Nos e2e, que não usam mocks, o texto
+  esperado vem do `Get-Mensagem`.
 
 ## Testes e2e
 

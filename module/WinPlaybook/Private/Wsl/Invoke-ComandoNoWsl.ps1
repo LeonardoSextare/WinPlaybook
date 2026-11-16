@@ -58,12 +58,12 @@
 
     $distribuicaoFoiEscolhida = [bool] $distribuicao -and [bool] $raizDeMontagem
     if (-not $distribuicaoFoiEscolhida) {
-        throw 'O WinPlaybook não sabe qual distribuição WSL roda o Ansible. Escolha com: Install-WinPlaybookShim -Distribution <nome> (o wsl --list mostra as distribuições).'
+        throw (Get-Mensagem -Nome 'DistribuicaoNaoEscolhida')
     }
 
     $wslEstaInstalado = [bool] (Get-Command -Name wsl -ErrorAction SilentlyContinue)
     if (-not $wslEstaInstalado) {
-        throw 'O WSL não foi encontrado. O WinPlaybook roda o Ansible numa distribuição WSL: instale o WSL com wsl --install e tente de novo.'
+        throw (Get-Mensagem -Nome 'WslNaoEncontrado')
     }
 
     $pastaAtual = (Get-Location -PSProvider FileSystem).ProviderPath
@@ -74,11 +74,15 @@
         $execucaoDoComando = 'sed -e ''1s/^\xEF\xBB\xBF//'' -e ''s/\r$//'' | "$@"'
     }
 
+    $mensagemDeComandoAusente = Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores $Comando
+    $marcadorDoCaminho = '<caminho-no-windows>'
+    $formatoDeComandoSoNoWindows = (Get-Mensagem -Nome 'ComandoSoNoWindows' -Valores $Comando, $marcadorDoCaminho).Replace('%', '%%').Replace($marcadorDoCaminho, '%s')
+
     $script = @(
-        'raiz_de_montagem="$0"; comando="$1";'
+        'raiz_de_montagem="$0"; mensagem_de_comando_ausente="$1"; formato_de_comando_so_no_windows="$2"; shift 2; comando="$1";'
         'case $(command -v "$comando") in'
-        '"") echo "WinPlaybook: comando $comando ausente no WSL. Instale-o no WSL, ou rode Install-WinPlaybookShim para atualizar os comandos." >&2; exit 127 ;;'
-        '"$raiz_de_montagem"*) echo "WinPlaybook: comando $comando ausente no WSL, existe apenas no Windows ($(command -v "$comando")). Instale-o no WSL." >&2; exit 127 ;;'
+        '"") printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127 ;;'
+        '"$raiz_de_montagem"*) printf "$formato_de_comando_so_no_windows\n" "$(command -v "$comando")" >&2; exit 127 ;;'
         'esac;'
         'case $(stat -c %A . 2>/dev/null) in ????????w?)'
         'if [ -z "${ANSIBLE_CONFIG+definida}" ] && [ -f ansible.cfg ]; then export ANSIBLE_CONFIG="$PWD/ansible.cfg"; fi ;;'
@@ -89,7 +93,7 @@
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
         '--cd', $pastaAtual
-        '--exec', 'sh', '-lc', $script, $raizDeMontagem
+        '--exec', 'sh', '-lc', $script, $raizDeMontagem, $mensagemDeComandoAusente, $formatoDeComandoSoNoWindows
         $Comando
     )
     foreach ($argumento in $Argumentos) {
@@ -140,7 +144,7 @@
         $distribuicaoExiste = $distribuicao -in @(Get-DistribuicaoDoWsl)
         $global:LASTEXITCODE = $codigoDeSaida
         if (-not $distribuicaoExiste) {
-            throw "A distribuição WSL $distribuicao, escolhida na instalação do WinPlaybook, não existe mais. Escolha outra com: Install-WinPlaybookShim -Distribution <nome> (o wsl --list mostra as distribuições)."
+            throw (Get-Mensagem -Nome 'DistribuicaoNaoExisteMais' -Valores $distribuicao)
         }
     }
 }

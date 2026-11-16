@@ -26,7 +26,7 @@
 
     $traduziuAUnidade = ($LASTEXITCODE -eq 0) -and ("$caminhoDaUnidade" -match '^/(.*/)?c/$')
     if (-not $traduziuAUnidade) {
-        throw "Não foi possível descobrir onde a distribuição WSL $Distribuicao monta as unidades do Windows (código de saída do wsl: $LASTEXITCODE)."
+        throw (Get-Mensagem -Nome 'RaizDeMontagemDesconhecida' -Valores $Distribuicao, $LASTEXITCODE)
     }
 
     return "$caminhoDaUnidade".Substring(0, "$caminhoDaUnidade".Length - 'c/'.Length)

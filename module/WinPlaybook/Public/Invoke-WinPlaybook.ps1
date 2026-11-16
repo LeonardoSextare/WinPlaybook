@@ -21,7 +21,7 @@
 
     $temComando = $args.Count -gt 0
     if (-not $temComando) {
-        throw 'Informe o comando que vai rodar na distribuição WSL, por exemplo: Invoke-WinPlaybook ansible --version'
+        throw (Get-Mensagem -Nome 'InformeOComando')
     }
 
     $argumentos = Get-ArgumentoDoShim -Comando $args[0] -Argumentos @($args | Select-Object -Skip 1) -CaminhoDoChamador $MyInvocation.PSCommandPath

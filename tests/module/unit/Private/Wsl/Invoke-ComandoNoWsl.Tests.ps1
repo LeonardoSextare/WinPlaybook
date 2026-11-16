@@ -1,5 +1,6 @@
 ﻿BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+    Mock Get-CulturaDaInterface -ModuleName WinPlaybook { 'pt-BR' }
 }
 
 AfterAll {
@@ -44,16 +45,34 @@ Describe 'Invoke-ComandoNoWsl' {
         ($argumentosDoWsl[4..6] -join ' ') | Should-Be '--exec sh -lc'
     }
 
-    It 'passa a raiz de montagem, o comando e os argumentos dele ao script do shell' {
+    It 'passa a raiz de montagem ao script do shell' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        $argumentosDoWsl[8] | Should-Be '/mnt/'
+    }
+
+    It 'passa ao script do shell as mensagens de comando ausente no idioma do usuário' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        ($argumentosDoWsl[9..10] -join '|') | Should-Be 'WinPlaybook: comando ansible-playbook ausente no WSL. Instale-o no WSL, ou rode Install-WinPlaybookShim para atualizar os comandos.|WinPlaybook: comando ansible-playbook ausente no WSL, existe apenas no Windows (%s). Instale-o no WSL.'
+    }
+
+    It 'protege o % do nome do comando na mensagem que o printf formata' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'a%b' }
+
+        $argumentosDoWsl[10] | Should-BeLikeString '*a%%b*(%s)*'
+    }
+
+    It 'passa o comando e os argumentos dele depois das mensagens' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '-i', 'inventory.yml', 'site.yml' }
 
-        ($argumentosDoWsl[8..12] -join ' ') | Should-Be '/mnt/ ansible-playbook -i inventory.yml site.yml'
+        ($argumentosDoWsl[11..14] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
     }
 
     It 'executa um comando sem argumentos' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
-        ($argumentosDoWsl[8..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be '/mnt/ ansible'
+        ($argumentosDoWsl[11..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
     }
 
     It 'converte os caminhos do Windows dos argumentos' {

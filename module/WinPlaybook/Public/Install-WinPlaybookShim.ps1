@@ -59,7 +59,7 @@
     $ehAPastaAnterior = $pastaAnterior -eq $pastaDosShims
     $pastaEhDeOutroDono = (Test-Path -LiteralPath $pastaDosShims) -and -not $ehAPastaAnterior
     if ($pastaEhDeOutroDono) {
-        throw "A pasta $pastaDosShims já existe e não foi criada pelo WinPlaybook. Escolha outro -Path, ou apague a pasta."
+        throw (Get-Mensagem -Nome 'PastaDeOutroDono' -Valores $pastaDosShims)
     }
 
     $distribuicao = $configuracao.WslDistribution
@@ -70,15 +70,15 @@
 
     $distribuicoesInstaladas = @(Get-DistribuicaoDoWsl)
     if (-not $distribuicao) {
-        throw "Escolha a distribuição WSL onde o Ansible está instalado: Install-WinPlaybookShim -Distribution <nome>. As distribuições instaladas são: $($distribuicoesInstaladas -join ', ')."
+        throw (Get-Mensagem -Nome 'EscolhaADistribuicao' -Valores ($distribuicoesInstaladas -join ', '))
     }
 
     $distribuicaoEstaInstalada = $distribuicao -in $distribuicoesInstaladas
     if (-not $distribuicaoEstaInstalada) {
-        throw "A distribuição WSL $distribuicao não existe. Escolha uma das distribuições instaladas: $($distribuicoesInstaladas -join ', ')."
+        throw (Get-Mensagem -Nome 'DistribuicaoNaoExiste' -Valores $distribuicao, ($distribuicoesInstaladas -join ', '))
     }
 
-    $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, 'Instalar os shims de comando do WinPlaybook')
+    $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, (Get-Mensagem -Nome 'InstalarShims'))
     if (-not $confirmou) {
         return
     }
