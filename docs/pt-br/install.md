@@ -1,49 +1,22 @@
 # Instalar o WinPlaybook
 
-Escolha uma das três formas de instalação. A mais rápida é o script de
-instalação. Nenhuma delas pede permissão de administrador.
+Escolha uma das duas formas de instalação. A mais rápida é a PowerShell
+Gallery. Nenhuma delas pede permissão de administrador.
 
 ## Requisitos
 
-| Requisito      | Versão                                             |
-| -------------- | -------------------------------------------------- |
-| Windows        | 10 22H2 ou 11 23H2 em diante, 64 bits              |
-| Docker Desktop | com o backend WSL 2 e *containers* Linux           |
-| PowerShell     | Windows PowerShell 5.1 ou PowerShell 7.4 em diante |
-
----
-
-## Script de instalação
-
-Execute no PowerShell:
-
-```powershell
-irm https://leonardosextare.github.io/WinPlaybook/install.ps1 | iex
-```
-
-Na primeira vez, a instalação pode levar alguns minutos, por causa do
-download da imagem do Ansible.
-
-Abra um terminal novo e teste:
-
-```powershell
-ansible --version
-```
-
-Para atualizar, execute o script de novo ou use o comando da sua versão do
-PowerShell:
-
-- PowerShell 7.4 em diante: `Update-PSResource WinPlaybook`
-- Windows PowerShell 5.1: `Update-Module WinPlaybook`
+| Requisito  | Versão                                             |
+| ---------- | -------------------------------------------------- |
+| Windows    | 10 ou 11                                           |
+| WSL        | 2, na versão mais recente                          |
+| PowerShell | Windows PowerShell 5.1 ou PowerShell 7.4 em diante |
 
 ---
 
 ## PowerShell Gallery
 
-Esta forma usa os comandos do próprio PowerShell, sem o script de instalação.
-
 Se o `Get-ExecutionPolicy` mostrar `Restricted` ou `AllSigned`, libere os
-scripts locais para o seu usuário:
+_scripts_ locais para o seu usuário:
 
 ```powershell
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
@@ -69,24 +42,31 @@ Instale o módulo:
 O PowerShell pergunta se você confia na PowerShell Gallery. Confirme para
 instalar.
 
-Crie os comandos do Ansible. Na primeira vez, o comando baixa a imagem:
+Instale o Ansible e crie os comandos dele no Windows:
 
 ```powershell
-Install-WinPlaybookShim
+Install-WinPlaybook
 ```
 
-Abra um terminal novo e teste com `ansible --version`.
+Na primeira vez, o comando cria a distribuição WSL `WinPlaybook`, com o
+Debian, e instala o Ansible nela. Isso leva alguns minutos.
 
-Para atualizar, use `Update-PSResource WinPlaybook` no PowerShell 7.4 em
-diante ou `Update-Module WinPlaybook` no Windows PowerShell 5.1.
+Teste no mesmo terminal:
+
+```powershell
+ansible --version
+```
+
+Os terminais e os programas que já estavam abertos, como o VS Code, só
+encontram os comandos depois de reabertos.
 
 ---
 
 ## Código-fonte
 
-Esta forma faz o *build* da imagem e do módulo na sua máquina. Além dos
-requisitos acima, você precisa do [Git](https://git-scm.com/) e do
-PowerShell 7.4 em diante. Execute todos os passos no PowerShell 7.
+Esta forma faz o _build_ do módulo na sua máquina. Além dos requisitos
+acima, você precisa do [Git](https://git-scm.com/) e do PowerShell 7.4 em
+diante. Execute todos os passos no PowerShell 7.
 
 1. Clone o repositório:
 
@@ -95,31 +75,70 @@ PowerShell 7.4 em diante. Execute todos os passos no PowerShell 7.
     cd WinPlaybook
     ```
 
-2. Faça o *build* da imagem e configure o WinPlaybook para usá-la:
+2. Instale o módulo na pasta de módulos do PowerShell 7:
 
     ```powershell
-    docker build --tag winplaybook:local image
-    [Environment]::SetEnvironmentVariable('WINPLAYBOOK_IMAGE', 'winplaybook:local', 'User')
-    $env:WINPLAYBOOK_IMAGE = 'winplaybook:local'
+    ./scripts/Build-PacoteDoModulo.ps1 -Versao 0.0.0 -PastaDeDestino (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules')
     ```
 
-3. Instale o módulo na pasta de módulos do PowerShell 7:
+3. Instale o Ansible e crie os comandos dele no Windows:
 
     ```powershell
-    $modulesFolder = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'PowerShell\Modules'
-    ./scripts/Build-ModulePackage.ps1 -Version 0.0.0 -Destination $modulesFolder
+    Install-WinPlaybook
     ```
 
-4. Crie os comandos do Ansible:
-
-    ```powershell
-    Install-WinPlaybookShim
-    ```
-
-5. Abra um terminal novo e teste com `ansible --version`.
+4. Teste com `ansible --version`.
 
 Depois da instalação, você pode apagar o repositório clonado.
 
-Para atualizar, apague a pasta
+---
+
+## Escolher a versão do Ansible
+
+O `Install-WinPlaybook` instala a versão mais nova do Ansible. Para usar outra
+versão, ou para instalar junto os pacotes Python que uma _collection_ pede,
+passe os parâmetros:
+
+```powershell
+Install-WinPlaybook -AnsibleVersion '12.*' -PythonPackage 'boto3', 'netaddr'
+```
+
+As próximas execuções do `Install-WinPlaybook` mantêm essas escolhas. Para
+voltar à versão mais nova, passe `-AnsibleVersion ''`. Para tirar os pacotes,
+passe `-PythonPackage @()`.
+
+## Atualizar
+
+Atualize o módulo com o comando da sua versão do PowerShell:
+
+- PowerShell 7.4 em diante: `Update-PSResource WinPlaybook`
+- Windows PowerShell 5.1: `Update-Module WinPlaybook`
+
+Se você instalou pelo código-fonte, apague a pasta
 `C:\Users\<usuário>\Documents\PowerShell\Modules\WinPlaybook` e repita os
-passos com o código novo.
+passos 1 e 2 com o código novo.
+
+Depois, atualize o Ansible e os comandos:
+
+```powershell
+Install-WinPlaybook
+```
+
+## Desinstalar
+
+Apague a distribuição e os comandos do Ansible:
+
+```powershell
+Uninstall-WinPlaybook
+```
+
+O comando pede confirmação, porque a distribuição é apagada com tudo o que
+há nela, como as _collections_ e as _roles_ que o `ansible-galaxy` instalou.
+
+Depois, remova o módulo:
+
+- PowerShell 7.4 em diante: `Uninstall-PSResource WinPlaybook`
+- Windows PowerShell 5.1: `Uninstall-Module WinPlaybook`
+
+Se você instalou pelo código-fonte, apague a pasta
+`C:\Users\<usuário>\Documents\PowerShell\Modules\WinPlaybook`.
