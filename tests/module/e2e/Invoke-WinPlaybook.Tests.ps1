@@ -188,4 +188,24 @@ Describe 'Invoke-WinPlaybook' {
             $saida | Should-BeLikeString '*comando cmd.exe ausente no WSL, existe apenas no Windows*'
         }
     }
+
+    Context 'quando a distribuição escolhida na instalação não existe mais' {
+        BeforeAll {
+            InModuleScope WinPlaybook {
+                Save-Configuracao -Configuracao @{ WslDistribution = 'WinPlaybookInexistente'; WslMountRoot = '/mnt/' }
+            }
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'explica como escolher outra' {
+            { Invoke-WinPlaybook ansible --version 2>$null } | Should-Throw -ExceptionMessage '*WinPlaybookInexistente*não existe mais*Install-WinPlaybookShim -Distribution*'
+        }
+    }
 }

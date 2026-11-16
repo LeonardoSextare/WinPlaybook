@@ -9,7 +9,8 @@
     caminhos do Windows viram os caminhos deles na distribuição.
 
     Um comando que não existe na distribuição, ou que só existe numa unidade do Windows, é
-    recusado com o código de saída 127.
+    recusado com o código de saída 127. Quando a distribuição escolhida na instalação não
+    existe mais, o erro explica como escolher outra.
 
     A saída do comando chega em UTF-8, então os acentos ficam certos também quando o
     PowerShell a captura, como em $saida = ansible-playbook site.yml.
@@ -114,5 +115,15 @@
     finally {
         $env:WSL_UTF8 = $utf8DoWslOriginal
         [Console]::OutputEncoding = $codificacaoDoConsole
+    }
+
+    $codigoDeSaida = $LASTEXITCODE
+    $oWslFalhou = $codigoDeSaida -eq -1
+    if ($oWslFalhou) {
+        $distribuicaoExiste = $distribuicao -in @(Get-DistribuicaoDoWsl)
+        $global:LASTEXITCODE = $codigoDeSaida
+        if (-not $distribuicaoExiste) {
+            throw "A distribuição WSL $distribuicao, escolhida na instalação do WinPlaybook, não existe mais. Escolha outra com: Install-WinPlaybookShim -Distribution <nome> (o wsl --list mostra as distribuições)."
+        }
     }
 }
