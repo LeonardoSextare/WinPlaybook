@@ -93,8 +93,8 @@ toggle.name = "Switch to dark mode"
 [project.extra]
 # Hides the "Made with Zensical" notice in the footer.
 generator = false
-# The same in both languages: the install script is published at the root of the site.
-install_url = "https://leonardosextare.github.io/WinPlaybook/install.ps1"
+# The same in both languages: installs the module from the PowerShell Gallery, then Ansible.
+install_command = "Install-Module WinPlaybook -Scope CurrentUser; Install-WinPlaybook"
 # Language selector in the header.
 alternate = [
   { name = "English", link = "/WinPlaybook/en/", lang = "en" },

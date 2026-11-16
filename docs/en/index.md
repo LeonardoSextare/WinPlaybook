@@ -10,7 +10,7 @@ hero:
   highlight: as if it were native
   lead: Use Ansible the way you already know it, without leaving Windows.
   checks:
-    - Docker Desktop is all you need
+    - WSL is all you need
     - Works with VS Code
     - Windows paths just work
     - Windows PowerShell and PowerShell Core
