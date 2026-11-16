@@ -65,18 +65,19 @@
         $distribuicao = $Distribution
     }
 
+    $distribuicoesInstaladas = @(Get-DistribuicaoDoWsl)
     if (-not $distribuicao) {
-        throw 'Escolha a distribuição WSL onde o Ansible está instalado: Install-WinPlaybookShim -Distribution <nome> (o wsl --list mostra as distribuições).'
+        throw "Escolha a distribuição WSL onde o Ansible está instalado: Install-WinPlaybookShim -Distribution <nome>. As distribuições instaladas são: $($distribuicoesInstaladas -join ', ')."
+    }
+
+    $distribuicaoEstaInstalada = $distribuicao -in $distribuicoesInstaladas
+    if (-not $distribuicaoEstaInstalada) {
+        throw "A distribuição WSL $distribuicao não existe. Escolha uma das distribuições instaladas: $($distribuicoesInstaladas -join ', ')."
     }
 
     $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, 'Instalar os shims de comando do WinPlaybook')
     if (-not $confirmou) {
         return
-    }
-
-    $distribuicaoEstaInstalada = $distribuicao -in @(Get-DistribuicaoDoWsl)
-    if (-not $distribuicaoEstaInstalada) {
-        throw "A distribuição WSL $distribuicao não existe. Escolha uma que o wsl --list mostra."
     }
 
     $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
