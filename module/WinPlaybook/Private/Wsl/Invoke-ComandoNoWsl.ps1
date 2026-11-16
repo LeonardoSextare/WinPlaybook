@@ -25,16 +25,27 @@
     .PARAMETER Argumentos
     Os argumentos do comando, como o usuário passou.
 
+    .PARAMETER Entrada
+    O que o comando recebe na entrada padrão, como as linhas que chegaram pelo pipeline. O
+    texto vai em UTF-8, com o fim de linha do Linux. Sem entrada, o comando usa a entrada
+    padrão do PowerShell, como o terminal, para os prompts do Ansible.
+
     .EXAMPLE
     Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml'
 
     Executa ansible-playbook site.yml na distribuição, a partir da pasta atual.
+
+    .EXAMPLE
+    Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '/dev/stdin' -Entrada (Get-Content site.yml)
+
+    Executa o playbook que chega pela entrada padrão.
     #>
     [CmdletBinding()]
     [OutputType([string])]
     param(
         [Parameter(Mandatory)] [string] $Comando,
-        [string[]] $Argumentos = @()
+        [string[]] $Argumentos = @(),
+        [AllowEmptyCollection()] [object[]] $Entrada = @()
     )
 
     $configuracao = Get-Configuracao
@@ -53,6 +64,12 @@
 
     $pastaAtual = (Get-Location -PSProvider FileSystem).ProviderPath
 
+    $temEntrada = $Entrada.Count -gt 0
+    $execucaoDoComando = 'exec "$@"'
+    if ($temEntrada) {
+        $execucaoDoComando = 'sed -e ''1s/^\xEF\xBB\xBF//'' -e ''s/\r$//'' | "$@"'
+    }
+
     $script = @(
         'raiz_de_montagem="$0"; comando="$1";'
         'case $(command -v "$comando") in'
@@ -62,7 +79,7 @@
         'case $(stat -c %A . 2>/dev/null) in ????????w?)'
         'if [ -z "${ANSIBLE_CONFIG+definida}" ] && [ -f ansible.cfg ]; then export ANSIBLE_CONFIG="$PWD/ansible.cfg"; fi ;;'
         'esac;'
-        'exec "$@"'
+        $execucaoDoComando
     ) -join ' '
 
     $argumentosDoWsl = @(
@@ -84,7 +101,13 @@
     $codificacaoDoConsole = [Console]::OutputEncoding
     [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
     try {
-        wsl @argumentosDoWsl
+        if ($temEntrada) {
+            $OutputEncoding = [Text.UTF8Encoding]::new($false)
+            $Entrada | wsl @argumentosDoWsl
+        }
+        else {
+            wsl @argumentosDoWsl
+        }
     }
     finally {
         [Console]::OutputEncoding = $codificacaoDoConsole
