@@ -37,6 +37,11 @@ bugs, e como o código lida com cada um.
 - No 5.1, o `Get-ChildItem -LiteralPath` ignora o `-Include` e devolve todos
   os arquivos. Filtre pela extensão com `Where-Object`
   (`$_.Extension -in '.ps1', '.psd1'`).
+- No 5.1, o `Test-Path` escreve o erro "Caracteres inválidos no caminho"
+  quando o caminho tem `"`, `<`, `>` ou `|`, como um argumento com JSON, e o
+  erro interrompe o comando de quem para nos erros. Antes de testar se um
+  argumento é um caminho, confira se ele não tem os caracteres de
+  `[IO.Path]::GetInvalidPathChars()`.
 
 ## WSL
 

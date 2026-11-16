@@ -43,6 +43,13 @@
             NoWindows = @('localhost', '-m', 'ansible.builtin.debug', '-a', '{"msg": "$HOME * ; | & `id` %PATH% ^ ! ''a''"}')
         }
         @{
+            Descricao = 'um argumento tem JSON com um caminho do Windows'
+            Projeto   = 'ola'
+            Comando   = 'ansible'
+            NoLinux   = @('localhost', '-m', 'ansible.builtin.debug', '-a', 'msg={{ caminho }}', '-e', '{"caminho": "C:\\Temp"}')
+            NoWindows = @('localhost', '-m', 'ansible.builtin.debug', '-a', 'msg={{ caminho }}', '-e', '{"caminho": "C:\\Temp"}')
+        }
+        @{
             Descricao = 'um argumento é vazio'
             Projeto   = 'ola'
             Comando   = 'ansible'
