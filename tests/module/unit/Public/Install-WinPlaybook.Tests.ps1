@@ -61,10 +61,12 @@ Describe 'Install-WinPlaybook' {
             }
         }
 
-        It 'prepara a distribuição' {
+        It 'prepara a distribuição com a pasta .ssh do usuário' {
             $null = Install-WinPlaybook
 
-            Should-Invoke Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Nome -eq 'WinPlaybook' }
+            Should-Invoke Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Nome -eq 'WinPlaybook' -and $PastaDoSsh -eq (Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh')
+            }
         }
 
         It 'instala o Ansible mais novo, sem pacotes Python extras' {

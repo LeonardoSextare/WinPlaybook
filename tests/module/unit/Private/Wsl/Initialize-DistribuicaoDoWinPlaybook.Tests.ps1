@@ -10,17 +10,18 @@ AfterAll {
 Describe 'Initialize-DistribuicaoDoWinPlaybook' {
     BeforeAll {
         Mock wsl -ModuleName WinPlaybook { }
+        $pastaDoSshInexistente = Join-Path $TestDrive 'sem-perfil/.ssh'
     }
 
     Context 'quando a preparação funciona' {
         BeforeAll {
             Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
-            InModuleScope WinPlaybook { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
         }
 
         It 'prepara a distribuição como root, para o usuário winplaybook' {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter {
-                $Distribuicao -eq 'WinPlaybook' -and $Usuario -eq 'root' -and ($Argumentos -join ',') -eq 'winplaybook'
+                $Distribuicao -eq 'WinPlaybook' -and $Usuario -eq 'root' -and $Argumentos[0] -eq 'winplaybook'
             }
         }
 
@@ -38,17 +39,47 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
         }
     }
 
+    Context 'quando a pasta .ssh do Windows existe' {
+        BeforeAll {
+            $pastaDoSsh = Join-Path $TestDrive 'perfil com espaço/.ssh'
+            $null = New-Item -ItemType Directory -Path $pastaDoSsh -Force
+            Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSsh } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
+        }
+
+        It 'monta a pasta no ~/.ssh, com a barra e o espaço escritos como o fstab exige' {
+            $pastaNoFstab = $pastaDoSsh.Replace('\', '\134').Replace(' ', '\040')
+
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Argumentos[1] -eq $pastaNoFstab }
+        }
+
+        It 'monta a pasta com as permissões que o ssh exige' {
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains('drvfs metadata,uid=%s,gid=%s,umask=077,fmask=111') }
+        }
+    }
+
+    Context 'quando a pasta .ssh do Windows não existe' {
+        BeforeAll {
+            Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
+        }
+
+        It 'não monta nada no ~/.ssh' {
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Argumentos[1] -eq '' }
+        }
+    }
+
     Context 'quando a preparação falha' {
         BeforeAll {
             Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 100; Saida = 'Temporary failure resolving deb.debian.org' } }
         }
 
         It 'explica o que conferir e mostra a resposta da distribuição' {
-            { InModuleScope WinPlaybook { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' } } | Should-Throw -ExceptionMessage '*preparar a distribuição WSL WinPlaybook*internet*Temporary failure resolving deb.debian.org'
+            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh } } | Should-Throw -ExceptionMessage '*preparar a distribuição WSL WinPlaybook*internet*Temporary failure resolving deb.debian.org'
         }
 
         It 'não para a distribuição' {
-            { InModuleScope WinPlaybook { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' } } | Should-Throw
+            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh } } | Should-Throw
 
             Should-Invoke wsl -ModuleName WinPlaybook -Times 0 -Exactly
         }

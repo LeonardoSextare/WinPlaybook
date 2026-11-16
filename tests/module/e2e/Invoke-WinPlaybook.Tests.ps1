@@ -185,6 +185,38 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando a pasta .ssh do Windows tem uma chave e o known_hosts' {
+        BeforeAll {
+            Push-Location $TestDrive
+            $pastaDoSsh = Get-PastaDoSshDeTeste
+            $nomeDaChave = "id_ed25519_$([guid]::NewGuid().ToString('N'))"
+            $linhasDaChave = @(Invoke-WinPlaybook sh -c 'ssh-keygen -q -t ed25519 -N "" -C winplaybook-teste -f "$1" && cat "$1" "$1.pub" && rm -f "$1" "$1.pub"' winplaybook "/tmp/$nomeDaChave")
+            $chavePrivada = ($linhasDaChave[0..($linhasDaChave.Count - 2)] -join "`n") + "`n"
+            [IO.File]::WriteAllText((Join-Path $pastaDoSsh $nomeDaChave), $chavePrivada)
+            $caminhoDoKnownHosts = Join-Path $pastaDoSsh 'known_hosts'
+            [IO.File]::WriteAllText($caminhoDoKnownHosts, "exemplo.winplaybook.teste $($linhasDaChave[-1])`n")
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath (Join-Path $pastaDoSsh $nomeDaChave), $caminhoDoKnownHosts -Force
+            Pop-Location
+        }
+
+        It 'aceita a chave privada criada no Windows' {
+            $saida = Invoke-WinPlaybook ssh-keygen -y -f "/home/winplaybook/.ssh/$nomeDaChave" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*ssh-ed25519 *'
+        }
+
+        It 'reconhece os hosts do known_hosts do Windows' {
+            $saida = Invoke-WinPlaybook ssh-keygen -F exemplo.winplaybook.teste 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*exemplo.winplaybook.teste*'
+        }
+    }
+
     Context 'quando o comando não está na distribuição' {
         BeforeAll {
             Push-Location $TestDrive

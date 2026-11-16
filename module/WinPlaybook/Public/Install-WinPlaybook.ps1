@@ -10,6 +10,10 @@
     configura, e a desinstalação a apaga. Se a primeira instalação falha, a distribuição
     criada nela é apagada.
 
+    O ssh da distribuição usa a pasta .ssh do Windows (%USERPROFILE%\.ssh) como ~/.ssh, com
+    as chaves, o known_hosts e o config dela, sem cópias. Quando a pasta ainda não existe, a
+    distribuição usa um ~/.ssh próprio; rode de novo depois de criá-la.
+
     Para cada comando do Ansible, cria um .ps1, que o PowerShell executa, e um .exe, que os
     outros programas executam, e coloca a pasta deles no Path do usuário. A pasta também é
     do WinPlaybook: uma nova instalação substitui tudo o que há nela. Os shims carregam o
@@ -109,7 +113,7 @@
     }
 
     try {
-        Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao
+        Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh (Join-Path -Path ([Environment]::GetFolderPath('UserProfile')) -ChildPath '.ssh')
         Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
         $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
