@@ -22,20 +22,23 @@ monta o ambiente de novo do outro lado e se acostuma com outro terminal, outro
 janela do editor fica no Windows, mas o terminal, os arquivos e parte das
 extensões rodam no Linux, e essas extensões precisam ser instaladas de novo.
 
-## Por que um container
+## Por que uma distribuição WSL própria
 
 O WinPlaybook coloca os comandos do Ansible no `PATH` do Windows e roda cada
-um num *container* descartável, que o Docker cria na hora e remove no fim. O
-`ansible-playbook` fica acessível para o terminal e para qualquer programa que
-roda no Windows, como um comando nativo, e você continua trabalhando no
-Windows.
+um numa distribuição WSL que é só dele. O `ansible-playbook` fica acessível
+para o terminal e para qualquer programa que roda no Windows, como um comando
+nativo, e você continua trabalhando no Windows. A distribuição fica por trás
+dos comandos, e você não precisa abrir um terminal nela.
 
-O [Docker Desktop](https://docs.docker.com/desktop/) já roda Linux sem
-configuração extra. A imagem do WinPlaybook traz o Ansible, o `ansible-lint` e
-as bibliotecas para gerenciar máquinas Windows. Você não instala o Python nem
-o Ansible no Windows, e as versões das ferramentas são as mesmas para todos
-que usam a mesma imagem.
+O WSL é um recurso do próprio Windows e enxerga as unidades dele. O Ansible lê os
+_playbooks_ na pasta onde eles já estão, e o WinPlaybook converte os caminhos
+do Windows nos argumentos para os caminhos da distribuição. Você não instala o
+Python nem o Ansible no Windows.
 
-Em troca, o Docker Desktop precisa estar em execução, e cada comando leva
-alguns segundos a mais para começar. Essas e outras limitações estão em
-[Como funciona](how-it-works.md#limitacoes).
+A distribuição é própria para não mexer nas que você já tem. O WinPlaybook a
+configura como o Ansible precisa, e o `Uninstall-WinPlaybook` a apaga por
+inteiro.
+
+Em troca, a primeira instalação baixa o Debian e o Ansible e leva alguns
+minutos, e cada comando leva um pouco mais para começar. Essas e outras
+limitações estão em [Como funciona](how-it-works.md#limitacoes).
