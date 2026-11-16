@@ -4,6 +4,7 @@
 
 AfterAll {
     Remove-Module WinPlaybook
+    $global:LASTEXITCODE = 0
 }
 
 Describe 'Invoke-ComandoNoWsl' {
@@ -11,7 +12,10 @@ Describe 'Invoke-ComandoNoWsl' {
         $pastaDoProjeto = Join-Path $TestDrive 'projeto'
         $null = New-Item -ItemType Directory -Path (Join-Path $pastaDoProjeto 'playbooks') -Force
 
-        Mock wsl -ModuleName WinPlaybook { $args }
+        Mock wsl -ModuleName WinPlaybook {
+            $global:LASTEXITCODE = 0
+            $args
+        }
         Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/' } }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
 
@@ -161,6 +165,46 @@ Describe 'Invoke-ComandoNoWsl' {
             $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
             [Console]::OutputEncoding.CodePage | Should-Be 850
+        }
+    }
+
+    Context 'quando o wsl não encontra a distribuição escolhida na instalação' {
+        BeforeAll {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = -1 }
+            Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Debian' }
+        }
+
+        It 'explica como escolher outra distribuição' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*distribuição WSL Ubuntu*não existe mais*Install-WinPlaybookShim -Distribution*'
+        }
+    }
+
+    Context 'quando o wsl falha e a distribuição escolhida existe' {
+        BeforeAll {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = -1 }
+            Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook {
+                $global:LASTEXITCODE = 0
+                'Ubuntu'
+            }
+        }
+
+        It 'mantém o código de saída do wsl' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $LASTEXITCODE | Should-Be -1
+        }
+    }
+
+    Context 'quando o comando falha na distribuição' {
+        BeforeAll {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = 2 }
+            Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu' }
+        }
+
+        It 'não consulta as distribuições de novo' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            Should-Invoke Get-DistribuicaoDoWsl -ModuleName WinPlaybook -Times 0 -Exactly
         }
     }
 
