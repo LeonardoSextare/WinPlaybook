@@ -29,7 +29,7 @@
         [AllowEmptyCollection()] [object[]] $Valores = @()
     )
 
-    $pastaDoModulo = [IO.Path]::GetFullPath((Join-Path -Path $PSScriptRoot -ChildPath '..\..'))
+    $pastaDoModulo = $ExecutionContext.SessionState.Module.ModuleBase
     $cultura = Get-CulturaDaInterface
     $temMensagensNoIdioma = $cultura -and (Test-Path -LiteralPath (Join-Path -Path $pastaDoModulo -ChildPath "$cultura\Mensagens.psd1"))
     if (-not $temMensagensNoIdioma) {

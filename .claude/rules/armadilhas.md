@@ -117,8 +117,11 @@ bugs, e como o código lida com cada um.
 
 ## Arquivos do módulo
 
-- Um caminho montado a partir do `$PSScriptRoot` depende da subpasta onde a
-  função está. Ao mover o arquivo, ajuste o caminho relativo.
+- O `$PSScriptRoot` de uma função depende do arquivo onde ela está, e o pacote
+  publicado junta as funções num `.psm1` só. Para achar um arquivo do módulo,
+  como o `bin\shim.exe`, parta da pasta do módulo
+  (`$ExecutionContext.SessionState.Module.ModuleBase`), nunca do
+  `$PSScriptRoot`.
 
 ## Pester
 

@@ -12,7 +12,7 @@
     [OutputType([string])]
     param()
 
-    $caminhoDoModelo = [IO.Path]::GetFullPath((Join-Path -Path $PSScriptRoot -ChildPath '..\..\bin\shim.exe'))
+    $caminhoDoModelo = Join-Path -Path $ExecutionContext.SessionState.Module.ModuleBase -ChildPath 'bin\shim.exe'
 
     $estaEmpacotado = Test-Path -LiteralPath $caminhoDoModelo
     if (-not $estaEmpacotado) {
