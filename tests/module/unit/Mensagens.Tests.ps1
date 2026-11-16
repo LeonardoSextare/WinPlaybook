@@ -5,7 +5,7 @@
         Write-Output @{ Chave = $chave }
     }
 
-    $arquivosDoModulo = Get-ChildItem -LiteralPath $pastaDoModulo -Recurse -File | Where-Object { $_.Extension -eq '.ps1' }
+    $arquivosDoModulo = Get-ChildItem -LiteralPath $pastaDoModulo -Recurse -File | Where-Object { $_.Extension -in '.ps1', '.psm1' }
     $mensagensUsadas = foreach ($arquivo in $arquivosDoModulo) {
         foreach ($uso in [regex]::Matches([IO.File]::ReadAllText($arquivo.FullName), "Get-Mensagem -Nome '(\w+)'")) {
             Write-Output @{ Chave = $uso.Groups[1].Value; Arquivo = $arquivo.Name }

@@ -88,8 +88,12 @@ Funções privadas:
   nova só surge com um assunto novo.
 - O `.psm1` não recebe funções nem lógica além do `Set-StrictMode` e do
   dot-sourcing.
-- Nada de etapa de build, código gerado ou arquivos juntados: o módulo é
-  publicado como está no repositório.
+- No repositório, cada função fica num arquivo próprio, e o código não tem
+  partes geradas. O pacote publicado junta as funções de `Private/` e
+  `Public/` num `.psm1` só (`scripts/Build-PacoteDoModulo.ps1`), porque o
+  PowerShell carrega um arquivo grande bem mais rápido que dezenas de arquivos
+  pequenos, e cada shim `.exe` carrega o módulo de novo. Nada além disso muda
+  no pacote, e o CI roda os testes no código e no pacote.
 - O módulo nunca reescreve os próprios arquivos nem gera funções em tempo de
   execução.
 - O `ModuleVersion` do manifesto fica em `'0.0.0'` e não é alterado.
