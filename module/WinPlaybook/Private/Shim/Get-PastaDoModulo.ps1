@@ -19,7 +19,7 @@
     [OutputType([string])]
     param()
 
-    $pastaDoModulo = [IO.Path]::GetFullPath((Join-Path -Path $PSScriptRoot -ChildPath '..\..'))
+    $pastaDoModulo = $ExecutionContext.SessionState.Module.ModuleBase
     $pastaDeCima = Split-Path -Path $pastaDoModulo -Parent
 
     $estaNumaPastaDeVersao = ([bool] ((Split-Path -Path $pastaDoModulo -Leaf) -as [version])) -and ((Split-Path -Path $pastaDeCima -Leaf) -eq 'WinPlaybook')
