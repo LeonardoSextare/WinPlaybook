@@ -2,9 +2,14 @@
 
 <#
 .SYNOPSIS
-Prepara a pasta do módulo que é publicada: uma cópia de module/WinPlaybook com o shim.exe e a versão.
+Prepara a pasta do módulo que é publicada: uma cópia de module/WinPlaybook com as funções num .psm1 só, o shim.exe e a versão.
 
 .DESCRIPTION
+No repositório, cada função fica num arquivo próprio em Private/ e Public/. Na cópia, as
+funções vão para o WinPlaybook.psm1, as de Private/ antes das de Public/, e as duas pastas
+saem: o PowerShell carrega um arquivo só bem mais rápido que dezenas de arquivos
+pequenos, e cada shim .exe carrega o módulo de novo.
+
 No repositório, o ModuleVersion fica em 0.0.0, e a versão vem da tag v<versão>. Por isso
 a versão só é gravada na cópia. Devolve o caminho da cópia.
 
@@ -37,6 +42,15 @@ if ($moduloJaExiste) {
 $null = New-Item -ItemType Directory -Path $PastaDeDestino -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot '../module/WinPlaybook') -Destination $caminhoDoModulo -Recurse
 & (Join-Path $PSScriptRoot 'Save-Shim.ps1') -Destination (Join-Path $caminhoDoModulo 'bin')
+
+$pastasDasFuncoes = @('Private', 'Public') | ForEach-Object { Join-Path $caminhoDoModulo $_ }
+$arquivosDasFuncoes = foreach ($pasta in $pastasDasFuncoes) {
+    Get-ChildItem -LiteralPath $pasta -Filter '*.ps1' -Recurse | Sort-Object -Property FullName
+}
+$funcoes = $arquivosDasFuncoes | ForEach-Object { (Get-Content -LiteralPath $_.FullName -Raw).TrimEnd() }
+$conteudoDoModulo = @('Set-StrictMode -Version 3.0') + $funcoes
+Set-Content -LiteralPath (Join-Path $caminhoDoModulo 'WinPlaybook.psm1') -Value ($conteudoDoModulo -join "`r`n`r`n") -Encoding utf8BOM
+Remove-Item -LiteralPath $pastasDasFuncoes -Recurse -Force
 
 $caminhoDoManifesto = Join-Path $caminhoDoModulo 'WinPlaybook.psd1'
 $manifesto = Get-Content -LiteralPath $caminhoDoManifesto -Raw

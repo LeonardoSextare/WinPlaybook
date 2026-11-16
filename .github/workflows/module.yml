@@ -42,7 +42,26 @@ jobs:
         run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
 
       - name: Roda os testes (Windows PowerShell 5.1)
+        id: testes-powershell-5
         if: success() || steps.testes-powershell-7.conclusion == 'failure'
+        shell: powershell
+        run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
+
+      - name: Troca o módulo pelo pacote publicado
+        id: pacote
+        if: success() || steps.testes-powershell-7.conclusion == 'failure' || steps.testes-powershell-5.conclusion == 'failure'
+        run: |
+          $pacote = ./scripts/Build-PacoteDoModulo.ps1 -Versao 0.0.0 -PastaDeDestino (Join-Path $env:RUNNER_TEMP 'pacote')
+          Remove-Item -LiteralPath module/WinPlaybook -Recurse -Force
+          Copy-Item -LiteralPath $pacote -Destination module/WinPlaybook -Recurse
+
+      - name: Roda os testes no pacote (PowerShell 7)
+        id: pacote-powershell-7
+        if: steps.pacote.conclusion == 'success'
+        run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
+
+      - name: Roda os testes no pacote (Windows PowerShell 5.1)
+        if: steps.pacote.conclusion == 'success'
         shell: powershell
         run: Invoke-Pester -Path tests/module/unit -CI -Output Detailed
 
@@ -82,8 +101,11 @@ jobs:
       - name: Instala as dependências de teste
         uses: ./.github/actions/instala-dependencias-de-teste
 
-      - name: Baixa o shim
-        run: ./scripts/Save-Shim.ps1
+      - name: Troca o módulo pelo pacote publicado
+        run: |
+          $pacote = ./scripts/Build-PacoteDoModulo.ps1 -Versao 0.0.0 -PastaDeDestino (Join-Path $env:RUNNER_TEMP 'pacote')
+          Remove-Item -LiteralPath module/WinPlaybook -Recurse -Force
+          Copy-Item -LiteralPath $pacote -Destination module/WinPlaybook -Recurse
 
       - name: Instala a distribuição WSL dos testes
         uses: Vampire/setup-wsl@v7

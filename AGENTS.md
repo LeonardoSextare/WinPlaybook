@@ -100,7 +100,8 @@ Os comandos rodam na raiz do repositório, no PowerShell 7.
   módulos PowerShell. Qualquer dependência nova é discutida antes de entrar.
 - **Arquitetura:** cada função fica num arquivo próprio. `Public/` tem os
   comandos do usuário, e `Private/` as funções internas, organizadas por
-  assunto. O módulo é publicado como está, sem etapa de build.
+  assunto. O pacote publicado junta as funções num `.psm1` só, para o módulo
+  carregar mais rápido, e o CI roda os testes no código e no pacote.
 - **Sistema do usuário:** o WinPlaybook altera o mínimo possível no sistema e
   pode ser removido por completo com facilidade. Um comando que falha não
   deixa nada pela metade.

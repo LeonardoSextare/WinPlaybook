@@ -148,3 +148,8 @@ mantenedor antes de virar padrão.
 - `Invoke-Pester -Path tests/<camada> -Output Detailed`, ou `tests` para todas
   as camadas.
 - Rodar nas duas edições: PowerShell 7 e Windows PowerShell 5.1.
+- No CI, os testes unitários rodam no código e no pacote publicado, e os e2e
+  só no pacote, que é o que o usuário recebe. Para isso, o job troca o
+  `module/WinPlaybook` pelo pacote do `scripts/Build-PacoteDoModulo.ps1`. Um
+  teste que depende de um arquivo do módulo além do manifesto, dos
+  `Mensagens.psd1` e do `bin\shim.exe` quebra no pacote.
