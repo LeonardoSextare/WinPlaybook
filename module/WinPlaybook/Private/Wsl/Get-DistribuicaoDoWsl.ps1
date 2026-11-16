@@ -14,7 +14,7 @@
 
     $wslEstaInstalado = [bool] (Get-Command -Name wsl -ErrorAction SilentlyContinue)
     if (-not $wslEstaInstalado) {
-        throw 'O WSL não foi encontrado. O WinPlaybook roda o Ansible numa distribuição WSL: instale o WSL com wsl --install e tente de novo.'
+        throw (Get-Mensagem -Nome 'WslNaoEncontrado')
     }
 
     $utf8Original = $env:WSL_UTF8
@@ -29,7 +29,7 @@
 
     $listou = $LASTEXITCODE -eq 0
     if (-not $listou) {
-        throw 'O WSL não tem distribuições. Instale uma com wsl --install, instale o Ansible nela e tente de novo.'
+        throw (Get-Mensagem -Nome 'WslSemDistribuicoes')
     }
 
     return @($listagem | ForEach-Object { "$_".Trim() } | Where-Object { $_ })

@@ -175,17 +175,21 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'explica que falta o comando' {
-            $saida = Invoke-WinPlaybook winplaybook-comando-inexistente 2>&1 | Out-String
+            $mensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores 'winplaybook-comando-inexistente' }
+
+            $saida = (Invoke-WinPlaybook winplaybook-comando-inexistente 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
 
             $LASTEXITCODE | Should-Be 127 -Because $saida
-            $saida | Should-BeLikeString '*comando winplaybook-comando-inexistente ausente no WSL. Instale-o*'
+            $saida | Should-BeLikeString "*$mensagem*"
         }
 
         It 'recusa o programa do Windows com o mesmo nome' {
-            $saida = Invoke-WinPlaybook cmd.exe /c exit 0 2>&1 | Out-String
+            $padraoDaMensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'ComandoSoNoWindows' -Valores 'cmd.exe', '*' }
+
+            $saida = (Invoke-WinPlaybook cmd.exe /c exit 0 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
 
             $LASTEXITCODE | Should-Be 127 -Because $saida
-            $saida | Should-BeLikeString '*comando cmd.exe ausente no WSL, existe apenas no Windows*'
+            $saida | Should-BeLikeString "*$padraoDaMensagem*"
         }
     }
 
@@ -205,7 +209,9 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'explica como escolher outra' {
-            { Invoke-WinPlaybook ansible --version 2>$null } | Should-Throw -ExceptionMessage '*WinPlaybookInexistente*não existe mais*Install-WinPlaybookShim -Distribution*'
+            $mensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'DistribuicaoNaoExisteMais' -Valores 'WinPlaybookInexistente' }
+
+            { Invoke-WinPlaybook ansible --version 2>$null } | Should-Throw -ExceptionMessage $mensagem
         }
     }
 }

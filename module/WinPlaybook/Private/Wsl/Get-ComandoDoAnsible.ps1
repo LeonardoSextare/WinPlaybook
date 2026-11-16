@@ -39,14 +39,14 @@
 
     $listou = $LASTEXITCODE -eq 0
     if (-not $listou) {
-        throw "Não foi possível listar os comandos da distribuição WSL $Distribuicao (código de saída do wsl: $LASTEXITCODE)."
+        throw (Get-Mensagem -Nome 'ComandosNaoListados' -Valores $Distribuicao, $LASTEXITCODE)
     }
 
     $comandos = @($listagem | Where-Object { $_.StartsWith('ansible') } | Sort-Object -Unique)
 
     $temComandos = $comandos.Count -gt 0
     if (-not $temComandos) {
-        throw "A distribuição WSL $Distribuicao não tem comandos do Ansible. Instale o Ansible nela e tente de novo."
+        throw (Get-Mensagem -Nome 'DistribuicaoSemAnsible' -Valores $Distribuicao)
     }
 
     return $comandos

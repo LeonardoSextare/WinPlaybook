@@ -15,7 +15,7 @@
     param()
 
     $pastaDosShims = Get-PastaDosShims
-    $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, 'Apagar os shims de comando do WinPlaybook')
+    $confirmou = $PSCmdlet.ShouldProcess($pastaDosShims, (Get-Mensagem -Nome 'ApagarShims'))
     if (-not $confirmou) {
         return
     }

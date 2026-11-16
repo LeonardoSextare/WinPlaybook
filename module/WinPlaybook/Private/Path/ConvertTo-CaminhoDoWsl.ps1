@@ -23,7 +23,7 @@
 
     $ehCaminhoAbsolutoDoWindows = $Caminho -match '^[A-Za-z]:[\\/]'
     if (-not $ehCaminhoAbsolutoDoWindows) {
-        throw "O caminho '$Caminho' não é um caminho absoluto do Windows."
+        throw (Get-Mensagem -Nome 'CaminhoNaoAbsoluto' -Valores $Caminho)
     }
 
     $unidade = $Caminho.Substring(0, 1).ToLowerInvariant()

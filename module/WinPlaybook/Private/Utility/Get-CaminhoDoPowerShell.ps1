@@ -33,7 +33,7 @@
     $pwsh = Get-Command -Name 'pwsh' -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     $pwshEstaInstalado = [bool] $pwsh
     if (-not $pwshEstaInstalado) {
-        throw 'O PowerShell 7 (pwsh) não está instalado. Instale com: winget install Microsoft.PowerShell'
+        throw (Get-Mensagem -Nome 'PowerShell7NaoInstalado')
     }
 
     return $pwsh.Source

@@ -16,7 +16,7 @@
 
     $estaEmpacotado = Test-Path -LiteralPath $caminhoDoModelo
     if (-not $estaEmpacotado) {
-        throw "O shim.exe não está em $caminhoDoModelo. Reinstale o WinPlaybook, ou rode scripts/Save-Shim.ps1 num clone do repositório."
+        throw (Get-Mensagem -Nome 'ShimNaoEmpacotado' -Valores $caminhoDoModelo)
     }
 
     return $caminhoDoModelo

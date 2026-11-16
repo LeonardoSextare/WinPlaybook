@@ -22,9 +22,13 @@ paths:
   o módulo: os comandos públicos e os parâmetros deles, as propriedades dos
   objetos que eles devolvem, as chaves do `settings.json` e as variáveis de
   ambiente `WINPLAYBOOK_*`.
-- O texto que o código mostra também é em português: as mensagens de erro, a
-  ajuda baseada em comentário, inclusive a dos comandos públicos, e os nomes
-  dos testes.
+- As mensagens que o código mostra, como os erros e as ações do `-WhatIf`,
+  ficam nos `Mensagens.psd1` de cada idioma (`pt-BR/` e `en-US/`, na pasta do
+  módulo), sempre com as mesmas chaves, e o código as pega com `Get-Mensagem`.
+  O usuário as vê no idioma da interface do Windows, com o inglês como
+  reserva. Uma mensagem nova entra nos dois arquivos no mesmo commit.
+- A ajuda baseada em comentário, inclusive a dos comandos públicos, e os nomes
+  dos testes ficam em português.
 
 ### Variáveis
 
