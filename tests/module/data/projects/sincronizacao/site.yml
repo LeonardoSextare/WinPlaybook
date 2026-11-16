@@ -1,0 +1,8 @@
+- name: Sincroniza uma pasta
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Copia a pasta com o rsync
+      ansible.posix.synchronize:
+        src: arquivos/
+        dest: "{{ playbook_dir }}/copia/"

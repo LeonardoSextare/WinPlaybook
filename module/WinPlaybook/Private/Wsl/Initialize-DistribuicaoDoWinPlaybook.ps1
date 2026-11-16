@@ -5,9 +5,10 @@
 
     .DESCRIPTION
     Grava o /etc/wsl.conf e o /etc/fstab da distribuição, instala os programas que o Ansible
-    usa (o Python, que roda os módulos num host com conexão local, o git, o ssh, o sshpass e o
-    curl) e cria o usuário winplaybook, que passa a ser o padrão. A configuração vale depois
-    que a distribuição reinicia, e por isso ela é parada no fim:
+    usa (o Python, que roda os módulos num host com conexão local, o git, o ssh, o sshpass, o
+    rsync, que o ansible.posix.synchronize usa, e o curl) e cria o usuário winplaybook, que
+    passa a ser o padrão. A configuração vale depois que a distribuição reinicia, e por isso
+    ela é parada no fim:
 
     - as unidades do Windows são montadas com metadata, pastas 755 e arquivos 644, como num
       disco do Linux. Assim o Ansible lê o ansible.cfg do projeto, e um arquivo de senha do
@@ -53,7 +54,7 @@
         'printf ''export LANG=C.UTF-8\n'' > /etc/profile.d/winplaybook.sh;'
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
-        'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 sshpass > /dev/null;'
+        'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync sshpass > /dev/null;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
         '[ -d "$pasta_do_ssh" ] || install -d -m 700 -o "$1" -g "$1" "$pasta_do_ssh";'
