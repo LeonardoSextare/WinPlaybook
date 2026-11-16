@@ -10,7 +10,7 @@
 
 {% block hero %}
   {% set hero = page.meta.hero %}
-  {% set install_command = "irm " ~ config.extra.install_url ~ " | iex" %}
+  {% set install_command = config.extra.install_command %}
   <section class="wp-hero">
     {#- Background light: glows that drift and breathe (stylesheets/home.css). -#}
     <div class="wp-hero__light" aria-hidden="true">

@@ -10,7 +10,7 @@ hero:
   highlight: como se fosse nativo
   lead: Use o Ansible como você já conhece, sem sair do Windows.
   checks:
-    - Só precisa do Docker Desktop
+    - Só precisa do WSL
     - Funciona com o VS Code
     - Aceita caminhos do Windows
     - Windows PowerShell e PowerShell Core
