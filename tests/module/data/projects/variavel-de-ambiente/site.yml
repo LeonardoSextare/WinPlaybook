@@ -1,0 +1,7 @@
+- name: Le uma variavel de ambiente
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Mostra a variavel
+      ansible.builtin.debug:
+        msg: "{{ lookup('env', 'WINPLAYBOOK_TEST_MENSAGEM') }}"

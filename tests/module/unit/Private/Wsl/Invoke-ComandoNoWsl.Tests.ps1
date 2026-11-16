@@ -120,6 +120,42 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando o Windows tem uma variável ANSIBLE_' {
+        BeforeAll {
+            $nomeDaVariavel = "ANSIBLE_WINPLAYBOOK_TEST_$([guid]::NewGuid().ToString('N').ToUpperInvariant())"
+            Set-Item -LiteralPath "Env:$nomeDaVariavel" -Value 'D:\infra\ansible.cfg'
+            $wslenvOriginal = $env:WSLENV
+            $env:WSLENV = 'AWS_PROFILE/u'
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath "Env:$nomeDaVariavel" -ErrorAction SilentlyContinue
+            $env:WSLENV = $wslenvOriginal
+        }
+
+        It 'põe a variável no WSLENV, junto com as do usuário' {
+            Mock wsl -ModuleName WinPlaybook { $env:WSLENV }
+
+            $wslenvDuranteOWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $wslenvDuranteOWsl.Split(':') | Should-BeCollection @($nomeDaVariavel, 'AWS_PROFILE/u')
+        }
+
+        It 'passa o valor com o caminho convertido' {
+            Mock wsl -ModuleName WinPlaybook { [Environment]::GetEnvironmentVariable($nomeDaVariavel) }
+
+            $valorDuranteOWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $valorDuranteOWsl | Should-Be '/mnt/d/infra/ansible.cfg'
+        }
+
+        It 'restaura a variável e o WSLENV no fim' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            "$(Get-Item -LiteralPath "Env:$nomeDaVariavel" | Select-Object -ExpandProperty Value) $env:WSLENV" | Should-Be 'D:\infra\ansible.cfg AWS_PROFILE/u'
+        }
+    }
+
     Context 'quando o wsl escreve as próprias mensagens' {
         BeforeAll {
             $utf8Original = $env:WSL_UTF8
