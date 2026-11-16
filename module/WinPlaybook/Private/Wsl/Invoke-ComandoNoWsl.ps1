@@ -11,6 +11,11 @@
     Um comando que não existe na distribuição, ou que só existe numa unidade do Windows, é
     recusado com o código de saída 127.
 
+    O Ansible ignora o ansible.cfg de uma pasta com permissão de escrita para todos, como as
+    unidades do Windows na distribuição. Numa pasta assim, o ansible.cfg da pasta atual vai
+    no ANSIBLE_CONFIG, a não ser que a variável já esteja definida, e o Ansible o lê como no
+    Linux.
+
     .PARAMETER Comando
     O comando na distribuição, como ansible-playbook.
 
@@ -50,6 +55,9 @@
         'case $(command -v "$comando") in'
         '"") echo "WinPlaybook: comando $comando ausente no WSL. Instale-o no WSL, ou rode Install-WinPlaybookShim para atualizar os comandos." >&2; exit 127 ;;'
         '"$raiz_de_montagem"*) echo "WinPlaybook: comando $comando ausente no WSL, existe apenas no Windows ($(command -v "$comando")). Instale-o no WSL." >&2; exit 127 ;;'
+        'esac;'
+        'case $(stat -c %A . 2>/dev/null) in ????????w?)'
+        'if [ -z "${ANSIBLE_CONFIG+definida}" ] && [ -f ansible.cfg ]; then export ANSIBLE_CONFIG="$PWD/ansible.cfg"; fi ;;'
         'esac;'
         'exec "$@"'
     ) -join ' '

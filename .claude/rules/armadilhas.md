@@ -53,6 +53,11 @@ bugs, e como o código lida com cada um.
 - Numa função avançada, o `-i` do Ansible vira um parâmetro ambíguo do
   PowerShell. A função que repassa argumentos ao Ansible é simples, sem
   `[CmdletBinding()]` nem `param()`, e usa `$args`.
+- O WSL monta as unidades do Windows com escrita para todos (777), e o Ansible
+  ignora o `ansible.cfg` de uma pasta assim. O script do
+  `Invoke-ComandoNoWsl` põe o `ansible.cfg` da pasta atual no
+  `ANSIBLE_CONFIG` quando a pasta tem escrita para todos e a variável não está
+  definida.
 
 ## Shims
 
