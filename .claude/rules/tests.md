@@ -66,9 +66,10 @@ mantenedor antes de virar padrão.
 
 ## WSL nos testes
 
-- Chamadas diretas ao `wsl.exe` passam pelo `Invoke-Wsl` de
-  `tests/helpers/Wsl.ps1`, que captura código de saída e saída sem quebrar no
-  Windows PowerShell 5.1.
+- Chamadas diretas ao `wsl.exe` passam pelo `Invoke-LinhaDeComando` de
+  `tests/helpers/Processo.ps1`, que entrega os argumentos sem que o Windows
+  PowerShell 5.1 mexa nas aspas e captura o código de saída, a saída e os
+  erros.
 
 ## Shim nos testes
 
@@ -108,12 +109,13 @@ mantenedor antes de virar padrão.
 ## Testes e2e
 
 - Usam uma distro WSL só de testes, nunca as do desenvolvedor:
-  `Initialize-DistribuicaoWslDeTeste` (`tests/helpers/Wsl.ps1`) no `BeforeAll`
-  cria ou reaproveita a `WinPlaybookTest` e devolve o nome. No CI, a action
-  `Vampire/setup-wsl` instala a distro, e a variável
-  `WINPLAYBOOK_TEST_WSL_DISTRIBUTION` do job passa o nome dela à action e aos
-  testes. A preparação instala o `uv`, o `ansible-core` e o `ansible-lint` na
-  primeira vez, com internet; os testes em si não usam internet.
+  `Initialize-DistribuicaoWslDeTeste` (`tests/helpers/Wsl.ps1`) no `BeforeAll`,
+  depois do `Import-Module`, cria ou reaproveita a `WinPlaybookE2E` e devolve o
+  nome. Ela é criada e preparada pelas mesmas funções do módulo que o
+  `Install-WinPlaybook` usa, então é igual à distro do usuário, e o disco dela
+  fica em `%LOCALAPPDATA%\WinPlaybookTestes`. Na primeira vez, a preparação
+  baixa o Debian, os pacotes do sistema e o Ansible; os testes em si não usam
+  internet. No CI, o job começa sem a distro e a cria assim.
 - Usam uma configuração no `$TestDrive`: o teste troca o `$env:LOCALAPPDATA`
   por uma pasta no `$TestDrive`, grava ali a distro de testes com
   `Save-Configuracao` e restaura o valor original no `AfterAll`. Sem isso, o teste
@@ -121,8 +123,8 @@ mantenedor antes de virar padrão.
 - Chamam o módulo como o usuário, a partir de uma cópia do projeto no
   `$TestDrive` (`Push-Location`/`Pop-Location`), e verificam saída e
   `$LASTEXITCODE`.
-- Shims são gerados no `$TestDrive` (nunca com `Install-WinPlaybookShim`, que
-  mexe no `Path` real), com `-PastaDoModulo (Get-PastaDoModulo)`. Eles
+- Shims são gerados no `$TestDrive` (nunca com `Install-WinPlaybook`, que
+  mexe no `Path` real e na distribuição WinPlaybook), com `-PastaDoModulo (Get-PastaDoModulo)`. Eles
   carregam o módulo do repositório pela pasta dele, sem mudar o
   `$env:PSModulePath`, como o usuário que instalou o módulo para uma edição só.
 - Argumentos com aspas, como JSON, são testados de ponta a ponta: só o

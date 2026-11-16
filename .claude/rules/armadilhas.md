@@ -61,11 +61,18 @@ bugs, e como o código lida com cada um.
 - Numa função avançada, o `-i` do Ansible vira um parâmetro ambíguo do
   PowerShell. A função que repassa argumentos ao Ansible é simples, sem
   `[CmdletBinding()]` nem `param()`, e usa `$args`.
-- O WSL monta as unidades do Windows com escrita para todos (777), e o Ansible
-  ignora o `ansible.cfg` de uma pasta assim. O script do
-  `Invoke-ComandoNoWsl` põe o `ansible.cfg` da pasta atual no
-  `ANSIBLE_CONFIG` quando a pasta tem escrita para todos e a variável não está
-  definida.
+- Por padrão, o WSL monta as unidades do Windows com permissão 777. O Ansible
+  ignora o `ansible.cfg` de uma pasta com escrita para todos, executa como
+  script o arquivo de `--vault-password-file` e o SSH recusa a chave. O
+  `Initialize-DistribuicaoDoWinPlaybook` grava no `/etc/wsl.conf` da
+  distribuição a montagem com `metadata,umask=22,fmask=111` (pastas 755 e
+  arquivos 644), e o `ComportamentoNativo.Tests.ps1` confere o `ansible.cfg` e
+  o vault.
+- O `ansible-core` declara só a versão mínima do Python, e o `uv` escolhe o
+  Python mais novo, em que o Ansible pode quebrar ao importar (como o
+  `ansible-core` 2.21 no Python 3.15). O `Install-AnsibleNaDistribuicao` tenta
+  do Python mais novo para o mais antigo e fica com o primeiro em que o
+  `ansible --version` funciona.
 
 ## Shims
 

@@ -9,9 +9,10 @@ esses comandos sem saber que eles rodam no Linux. Para mais detalhes, veja
 [Por que o WinPlaybook](docs/pt-br/why-winplaybook.md).
 
 O WinPlaybook é um módulo PowerShell, distribuído pela PowerShell Gallery e
-compatível com o Windows PowerShell 5.1 e o PowerShell 7. A distribuição WSL
-pode ser uma que o usuário já tem ou uma que o WinPlaybook prepara; como essa
-preparação vai funcionar ainda está em definição.
+compatível com o Windows PowerShell 5.1 e o PowerShell 7. O Ansible roda numa
+distribuição WSL própria do WinPlaybook, com o Debian, que o
+`Install-WinPlaybook` cria e prepara e o `Uninstall-WinPlaybook` apaga. As
+distribuições que o usuário já tem não são usadas.
 
 O projeto está na versão 0: já tem releases iniciais, mas ainda não é
 estável, e qualquer release pode trazer breaking changes.
@@ -181,7 +182,7 @@ Particularidades do projeto:
 - **Sem escopo:** `fix: ...`, nunca `fix(shim): ...`.
 - **Descrição em português:** começa com um verbo no presente e em
   minúscula, sem ponto final e com até 72 caracteres, como em
-  `fix: aceita caminhos com colchetes no Install-WinPlaybookShim`.
+  `fix: aceita caminhos com colchetes no Install-WinPlaybook`.
 - **Corpo opcional:** explica o porquê quando ele não é óbvio pelo título. Ele
   fica no histórico, mas não entra no changelog.
 - **Changelog:** entram só `feat`, `fix`, `perf` e `refactor`. Os outros tipos

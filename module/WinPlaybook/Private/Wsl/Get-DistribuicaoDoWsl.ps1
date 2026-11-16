@@ -3,10 +3,14 @@
     .SYNOPSIS
     Lista os nomes das distribuições WSL instaladas neste computador.
 
+    .DESCRIPTION
+    Devolve uma lista vazia quando o WSL não tem distribuições, porque nesse caso o
+    wsl --list falha.
+
     .EXAMPLE
     Get-DistribuicaoDoWsl
 
-    Devolve Ubuntu e as outras distribuições que o wsl --list mostra.
+    Devolve WinPlaybook e as outras distribuições que o wsl --list mostra.
     #>
     [CmdletBinding()]
     [OutputType([string[]])]
@@ -29,7 +33,7 @@
 
     $listou = $LASTEXITCODE -eq 0
     if (-not $listou) {
-        throw (Get-Mensagem -Nome 'WslSemDistribuicoes')
+        return @()
     }
 
     return @($listagem | ForEach-Object { "$_".Trim() } | Where-Object { $_ })

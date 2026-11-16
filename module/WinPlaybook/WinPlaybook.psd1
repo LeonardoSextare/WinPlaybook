@@ -9,9 +9,9 @@
     CompatiblePSEditions = @('Desktop', 'Core')
 
     FunctionsToExport    = @(
-        'Install-WinPlaybookShim'
+        'Install-WinPlaybook'
         'Invoke-WinPlaybook'
-        'Uninstall-WinPlaybookShim'
+        'Uninstall-WinPlaybook'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

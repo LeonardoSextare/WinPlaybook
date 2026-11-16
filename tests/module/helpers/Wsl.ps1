@@ -1,40 +1,13 @@
-﻿function Invoke-Wsl {
+﻿function Initialize-DistribuicaoWslDeTeste {
     <#
     .SYNOPSIS
-    Executa o wsl.exe e devolve o código de saída (CodigoDeSaida) e a saída junto com os erros (Saida).
+    Prepara a distribuição WSL dos testes, como o Install-WinPlaybook prepara a distribuição WinPlaybook, e devolve o nome dela.
 
     .DESCRIPTION
-    Uma linha no stderr não interrompe o comando, nem no Windows PowerShell 5.1.
-
-    .PARAMETER Argumentos
-    Os argumentos do wsl.exe.
-
-    .EXAMPLE
-    Invoke-Wsl -Argumentos '--list', '--quiet'
-    #>
-    [CmdletBinding()]
-    [OutputType([pscustomobject])]
-    param(
-        [Parameter(Mandatory)] [string[]] $Argumentos
-    )
-
-    $ErrorActionPreference = 'Continue'
-    $saida = & wsl @Argumentos 2>&1 | ForEach-Object { "$_" }
-    return [pscustomobject]@{
-        CodigoDeSaida = $LASTEXITCODE
-        Saida         = $saida -join [Environment]::NewLine
-    }
-}
-
-function Initialize-DistribuicaoWslDeTeste {
-    <#
-    .SYNOPSIS
-    Prepara a distribuição WSL dos testes, com o Ansible e o ansible-lint, e devolve o nome dela.
-
-    .DESCRIPTION
-    A distribuição é a de WINPLAYBOOK_TEST_WSL_DISTRIBUTION ou, sem a variável, a
-    WinPlaybookTest. Ela é criada quando ainda não existe e reaproveitada nas outras vezes.
-    Na primeira vez, a preparação baixa o uv e o Ansible da internet.
+    A distribuição se chama WinPlaybookE2E e guarda o disco em
+    %LOCALAPPDATA%\WinPlaybookTestes\WinPlaybookE2E. As funções do próprio módulo a criam e
+    a preparam na primeira vez, com internet, e as outras vezes reaproveitam a distribuição
+    já preparada. O módulo WinPlaybook precisa estar importado.
 
     .EXAMPLE
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
@@ -43,38 +16,23 @@ function Initialize-DistribuicaoWslDeTeste {
     [OutputType([string])]
     param()
 
-    $nome = $env:WINPLAYBOOK_TEST_WSL_DISTRIBUTION
-    if (-not $nome) {
-        $nome = 'WinPlaybookTest'
+    $parametros = @{
+        Nome  = 'WinPlaybookE2E'
+        Pasta = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\WinPlaybookE2E'
     }
-
-    $utf8Original = $env:WSL_UTF8
-    $env:WSL_UTF8 = '1'
-    try {
-        $nomesInstalados = (Invoke-Wsl -Argumentos '--list', '--quiet').Saida -split '\r?\n'
-        $estaInstalada = $nomesInstalados -contains $nome
+    InModuleScope WinPlaybook -Parameters $parametros {
+        $estaInstalada = $Nome -in @(Get-DistribuicaoDoWsl)
         if (-not $estaInstalada) {
-            $resultado = Invoke-Wsl -Argumentos '--install', 'Ubuntu', '--name', $nome, '--no-launch'
-            if ($resultado.CodigoDeSaida -ne 0) {
-                throw "Não foi possível instalar a distribuição WSL ${nome}: $($resultado.Saida)"
-            }
+            New-DistribuicaoDoWinPlaybook -Nome $Nome -Pasta $Pasta
         }
 
-        $comandosDePreparacao = @(
-            'command -v uv >/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh'
-            'uv tool install ansible-core'
-            'uv tool install ansible-lint'
-        )
-        foreach ($comando in $comandosDePreparacao) {
-            $resultado = Invoke-Wsl -Argumentos '-d', $nome, '-e', 'bash', '-lc', $comando
-            if ($resultado.CodigoDeSaida -ne 0) {
-                throw "Não foi possível rodar '$comando' na distribuição WSL ${nome}: $($resultado.Saida)"
-            }
+        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && test -x "$HOME/.local/bin/ansible-playbook"' -Argumentos 'winplaybook' -Usuario 'winplaybook'
+        $estaPreparada = $verificacao.CodigoDeSaida -eq 0
+        if (-not $estaPreparada) {
+            Initialize-DistribuicaoDoWinPlaybook -Nome $Nome
+            Install-AnsibleNaDistribuicao -Nome $Nome -VersaoDoAnsible ''
         }
     }
-    finally {
-        $env:WSL_UTF8 = $utf8Original
-    }
 
-    return $nome
+    return $parametros.Nome
 }

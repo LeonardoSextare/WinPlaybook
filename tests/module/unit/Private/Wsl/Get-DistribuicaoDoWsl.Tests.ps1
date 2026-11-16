@@ -54,8 +54,10 @@ Describe 'Get-DistribuicaoDoWsl' {
             Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = -1 }
         }
 
-        It 'explica como instalar uma' {
-            { InModuleScope WinPlaybook { Get-DistribuicaoDoWsl } } | Should-Throw -ExceptionMessage '*não tem distribuições*wsl --install*'
+        It 'devolve uma lista vazia' {
+            $resultado = InModuleScope WinPlaybook { Get-DistribuicaoDoWsl }
+
+            @($resultado).Count | Should-Be 0
         }
     }
 

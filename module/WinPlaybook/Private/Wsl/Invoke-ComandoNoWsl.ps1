@@ -1,27 +1,21 @@
 ﻿function Invoke-ComandoNoWsl {
     <#
     .SYNOPSIS
-    Executa um comando na distribuição WSL escolhida na instalação, a partir da pasta atual.
+    Executa um comando na distribuição WSL do WinPlaybook, a partir da pasta atual.
 
     .DESCRIPTION
     O comando roda num login shell, que tem no PATH as pastas do usuário, como
     ~/.local/bin. Os argumentos chegam ao comando sem que um shell os interprete, e os
     caminhos do Windows viram os caminhos deles na distribuição.
 
-    Um comando que não existe na distribuição, ou que só existe numa unidade do Windows, é
-    recusado com o código de saída 127. Quando a distribuição escolhida na instalação não
-    existe mais, o erro explica como escolher outra.
+    Um comando que não existe na distribuição é recusado com o código de saída 127. Quando a
+    distribuição não existe mais, o erro explica como instalá-la de novo.
 
     A saída do comando chega em UTF-8, então os acentos ficam certos também quando o
     PowerShell a captura, como em $saida = ansible-playbook site.yml.
 
     As variáveis de ambiente ANSIBLE_ do Windows chegam ao comando, com os caminhos do
     Windows convertidos. As outras variáveis chegam quando estão no WSLENV, como o WSL faz.
-
-    O Ansible ignora o ansible.cfg de uma pasta com permissão de escrita para todos, como as
-    unidades do Windows na distribuição. Numa pasta assim, o ansible.cfg da pasta atual vai
-    no ANSIBLE_CONFIG, a não ser que a variável já esteja definida, e o Ansible o lê como no
-    Linux.
 
     .PARAMETER Comando
     O comando na distribuição, como ansible-playbook.
@@ -75,25 +69,17 @@
     }
 
     $mensagemDeComandoAusente = Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores $Comando
-    $marcadorDoCaminho = '<caminho-no-windows>'
-    $formatoDeComandoSoNoWindows = (Get-Mensagem -Nome 'ComandoSoNoWindows' -Valores $Comando, $marcadorDoCaminho).Replace('%', '%%').Replace($marcadorDoCaminho, '%s')
 
     $script = @(
-        'raiz_de_montagem="$0"; mensagem_de_comando_ausente="$1"; formato_de_comando_so_no_windows="$2"; shift 2; comando="$1";'
-        'case $(command -v "$comando") in'
-        '"") printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127 ;;'
-        '"$raiz_de_montagem"*) printf "$formato_de_comando_so_no_windows\n" "$(command -v "$comando")" >&2; exit 127 ;;'
-        'esac;'
-        'case $(stat -c %A . 2>/dev/null) in ????????w?)'
-        'if [ -z "${ANSIBLE_CONFIG+definida}" ] && [ -f ansible.cfg ]; then export ANSIBLE_CONFIG="$PWD/ansible.cfg"; fi ;;'
-        'esac;'
+        'mensagem_de_comando_ausente="$0";'
+        'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
         $execucaoDoComando
     ) -join ' '
 
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
         '--cd', $pastaAtual
-        '--exec', 'sh', '-lc', $script, $raizDeMontagem, $mensagemDeComandoAusente, $formatoDeComandoSoNoWindows
+        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente
         $Comando
     )
     foreach ($argumento in $Argumentos) {
