@@ -23,8 +23,14 @@ Describe 'New-ShimDeComando' {
             }
         }
 
-        It 'grava um script que executa o comando pelo módulo' {
+        It 'grava um script que executa o comando pelo módulo com o pipeline' {
             $conteudo = Get-Content -LiteralPath (Join-Path $pastaDosShims 'ansible-playbook.ps1')
+
+            $conteudo | Should-Be "`$input | WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args; exit `$LASTEXITCODE"
+        }
+
+        It 'grava o script do executável sem ler a entrada padrão' {
+            $conteudo = Get-Content -LiteralPath (Join-Path $pastaDosShims 'exe/ansible-playbook.ps1')
 
             $conteudo | Should-Be "WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args; exit `$LASTEXITCODE"
         }
@@ -35,8 +41,8 @@ Describe 'New-ShimDeComando' {
             $conteudo | Should-Be 'shim modelo'
         }
 
-        It 'aponta o executável para o script pelo PowerShell escolhido' {
-            $caminhoDoScript = Join-Path $pastaDosShims 'ansible-playbook.ps1'
+        It 'aponta o executável para o script dele pelo PowerShell escolhido' {
+            $caminhoDoScript = Join-Path $pastaDosShims 'exe\ansible-playbook.ps1'
 
             $conteudo = Get-Content -LiteralPath (Join-Path $pastaDosShims 'ansible-playbook.shim') -Encoding UTF8
 

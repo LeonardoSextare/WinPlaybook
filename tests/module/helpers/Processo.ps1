@@ -17,6 +17,9 @@
     .PARAMETER PastaDeTrabalho
     A pasta onde o programa começa. O padrão é a pasta atual.
 
+    .PARAMETER CaminhoDaEntrada
+    Um arquivo que o programa recebe na entrada padrão.
+
     .EXAMPLE
     Invoke-LinhaDeComando -Programa $caminhoDoShim -Argumentos '-i inventory.yml site.yml'
     #>
@@ -25,7 +28,8 @@
     param(
         [Parameter(Mandatory)] [string] $Programa,
         [string] $Argumentos,
-        [string] $PastaDeTrabalho
+        [string] $PastaDeTrabalho,
+        [string] $CaminhoDaEntrada
     )
 
     $caminhoDaSaida = (New-TemporaryFile).FullName
@@ -44,6 +48,9 @@
         }
         if ($PastaDeTrabalho) {
             $parametros.WorkingDirectory = $PastaDeTrabalho
+        }
+        if ($CaminhoDaEntrada) {
+            $parametros.RedirectStandardInput = $CaminhoDaEntrada
         }
 
         $processo = Start-Process @parametros
@@ -115,6 +122,9 @@ function Invoke-ScriptDePowerShell {
     .PARAMETER Argumentos
     Os argumentos do script.
 
+    .PARAMETER CaminhoDaEntrada
+    Um arquivo cujas linhas o script recebe pelo pipeline, como em Get-Content arquivo | script.
+
     .EXAMPLE
     Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims 'ansible-playbook.ps1') -Argumentos 'site.yml'
     #>
@@ -122,12 +132,18 @@ function Invoke-ScriptDePowerShell {
     [OutputType([pscustomobject])]
     param(
         [Parameter(Mandatory)] [string] $Caminho,
-        [AllowEmptyString()] [string[]] $Argumentos = @()
+        [AllowEmptyString()] [string[]] $Argumentos = @(),
+        [string] $CaminhoDaEntrada
     )
 
     $ErrorActionPreference = 'Continue'
     $global:LASTEXITCODE = 0
-    $registros = @(& $Caminho @Argumentos 2>&1)
+    if ($CaminhoDaEntrada) {
+        $registros = @(Get-Content -LiteralPath $CaminhoDaEntrada -Encoding UTF8 | & $Caminho @Argumentos 2>&1)
+    }
+    else {
+        $registros = @(& $Caminho @Argumentos 2>&1)
+    }
     $codigoDeSaida = $LASTEXITCODE
 
     $linhasDaSaida = $registros | Where-Object { $_ -isnot [Management.Automation.ErrorRecord] } | ForEach-Object { "$_" }

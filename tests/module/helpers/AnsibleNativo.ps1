@@ -155,6 +155,9 @@ function Invoke-AnsibleNativo {
     .PARAMETER Argumentos
     Os argumentos do comando, no formato do Linux.
 
+    .PARAMETER CaminhoDaEntrada
+    Um arquivo do Windows que o comando recebe na entrada padrão, como em cat arquivo | comando.
+
     .EXAMPLE
     Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando 'ansible-playbook' -Argumentos 'site.yml'
     #>
@@ -164,7 +167,8 @@ function Invoke-AnsibleNativo {
         [Parameter(Mandatory)] [string] $Distribuicao,
         [Parameter(Mandatory)] [string] $Pasta,
         [Parameter(Mandatory)] [string] $Comando,
-        [AllowEmptyString()] [string[]] $Argumentos = @()
+        [AllowEmptyString()] [string[]] $Argumentos = @(),
+        [string] $CaminhoDaEntrada
     )
 
     $argumentosDoWsl = @('--distribution', $Distribuicao, '--cd', $Pasta, '--exec', 'sh', '-lc', 'exec "$@"', 'sh', $Comando) + $Argumentos
@@ -172,7 +176,7 @@ function Invoke-AnsibleNativo {
     $utf8Original = $env:WSL_UTF8
     $env:WSL_UTF8 = '1'
     try {
-        return Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos (ConvertTo-LinhaDeComando -Argumentos $argumentosDoWsl)
+        return Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos (ConvertTo-LinhaDeComando -Argumentos $argumentosDoWsl) -CaminhoDaEntrada $CaminhoDaEntrada
     }
     finally {
         $env:WSL_UTF8 = $utf8Original

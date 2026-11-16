@@ -29,6 +29,14 @@
             NoWindows = @('site.yml')
         }
         @{
+            Descricao = 'o playbook vem pela entrada padrão'
+            Projeto   = 'entrada'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('/dev/stdin')
+            NoWindows = @('/dev/stdin')
+            Entrada   = 'playbook.yml'
+        }
+        @{
             Descricao = 'o comando mostra a versão'
             Projeto   = 'ola'
             Comando   = 'ansible'
@@ -207,8 +215,9 @@ BeforeAll {
         Executa o cenário direto no Linux da distribuição, a partir de uma cópia do projeto no disco do Linux.
 
         .DESCRIPTION
-        Devolve um objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto
-        trocada por <projeto>.
+        Com Entrada, o comando recebe esse arquivo do projeto na entrada padrão. Devolve um
+        objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto trocada por
+        <projeto>.
 
         .PARAMETER Cenario
         O cenário, com Projeto, Comando e os argumentos no formato do Linux (NoLinux).
@@ -222,10 +231,16 @@ BeforeAll {
             [Parameter(Mandatory)] [hashtable] $Cenario
         )
 
-        $projetoNoLinux = Copy-ProjetoParaDistribuicao -Distribuicao $nomeDaDistribuicao -Origem (Join-Path $pastaDosProjetos $Cenario.Projeto)
+        $origem = Join-Path $pastaDosProjetos $Cenario.Projeto
+        $caminhoDaEntrada = $null
+        if ($Cenario.Entrada) {
+            $caminhoDaEntrada = Join-Path $origem $Cenario.Entrada
+        }
+
+        $projetoNoLinux = Copy-ProjetoParaDistribuicao -Distribuicao $nomeDaDistribuicao -Origem $origem
         try {
             $argumentos = @($Cenario.NoLinux | ForEach-Object { $_.Replace('<projeto>', $projetoNoLinux) })
-            $resultado = Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando $Cenario.Comando -Argumentos $argumentos
+            $resultado = Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando $Cenario.Comando -Argumentos $argumentos -CaminhoDaEntrada $caminhoDaEntrada
 
             return [pscustomobject]@{
                 CodigoDeSaida = $resultado.CodigoDeSaida
@@ -246,9 +261,11 @@ BeforeAll {
 
         .DESCRIPTION
         Com PastaDoProjeto = DiscoDoLinux, a cópia fica no disco do Linux da distribuição, e o
-        Windows a vê pelo caminho \\wsl.localhost. Pelo PowerShell, o console usa a página de
-        código do Windows, como num terminal novo. Devolve um objeto com CodigoDeSaida, Saida,
-        Erro e Arquivos, com a pasta do projeto trocada por <projeto>.
+        Windows a vê pelo caminho \\wsl.localhost. Com Entrada, o comando recebe esse arquivo
+        do projeto pelo pipeline, no PowerShell, ou pela entrada padrão, nos outros programas.
+        Pelo PowerShell, o console usa a página de código do Windows, como num terminal novo.
+        Devolve um objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto
+        trocada por <projeto>.
 
         .PARAMETER Cenario
         O cenário, com Projeto, Comando e os argumentos no formato do Windows (NoWindows).
@@ -267,6 +284,11 @@ BeforeAll {
         )
 
         $origem = Join-Path $pastaDosProjetos $Cenario.Projeto
+        $caminhoDaEntrada = $null
+        if ($Cenario.Entrada) {
+            $caminhoDaEntrada = Join-Path $origem $Cenario.Entrada
+        }
+
         $ficaNoDiscoDoLinux = $Cenario.PastaDoProjeto -eq 'DiscoDoLinux'
         if ($ficaNoDiscoDoLinux) {
             $projetoNoLinux = Copy-ProjetoParaDistribuicao -Distribuicao $nomeDaDistribuicao -Origem $origem
@@ -286,7 +308,7 @@ BeforeAll {
                 [Console]::OutputEncoding = [Text.Encoding]::GetEncoding([Globalization.CultureInfo]::CurrentCulture.TextInfo.OEMCodePage)
                 Push-Location -LiteralPath $projeto
                 try {
-                    $resultado = Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims "$($Cenario.Comando).ps1") -Argumentos $argumentos
+                    $resultado = Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims "$($Cenario.Comando).ps1") -Argumentos $argumentos -CaminhoDaEntrada $caminhoDaEntrada
                 }
                 finally {
                     Pop-Location
@@ -295,7 +317,7 @@ BeforeAll {
             }
             else {
                 $linhaDeComando = ConvertTo-LinhaDeComando -Argumentos $argumentos
-                $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims "$($Cenario.Comando).exe") -Argumentos $linhaDeComando -PastaDeTrabalho $projeto
+                $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims "$($Cenario.Comando).exe") -Argumentos $linhaDeComando -PastaDeTrabalho $projeto -CaminhoDaEntrada $caminhoDaEntrada
             }
 
             $projetoNaDistribuicao = ConvertTo-CaminhoNaDistribuicao -Distribuicao $nomeDaDistribuicao -Caminho $projeto

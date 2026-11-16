@@ -75,6 +75,15 @@ bugs, e como o código lida com cada um.
 - Chamado pelo `.exe` com `-File`, o PowerShell sai com 0 mesmo quando o
   comando falha. O `.ps1` gerado para cada shim termina com
   `exit $LASTEXITCODE`.
+- Aberto com `-File` e com a entrada padrão redirecionada, o PowerShell lê a
+  entrada para o `$input` do script quando ele cita `$input`, mesmo num trecho
+  que não roda, e o programa que o script chama recebe a entrada vazia. O
+  `.exe` abre o `exe\<comando>.ps1`, que não cita `$input`. Só o `.ps1` que o
+  PowerShell executa repassa o pipeline.
+- O PowerShell escreve cada linha do pipeline na entrada de um programa com
+  `\r\n`, e o 5.1 pode pôr um BOM no começo, mesmo com o `$OutputEncoding` em
+  UTF-8 sem BOM. O `Invoke-ComandoNoWsl` manda o pipeline em UTF-8, e o script
+  na distribuição tira o BOM e os `\r` com o `sed`.
 
 ## Caminhos e texto
 

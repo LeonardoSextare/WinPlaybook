@@ -100,6 +100,22 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando o comando recebe uma entrada' {
+        It 'manda cada linha da entrada pelo pipeline do wsl' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '/dev/stdin' -Entrada 'linha 1', 'linha 2', 'linha 3' }
+
+            Should-Invoke wsl -ModuleName WinPlaybook -Times 3 -Exactly
+        }
+    }
+
+    Context 'quando o comando não recebe entrada' {
+        It 'chama o wsl uma vez, sem pipeline' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            Should-Invoke wsl -ModuleName WinPlaybook -Times 1 -Exactly
+        }
+    }
+
     Context 'quando o console usa a página de código do Windows' {
         BeforeAll {
             $codificacaoOriginal = [Console]::OutputEncoding

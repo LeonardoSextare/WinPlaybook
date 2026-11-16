@@ -1,0 +1,7 @@
+- name: Vem pela entrada padrão
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Mostra uma frase com acentos
+      ansible.builtin.debug:
+        msg: chegou pela entrada, com ação

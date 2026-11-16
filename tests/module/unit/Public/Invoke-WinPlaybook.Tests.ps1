@@ -35,6 +35,22 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    It 'repassa o pipeline para a entrada do comando' {
+        'linha 1', 'linha 2' | Invoke-WinPlaybook ansible-playbook /dev/stdin
+
+        Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            ($Entrada -join '|') -eq 'linha 1|linha 2'
+        }
+    }
+
+    It 'executa o comando sem entrada quando não há pipeline' {
+        Invoke-WinPlaybook ansible-playbook site.yml
+
+        Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $Entrada.Count -eq 0
+        }
+    }
+
     It 'recusa uma chamada sem comando' {
         { Invoke-WinPlaybook } | Should-Throw -ExceptionMessage 'Informe o comando*'
     }
