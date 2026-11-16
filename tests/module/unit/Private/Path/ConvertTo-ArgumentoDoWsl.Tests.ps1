@@ -40,6 +40,20 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
         }
     }
 
+    Context 'quando o argumento tem caracteres que não cabem num caminho e quem chama para nos erros' {
+        It 'mantém <Descricao> sem mudança e sem erro' -ForEach @(
+            @{ Descricao = 'um JSON com um caminho do Windows'; Argumento = '{"caminho": "C:\\Temp"}' }
+            @{ Descricao = 'um texto com barra invertida e barra vertical'; Argumento = 'a\b|c' }
+        ) {
+            $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
+                $ErrorActionPreference = 'Stop'
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+            }
+
+            $resultado | Should-Be $Argumento
+        }
+    }
+
     Context 'quando o argumento é um caminho absoluto' {
         It 'converte <Descricao>' -ForEach @(
             @{ Descricao = 'o caminho'; Argumento = 'C:\repo\playbooks\site.yml'; Esperado = '/mnt/c/repo/playbooks/site.yml' }

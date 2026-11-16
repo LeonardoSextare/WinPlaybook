@@ -46,7 +46,8 @@
         return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
     }
 
-    $ehCaminhoRelativoExistente = $valor.Contains('\') -and (Test-Path -LiteralPath (Join-Path -Path $PastaAtual -ChildPath $valor))
+    $podeSerCaminhoRelativo = $valor.Contains('\') -and ($valor.IndexOfAny([IO.Path]::GetInvalidPathChars()) -lt 0)
+    $ehCaminhoRelativoExistente = $podeSerCaminhoRelativo -and (Test-Path -LiteralPath (Join-Path -Path $PastaAtual -ChildPath $valor))
     if ($ehCaminhoRelativoExistente) {
         return $prefixo + $valor.Replace('\', '/')
     }
