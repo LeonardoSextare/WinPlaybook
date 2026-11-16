@@ -11,6 +11,9 @@
     Um comando que não existe na distribuição, ou que só existe numa unidade do Windows, é
     recusado com o código de saída 127.
 
+    A saída do comando chega em UTF-8, então os acentos ficam certos também quando o
+    PowerShell a captura, como em $saida = ansible-playbook site.yml.
+
     O Ansible ignora o ansible.cfg de uma pasta com permissão de escrita para todos, como as
     unidades do Windows na distribuição. Numa pasta assim, o ansible.cfg da pasta atual vai
     no ANSIBLE_CONFIG, a não ser que a variável já esteja definida, e o Ansible o lê como no
@@ -78,5 +81,12 @@
     }
 
     $ErrorActionPreference = 'Continue'
-    wsl @argumentosDoWsl
+    $codificacaoDoConsole = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    try {
+        wsl @argumentosDoWsl
+    }
+    finally {
+        [Console]::OutputEncoding = $codificacaoDoConsole
+    }
 }
