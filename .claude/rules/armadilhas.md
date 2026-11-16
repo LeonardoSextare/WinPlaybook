@@ -107,6 +107,14 @@ bugs, e como o código lida com cada um.
   métodos de string não. Métodos que comparam texto recebem
   `[StringComparison]::OrdinalIgnoreCase`.
 
+## Variáveis de ambiente
+
+- No PowerShell 7, o `[Environment]::SetEnvironmentVariable($nome, $null)`
+  deixa a variável definida com valor vazio, porque o PowerShell passa uma
+  string vazia para o .NET. No 5.1, a variável some. Para apagar uma variável,
+  use `Remove-Item -LiteralPath "Env:$nome"`. Um `ANSIBLE_` vazio muda o
+  Ansible, que lê um booleano vazio como falso.
+
 ## Arquivos do módulo
 
 - Um caminho montado a partir do `$PSScriptRoot` depende da subpasta onde a

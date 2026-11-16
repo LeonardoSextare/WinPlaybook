@@ -158,6 +158,9 @@ function Invoke-AnsibleNativo {
     .PARAMETER CaminhoDaEntrada
     Um arquivo do Windows que o comando recebe na entrada padrão, como em cat arquivo | comando.
 
+    .PARAMETER Variaveis
+    As variáveis de ambiente que o comando recebe, como as que o usuário exporta no shell.
+
     .EXAMPLE
     Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando 'ansible-playbook' -Argumentos 'site.yml'
     #>
@@ -168,10 +171,12 @@ function Invoke-AnsibleNativo {
         [Parameter(Mandatory)] [string] $Pasta,
         [Parameter(Mandatory)] [string] $Comando,
         [AllowEmptyString()] [string[]] $Argumentos = @(),
-        [string] $CaminhoDaEntrada
+        [string] $CaminhoDaEntrada,
+        [hashtable] $Variaveis = @{}
     )
 
-    $argumentosDoWsl = @('--distribution', $Distribuicao, '--cd', $Pasta, '--exec', 'sh', '-lc', 'exec "$@"', 'sh', $Comando) + $Argumentos
+    $atribuicoes = @($Variaveis.Keys | Sort-Object | ForEach-Object { "$_=$($Variaveis[$_])" })
+    $argumentosDoWsl = @('--distribution', $Distribuicao, '--cd', $Pasta, '--exec', 'sh', '-lc', 'exec env "$@"', 'sh') + $atribuicoes + @($Comando) + $Argumentos
 
     $utf8Original = $env:WSL_UTF8
     $env:WSL_UTF8 = '1'

@@ -15,6 +15,9 @@
     A saída do comando chega em UTF-8, então os acentos ficam certos também quando o
     PowerShell a captura, como em $saida = ansible-playbook site.yml.
 
+    As variáveis de ambiente ANSIBLE_ do Windows chegam ao comando, com os caminhos do
+    Windows convertidos. As outras variáveis chegam quando estão no WSLENV, como o WSL faz.
+
     O Ansible ignora o ansible.cfg de uma pasta com permissão de escrita para todos, como as
     unidades do Windows na distribuição. Numa pasta assim, o ansible.cfg da pasta atual vai
     no ANSIBLE_CONFIG, a não ser que a variável já esteja definida, e o Ansible o lê como no
@@ -98,12 +101,22 @@
         $argumentosDoWsl = @(ConvertTo-ArgumentoNativoLegado -Argumento $argumentosDoWsl)
     }
 
+    $variaveisDoAnsible = Get-VariavelDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem -PastaAtual $pastaAtual
+
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding
     $utf8DoWslOriginal = $env:WSL_UTF8
-    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
-    $env:WSL_UTF8 = '1'
+    $wslenvOriginal = $env:WSLENV
+    $valoresOriginaisDoAnsible = @{}
     try {
+        foreach ($nome in $variaveisDoAnsible.Keys) {
+            $valoresOriginaisDoAnsible[$nome] = [Environment]::GetEnvironmentVariable($nome)
+            [Environment]::SetEnvironmentVariable($nome, $variaveisDoAnsible[$nome])
+        }
+        $env:WSLENV = (@($variaveisDoAnsible.Keys) + @("$wslenvOriginal".Split(':') | Where-Object { $_ })) -join ':'
+        [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+        $env:WSL_UTF8 = '1'
+
         if ($temEntrada) {
             $OutputEncoding = [Text.UTF8Encoding]::new($false)
             $Entrada | wsl @argumentosDoWsl
@@ -114,6 +127,10 @@
     }
     finally {
         $env:WSL_UTF8 = $utf8DoWslOriginal
+        $env:WSLENV = $wslenvOriginal
+        foreach ($nome in $valoresOriginaisDoAnsible.Keys) {
+            [Environment]::SetEnvironmentVariable($nome, $valoresOriginaisDoAnsible[$nome])
+        }
         [Console]::OutputEncoding = $codificacaoDoConsole
     }
 

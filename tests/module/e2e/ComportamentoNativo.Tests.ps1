@@ -165,6 +165,33 @@
             NoWindows = @('dump', '--only-changed')
         }
         @{
+            Descricao        = 'uma variável ANSIBLE_ do Windows muda a configuração'
+            Projeto          = 'ola'
+            Comando          = 'ansible-playbook'
+            NoLinux          = @('site.yml')
+            NoWindows        = @('site.yml')
+            VariaveisNoLinux = @{ ANSIBLE_DISPLAY_OK_HOSTS = 'false' }
+            Variaveis        = @{ ANSIBLE_DISPLAY_OK_HOSTS = 'false' }
+        }
+        @{
+            Descricao        = 'uma variável ANSIBLE_ do Windows aponta para um arquivo do projeto'
+            Projeto          = 'configuracao-pela-variavel'
+            Comando          = 'ansible-config'
+            NoLinux          = @('dump', '--only-changed')
+            NoWindows        = @('dump', '--only-changed')
+            VariaveisNoLinux = @{ ANSIBLE_CONFIG = '<projeto>/config/ansible.cfg' }
+            Variaveis        = @{ ANSIBLE_CONFIG = '<projeto>\config\ansible.cfg' }
+        }
+        @{
+            Descricao        = 'o playbook lê uma variável que o usuário pôs no WSLENV'
+            Projeto          = 'variavel-de-ambiente'
+            Comando          = 'ansible-playbook'
+            NoLinux          = @('site.yml')
+            NoWindows        = @('site.yml')
+            VariaveisNoLinux = @{ WINPLAYBOOK_TEST_MENSAGEM = 'oi do ambiente' }
+            Variaveis        = @{ WINPLAYBOOK_TEST_MENSAGEM = 'oi do ambiente'; WSLENV = 'WINPLAYBOOK_TEST_MENSAGEM' }
+        }
+        @{
             Descricao = 'o ansible-doc mostra a documentação de um módulo'
             Projeto   = 'ola'
             Comando   = 'ansible-doc'
@@ -212,9 +239,9 @@ BeforeAll {
         Executa o cenário direto no Linux da distribuição, a partir de uma cópia do projeto no disco do Linux.
 
         .DESCRIPTION
-        Com Entrada, o comando recebe esse arquivo do projeto na entrada padrão. Devolve um
-        objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto trocada por
-        <projeto>.
+        Com Entrada, o comando recebe esse arquivo do projeto na entrada padrão, e com
+        VariaveisNoLinux, essas variáveis de ambiente. Devolve um objeto com CodigoDeSaida, Saida,
+        Erro e Arquivos, com a pasta do projeto trocada por <projeto>.
 
         .PARAMETER Cenario
         O cenário, com Projeto, Comando e os argumentos no formato do Linux (NoLinux).
@@ -237,7 +264,13 @@ BeforeAll {
         $projetoNoLinux = Copy-ProjetoParaDistribuicao -Distribuicao $nomeDaDistribuicao -Origem $origem
         try {
             $argumentos = @($Cenario.NoLinux | ForEach-Object { $_.Replace('<projeto>', $projetoNoLinux) })
-            $resultado = Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando $Cenario.Comando -Argumentos $argumentos -CaminhoDaEntrada $caminhoDaEntrada
+            $variaveis = @{}
+            if ($Cenario.VariaveisNoLinux) {
+                foreach ($nome in $Cenario.VariaveisNoLinux.Keys) {
+                    $variaveis[$nome] = $Cenario.VariaveisNoLinux[$nome].Replace('<projeto>', $projetoNoLinux)
+                }
+            }
+            $resultado = Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando $Cenario.Comando -Argumentos $argumentos -CaminhoDaEntrada $caminhoDaEntrada -Variaveis $variaveis
 
             return [pscustomobject]@{
                 CodigoDeSaida = $resultado.CodigoDeSaida
@@ -260,6 +293,7 @@ BeforeAll {
         Com PastaDoProjeto = DiscoDoLinux, a cópia fica no disco do Linux da distribuição, e o
         Windows a vê pelo caminho \\wsl.localhost. Com Entrada, o comando recebe esse arquivo
         do projeto pelo pipeline, no PowerShell, ou pela entrada padrão, nos outros programas.
+        Com Variaveis, o teste define essas variáveis de ambiente do Windows durante a chamada.
         Pelo PowerShell, o console usa a página de código do Windows, como num terminal novo.
         Devolve um objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto
         trocada por <projeto>.
@@ -296,8 +330,15 @@ BeforeAll {
             Copy-Item -LiteralPath $origem -Destination $projeto -Recurse
         }
 
+        $valoresOriginais = @{}
         try {
             $argumentos = @($Cenario.NoWindows | ForEach-Object { $_.Replace('<projeto>', $projeto) })
+            if ($Cenario.Variaveis) {
+                foreach ($nome in $Cenario.Variaveis.Keys) {
+                    $valoresOriginais[$nome] = [Environment]::GetEnvironmentVariable($nome)
+                    Set-Item -LiteralPath "Env:$nome" -Value $Cenario.Variaveis[$nome].Replace('<projeto>', $projeto)
+                }
+            }
 
             $ehChamadoPeloPowerShell = $Chamador -eq 'PowerShell'
             if ($ehChamadoPeloPowerShell) {
@@ -326,6 +367,12 @@ BeforeAll {
             }
         }
         finally {
+            foreach ($nome in $valoresOriginais.Keys) {
+                Remove-Item -LiteralPath "Env:$nome" -ErrorAction SilentlyContinue
+                if ($null -ne $valoresOriginais[$nome]) {
+                    Set-Item -LiteralPath "Env:$nome" -Value $valoresOriginais[$nome]
+                }
+            }
             if ($ficaNoDiscoDoLinux) {
                 Remove-PastaDaDistribuicao -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux
             }
