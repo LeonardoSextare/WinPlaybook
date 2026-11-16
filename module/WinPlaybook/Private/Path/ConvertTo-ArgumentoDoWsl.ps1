@@ -5,10 +5,11 @@
 
     .DESCRIPTION
     Um caminho absoluto vira um caminho dentro da pasta onde a distribuição monta as
-    unidades. Um caminho relativo com barras invertidas passa a usar barras normais, mas só
-    quando ele existe, porque outros argumentos podem ter barras invertidas sem ser
-    caminhos. O caminho pode vir depois de uma opção (--inventory=) e depois de @, como em
-    -e @vars\prod.yml. Os outros argumentos voltam sem mudança.
+    unidades. Um caminho relativo com barras invertidas passa a usar barras normais quando
+    começa com .\ ou ..\, ou quando a pasta dele existe, mesmo que o arquivo ainda não
+    exista, porque outros argumentos podem ter barras invertidas sem ser caminhos. O caminho
+    pode vir depois de uma opção (--inventory=) e depois de @, como em -e @vars\prod.yml. Os
+    outros argumentos voltam sem mudança.
 
     .PARAMETER Argumento
     O argumento, como o usuário passou.
@@ -17,7 +18,7 @@
     A pasta onde a distribuição monta as unidades do Windows, como /mnt/.
 
     .PARAMETER PastaAtual
-    A pasta de onde o comando é executado, para conferir se um caminho relativo existe.
+    A pasta de onde o comando é executado, para conferir se a pasta de um caminho relativo existe.
 
     .EXAMPLE
     ConvertTo-ArgumentoDoWsl -Argumento '.\site.yml' -RaizDeMontagem '/mnt/' -PastaAtual 'C:\repo'
@@ -46,9 +47,8 @@
         return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
     }
 
-    $podeSerCaminhoRelativo = $valor.Contains('\') -and ($valor.IndexOfAny([IO.Path]::GetInvalidPathChars()) -lt 0)
-    $ehCaminhoRelativoExistente = $podeSerCaminhoRelativo -and (Test-Path -LiteralPath (Join-Path -Path $PastaAtual -ChildPath $valor))
-    if ($ehCaminhoRelativoExistente) {
+    $ehCaminhoRelativoDoWindows = Test-CaminhoRelativoDoWindows -Caminho $valor -PastaAtual $PastaAtual
+    if ($ehCaminhoRelativoDoWindows) {
         return $prefixo + $valor.Replace('\', '/')
     }
 
