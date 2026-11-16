@@ -116,6 +116,30 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando o wsl escreve as próprias mensagens' {
+        BeforeAll {
+            $utf8Original = $env:WSL_UTF8
+            $env:WSL_UTF8 = 'original'
+            Mock wsl -ModuleName WinPlaybook { $env:WSL_UTF8 }
+        }
+
+        AfterAll {
+            $env:WSL_UTF8 = $utf8Original
+        }
+
+        It 'pede ao wsl as mensagens em UTF-8' {
+            $utf8DuranteOWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $utf8DuranteOWsl | Should-Be '1'
+        }
+
+        It 'restaura a variável WSL_UTF8 no fim' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $env:WSL_UTF8 | Should-Be 'original'
+        }
+    }
+
     Context 'quando o console usa a página de código do Windows' {
         BeforeAll {
             $codificacaoOriginal = [Console]::OutputEncoding

@@ -99,7 +99,9 @@
 
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding
+    $utf8DoWslOriginal = $env:WSL_UTF8
     [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    $env:WSL_UTF8 = '1'
     try {
         if ($temEntrada) {
             $OutputEncoding = [Text.UTF8Encoding]::new($false)
@@ -110,6 +112,7 @@
         }
     }
     finally {
+        $env:WSL_UTF8 = $utf8DoWslOriginal
         [Console]::OutputEncoding = $codificacaoDoConsole
     }
 }
