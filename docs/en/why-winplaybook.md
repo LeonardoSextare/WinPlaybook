@@ -23,19 +23,23 @@ this: the editor window stays on Windows, but the terminal, the files, and some
 of the extensions run on Linux, and you have to install those extensions
 again.
 
-## Why a container
+## Why its own WSL distribution
 
 WinPlaybook adds the Ansible commands to your Windows `PATH` and runs each one
-in a disposable container that Docker creates when the command starts and
-removes when it ends. The `ansible-playbook` command is available to the
-terminal and to any program that runs on Windows, like a native command, and
-you keep working on Windows.
+in a WSL distribution that belongs only to WinPlaybook. The `ansible-playbook`
+command is available to the terminal and to any program that runs on Windows,
+like a native command, and you keep working on Windows. The distribution stays
+behind the commands, and you don't need to open a terminal in it.
 
-[Docker Desktop](https://docs.docker.com/desktop/) already runs Linux without
-extra setup. The WinPlaybook image includes Ansible, `ansible-lint`, and the
-libraries to manage Windows machines. You don't install Python or Ansible on
-Windows, and everyone who uses the same image has the same tool versions.
+WSL is a Windows feature and can see the Windows drives. Ansible reads the
+playbooks in the folder where they already are, and WinPlaybook converts the
+Windows paths in the arguments to the distribution paths. You don't install
+Python or Ansible on Windows.
 
-In exchange, Docker Desktop must be running, and each command takes a few
-more seconds to start. These and other limitations are in
-[How it works](how-it-works.md#limitations).
+The distribution is separate so that WinPlaybook doesn't change the
+distributions that you already have. WinPlaybook sets it up the way Ansible
+needs, and `Uninstall-WinPlaybook` deletes all of it.
+
+In exchange, the first installation downloads Debian and Ansible and takes a
+few minutes, and each command takes a little longer to start. These and other
+limitations are in [How it works](how-it-works.md#limitations).
