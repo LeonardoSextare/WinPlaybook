@@ -29,7 +29,8 @@ flowchart LR
 catalog, with its disk in `C:\Users\<user>\AppData\Local\WinPlaybook\distro`,
 and prepares it for Ansible:
 
-- It installs Python, Git, SSH, and `sshpass`.
+- It installs Python, Git, SSH, `sshpass`, and `rsync`, which
+  `ansible.posix.synchronize` uses.
 - It creates the `winplaybook` user, which runs the commands.
 - It installs Ansible with [uv](https://docs.astral.sh/uv/), in
   `/home/winplaybook/.local/bin`, on the newest Python version where Ansible
