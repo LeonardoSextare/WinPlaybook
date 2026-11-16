@@ -14,6 +14,7 @@
     $projetoComViolacoesDeLint = Join-Path $PSScriptRoot '../data/projects/violacao-de-lint'
     $projetoComConfiguracao = Join-Path $PSScriptRoot '../data/projects/configuracao-do-projeto'
     $projetoComInventario = Join-Path $PSScriptRoot '../data/projects/inventario'
+    $projetoComSincronizacao = Join-Path $PSScriptRoot '../data/projects/sincronizacao'
 }
 
 AfterAll {
@@ -182,6 +183,25 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*"ping": "pong"*'
+        }
+    }
+
+    Context 'quando o playbook copia uma pasta com o ansible.posix.synchronize' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'sincronizacao'
+            Copy-Item $projetoComSincronizacao $projeto -Recurse
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'copia os arquivos com o rsync da distribuição' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            Get-Content -LiteralPath (Join-Path $projeto 'copia/ola.txt') -Raw | Should-BeLikeString 'oi do rsync*'
         }
     }
 
