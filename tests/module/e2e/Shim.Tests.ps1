@@ -1,13 +1,12 @@
 ﻿BeforeAll {
     . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
+    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
 
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
-
-    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $pastaDeProgramasDoWindows = Join-Path $TestDrive 'programas-do-windows'
     $null = New-Item -ItemType File -Path (Join-Path $pastaDeProgramasDoWindows 'ansible-windows.exe') -Force

@@ -51,7 +51,7 @@ Todas as funções:
 
 Funções públicas:
 
-- Nome em inglês, com `WinPlaybook` no substantivo (`Install-WinPlaybookShim`).
+- Nome em inglês, com `WinPlaybook` no substantivo (`Install-WinPlaybook`).
 - Parâmetros em inglês, com os nomes que o PowerShell já usa para a mesma
   ideia (`-Path`, `-Force`).
 
@@ -143,8 +143,12 @@ Funções privadas:
 - O WinPlaybook só cria e apaga pastas dele. Os shims ficam em
   `<local>\WinPlaybook\bin` (padrão `%LOCALAPPDATA%\WinPlaybook\bin`). Uma
   pasta já existente que não está registrada na configuração não é tocada.
+- A única distribuição WSL que o WinPlaybook cria, altera e apaga é a dele, a
+  `WinPlaybook`, com o disco em `%LOCALAPPDATA%\WinPlaybook\distro`. As
+  distribuições do usuário não são tocadas.
 - A configuração fica em `%LOCALAPPDATA%\WinPlaybook\settings.json`, em lugar
   fixo, e só as funções de `Settings/` leem e gravam esse arquivo.
 - A desinstalação desfaz toda alteração que o WinPlaybook fez no sistema,
-  seja na instalação ou em qualquer outro comando, como a pasta dos shims, a
-  entrada no `PATH` do usuário e a configuração.
+  seja na instalação ou em qualquer outro comando, como a distribuição
+  `WinPlaybook`, a pasta dos shims, a entrada no `PATH` do usuário e a
+  configuração.

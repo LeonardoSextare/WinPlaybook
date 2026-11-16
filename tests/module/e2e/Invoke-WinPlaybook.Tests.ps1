@@ -13,6 +13,7 @@
     $projetoOla = Join-Path $PSScriptRoot '../data/projects/ola'
     $projetoComViolacoesDeLint = Join-Path $PSScriptRoot '../data/projects/violacao-de-lint'
     $projetoComConfiguracao = Join-Path $PSScriptRoot '../data/projects/configuracao-do-projeto'
+    $projetoComInventario = Join-Path $PSScriptRoot '../data/projects/inventario'
 }
 
 AfterAll {
@@ -165,6 +166,25 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o inventário tem um host com conexão local' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'inventario'
+            Copy-Item $projetoComInventario $projeto -Recurse
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'executa um módulo nesse host' {
+            $saida = Invoke-WinPlaybook ansible -i inventario.yml servidores -m ansible.builtin.ping 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"ping": "pong"*'
+        }
+    }
+
     Context 'quando o comando não está na distribuição' {
         BeforeAll {
             Push-Location $TestDrive
@@ -184,16 +204,16 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'recusa o programa do Windows com o mesmo nome' {
-            $padraoDaMensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'ComandoSoNoWindows' -Valores 'cmd.exe', '*' }
+            $mensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores 'cmd.exe' }
 
             $saida = (Invoke-WinPlaybook cmd.exe /c exit 0 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
 
             $LASTEXITCODE | Should-Be 127 -Because $saida
-            $saida | Should-BeLikeString "*$padraoDaMensagem*"
+            $saida | Should-BeLikeString "*$mensagem*"
         }
     }
 
-    Context 'quando a distribuição escolhida na instalação não existe mais' {
+    Context 'quando a distribuição do WinPlaybook não existe mais' {
         BeforeAll {
             InModuleScope WinPlaybook {
                 Save-Configuracao -Configuracao @{ WslDistribution = 'WinPlaybookInexistente'; WslMountRoot = '/mnt/' }
@@ -208,7 +228,7 @@ Describe 'Invoke-WinPlaybook' {
             }
         }
 
-        It 'explica como escolher outra' {
+        It 'explica como instalar de novo' {
             $mensagem = InModuleScope WinPlaybook { Get-Mensagem -Nome 'DistribuicaoNaoExisteMais' -Valores 'WinPlaybookInexistente' }
 
             { Invoke-WinPlaybook ansible --version 2>$null } | Should-Throw -ExceptionMessage $mensagem

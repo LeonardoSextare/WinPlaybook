@@ -29,12 +29,12 @@
             NoWindows = @('site.yml')
         }
         @{
-            Descricao = 'o playbook vem pela entrada padrão'
-            Projeto   = 'entrada'
-            Comando   = 'ansible-playbook'
-            NoLinux   = @('/dev/stdin')
-            NoWindows = @('/dev/stdin')
-            Entrada   = 'playbook.yml'
+            Descricao = 'o texto cifrado vem pela entrada padrão'
+            Projeto   = 'senha-do-vault'
+            Comando   = 'ansible-vault'
+            NoLinux   = @('decrypt', '--vault-password-file', 'senha.txt')
+            NoWindows = @('decrypt', '--vault-password-file', 'senha.txt')
+            Entrada   = 'segredo.yml'
         }
         @{
             Descricao = 'o comando mostra a versão'
@@ -165,6 +165,13 @@
             NoWindows = @('dump', '--only-changed')
         }
         @{
+            Descricao = 'a senha do vault vem de um arquivo do projeto'
+            Projeto   = 'senha-do-vault'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('--vault-password-file', 'senha.txt', 'site.yml')
+            NoWindows = @('--vault-password-file', 'senha.txt', 'site.yml')
+        }
+        @{
             Descricao        = 'uma variável ANSIBLE_ do Windows muda a configuração'
             Projeto          = 'ola'
             Comando          = 'ansible-playbook'
@@ -212,13 +219,12 @@ BeforeAll {
     . (Join-Path $PSScriptRoot '../helpers/AnsibleNativo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
+    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
 
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
-
-    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $pastaDosShims = Join-Path $TestDrive 'shims'
     $null = New-Item -ItemType Directory -Path $pastaDosShims

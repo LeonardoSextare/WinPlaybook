@@ -45,34 +45,22 @@ Describe 'Invoke-ComandoNoWsl' {
         ($argumentosDoWsl[4..6] -join ' ') | Should-Be '--exec sh -lc'
     }
 
-    It 'passa a raiz de montagem ao script do shell' {
+    It 'passa ao script do shell a mensagem de comando ausente no idioma do usuário' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-        $argumentosDoWsl[8] | Should-Be '/mnt/'
+        $argumentosDoWsl[8] | Should-Be 'WinPlaybook: comando ansible-playbook ausente na distribuição WSL. Rode o Install-WinPlaybook para atualizar os comandos.'
     }
 
-    It 'passa ao script do shell as mensagens de comando ausente no idioma do usuário' {
-        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
-
-        ($argumentosDoWsl[9..10] -join '|') | Should-Be 'WinPlaybook: comando ansible-playbook ausente no WSL. Instale-o no WSL, ou rode Install-WinPlaybookShim para atualizar os comandos.|WinPlaybook: comando ansible-playbook ausente no WSL, existe apenas no Windows (%s). Instale-o no WSL.'
-    }
-
-    It 'protege o % do nome do comando na mensagem que o printf formata' {
-        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'a%b' }
-
-        $argumentosDoWsl[10] | Should-BeLikeString '*a%%b*(%s)*'
-    }
-
-    It 'passa o comando e os argumentos dele depois das mensagens' {
+    It 'passa o comando e os argumentos dele depois da mensagem' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '-i', 'inventory.yml', 'site.yml' }
 
-        ($argumentosDoWsl[11..14] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
+        ($argumentosDoWsl[9..12] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
     }
 
     It 'executa um comando sem argumentos' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
-        ($argumentosDoWsl[11..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
+        ($argumentosDoWsl[9..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
     }
 
     It 'converte os caminhos do Windows dos argumentos' {
@@ -223,18 +211,18 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
-    Context 'quando o wsl não encontra a distribuição escolhida na instalação' {
+    Context 'quando o wsl não encontra a distribuição do WinPlaybook' {
         BeforeAll {
             Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = -1 }
             Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Debian' }
         }
 
-        It 'explica como escolher outra distribuição' {
-            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*distribuição WSL Ubuntu*não existe mais*Install-WinPlaybookShim -Distribution*'
+        It 'explica como instalar a distribuição de novo' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*distribuição WSL Ubuntu do WinPlaybook não existe mais*Install-WinPlaybook'
         }
     }
 
-    Context 'quando o wsl falha e a distribuição escolhida existe' {
+    Context 'quando o wsl falha e a distribuição existe' {
         BeforeAll {
             Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = -1 }
             Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook {
@@ -263,13 +251,13 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
-    Context 'quando nenhuma distribuição foi escolhida' {
+    Context 'quando o WinPlaybook não foi instalado' {
         BeforeAll {
             Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null } }
         }
 
-        It 'explica como escolher uma' {
-            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*Install-WinPlaybookShim -Distribution*'
+        It 'explica como instalar' {
+            { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage '*não está instalado*Install-WinPlaybook'
         }
 
         It 'para antes de chamar o wsl' {

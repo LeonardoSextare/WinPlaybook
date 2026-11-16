@@ -13,9 +13,9 @@ Describe 'Get-Mensagem' {
         }
 
         It 'devolve a mensagem em português, com os valores nos marcadores' {
-            $resultado = InModuleScope WinPlaybook { Get-Mensagem -Nome 'DistribuicaoNaoExiste' -Valores 'Fedora', 'Ubuntu, Debian' }
+            $resultado = InModuleScope WinPlaybook { Get-Mensagem -Nome 'RaizDeMontagemDesconhecida' -Valores 'WinPlaybook', 1 }
 
-            $resultado | Should-Be 'A distribuição WSL Fedora não existe. Escolha uma das distribuições instaladas: Ubuntu, Debian.'
+            $resultado | Should-Be 'Não foi possível descobrir onde a distribuição WSL WinPlaybook monta as unidades do Windows (código de saída do wsl: 1).'
         }
     }
 
@@ -25,9 +25,9 @@ Describe 'Get-Mensagem' {
         }
 
         It 'devolve a mensagem em inglês' {
-            $resultado = InModuleScope WinPlaybook { Get-Mensagem -Nome 'DistribuicaoNaoExiste' -Valores 'Fedora', 'Ubuntu, Debian' }
+            $resultado = InModuleScope WinPlaybook { Get-Mensagem -Nome 'RaizDeMontagemDesconhecida' -Valores 'WinPlaybook', 1 }
 
-            $resultado | Should-Be "The WSL distribution Fedora doesn't exist. Choose one of the installed distributions: Ubuntu, Debian."
+            $resultado | Should-Be 'Could not find where the WSL distribution WinPlaybook mounts the Windows drives (wsl exit code: 1).'
         }
     }
 

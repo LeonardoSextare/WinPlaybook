@@ -1,0 +1,63 @@
+﻿function Install-AnsibleNaDistribuicao {
+    <#
+    .SYNOPSIS
+    Instala o Ansible, o ansible-lint e o pywinrm na distribuição WSL do WinPlaybook, com o uv.
+
+    .DESCRIPTION
+    Instala o uv no usuário winplaybook quando ele ainda não está lá e, num ambiente só, o
+    pacote ansible, com as collections dele, o ansible-lint, o pywinrm e os pacotes Python
+    pedidos. Os comandos do ansible-core e do ansible-lint ficam em ~/.local/bin.
+
+    O ansible-core declara só a versão mínima do Python, e uma versão nova demais do Python
+    pode quebrá-lo. Por isso o uv tenta do Python mais novo para o mais antigo e fica com o
+    primeiro em que o ansible --version funciona. Rodar de novo troca a instalação pela
+    pedida.
+
+    .PARAMETER Nome
+    O nome da distribuição no WSL.
+
+    .PARAMETER VersaoDoAnsible
+    A versão do pacote ansible, como 13.0.0 ou 13.*. Vazia, instala a mais nova.
+
+    .PARAMETER PacotesPython
+    Os pacotes Python que entram junto com o Ansible, como boto3, no formato do pip.
+
+    .EXAMPLE
+    Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' -PacotesPython 'boto3'
+
+    .LINK
+    https://docs.astral.sh/uv/guides/tools/
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [string] $Nome,
+        [AllowEmptyString()] [string] $VersaoDoAnsible,
+        [AllowEmptyCollection()] [string[]] $PacotesPython = @()
+    )
+
+    $pacoteDoAnsible = 'ansible'
+    $versaoFoiEscolhida = [bool] $VersaoDoAnsible
+    if ($versaoFoiEscolhida) {
+        $pacoteDoAnsible = "ansible==$VersaoDoAnsible"
+    }
+
+    $script = @(
+        'export PATH="$HOME/.local/bin:$PATH";'
+        'command -v uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh > /dev/null 2>&1;'
+        'pacote="$1"; shift;'
+        'for extra in "$@"; do set -- "$@" --with "$extra"; shift; done;'
+        'ultima_saida="";'
+        'for versao in $(uv python list 2> /dev/null | sed -n ''s/^cpython-\(3\.[0-9]*\)\.[0-9]*-linux.*/\1/p'' | sort -t. -k2 -n -r -u); do'
+        'if ultima_saida=$(uv tool install --force --python "$versao" "$pacote" --with-executables-from ansible-core,ansible-lint --with pywinrm "$@" 2>&1) && ultima_saida=$("$HOME/.local/bin/ansible" --version 2>&1); then exit 0; fi;'
+        'done;'
+        'printf ''%s\n'' "$ultima_saida" >&2; exit 1'
+    ) -join ' '
+
+    $argumentos = @($pacoteDoAnsible) + $PacotesPython
+    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'winplaybook'
+    $instalou = $resultado.CodigoDeSaida -eq 0
+    if (-not $instalou) {
+        throw (Get-Mensagem -Nome 'AnsibleNaoInstalado' -Valores $Nome, $resultado.Saida)
+    }
+}

@@ -1,0 +1,9 @@
+- name: Lê um segredo do vault
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - segredo.yml
+  tasks:
+    - name: Mostra o segredo
+      ansible.builtin.debug:
+        msg: "{{ segredo }}"

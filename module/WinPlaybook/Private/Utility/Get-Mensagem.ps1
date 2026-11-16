@@ -9,15 +9,15 @@
     {1}... da mensagem viram os valores, na ordem.
 
     .PARAMETER Nome
-    A chave da mensagem, como DistribuicaoNaoExiste.
+    A chave da mensagem, como WslNaoInstalado.
 
     .PARAMETER Valores
     Os valores dos marcadores da mensagem.
 
     .EXAMPLE
-    Get-Mensagem -Nome 'DistribuicaoNaoExiste' -Valores 'Fedora', 'Ubuntu, Debian'
+    Get-Mensagem -Nome 'RaizDeMontagemDesconhecida' -Valores 'WinPlaybook', 1
 
-    Devolve "A distribuição WSL Fedora não existe. Escolha uma das distribuições instaladas: Ubuntu, Debian." num Windows em português.
+    Devolve "Não foi possível descobrir onde a distribuição WSL WinPlaybook monta as unidades do Windows (código de saída do wsl: 1)." num Windows em português.
 
     .LINK
     https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/import-localizeddata

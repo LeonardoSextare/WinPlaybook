@@ -15,7 +15,7 @@ inglês (`docs/en/`).
   desenvolver o projeto (testes, CI, estrutura do código).
 - Público técnico, da área de TI.
 - Só entra na documentação o que tem uso real. Opções e variáveis criadas
-  para testes (como `WINPLAYBOOK_TEST_WSL_DISTRIBUTION`) ficam de fora até
+  para testes (como as variáveis `WINPLAYBOOK_TEST_`) ficam de fora até
   existir um caso real de usuário.
 
 ## Organização

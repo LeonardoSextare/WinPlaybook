@@ -74,7 +74,7 @@ Describe 'Get-ComandoDoAnsible' {
         }
 
         It 'explica que falta o Ansible na distribuição' {
-            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' } } | Should-Throw -ExceptionMessage '*Ubuntu não tem comandos do Ansible*Instale o Ansible*'
+            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' } } | Should-Throw -ExceptionMessage '*Ubuntu não tem comandos do Ansible*Install-WinPlaybook*'
         }
     }
 }
