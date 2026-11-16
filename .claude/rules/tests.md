@@ -118,9 +118,9 @@ mantenedor antes de virar padrão.
   `$TestDrive` (`Push-Location`/`Pop-Location`), e verificam saída e
   `$LASTEXITCODE`.
 - Shims são gerados no `$TestDrive` (nunca com `Install-WinPlaybookShim`, que
-  mexe no `Path` real). A pasta `module/` do repositório entra no
-  `$env:PSModulePath` do processo, restaurado no `AfterAll`, para o PowerShell
-  aberto pelo `.exe` achar o módulo pelo nome.
+  mexe no `Path` real), com `-PastaDoModulo (Get-PastaDoModulo)`. Eles
+  carregam o módulo do repositório pela pasta dele, sem mudar o
+  `$env:PSModulePath`, como o usuário que instalou o módulo para uma edição só.
 - Argumentos com aspas, como JSON, são testados de ponta a ponta: só o
   `wsl.exe` real mostra o que o PowerShell 5.1 faz com eles.
 

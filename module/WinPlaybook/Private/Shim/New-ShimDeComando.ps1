@@ -9,6 +9,9 @@
     empacotado, que lê o <comando>.shim e abre o PowerShell escolhido com o exe\<comando>.ps1.
     Esse script não lê a entrada padrão, que chega ao comando sem passar pelo PowerShell.
 
+    Os dois scripts carregam o módulo pela pasta dele, então funcionam nas duas edições do
+    PowerShell, mesmo quando o módulo foi instalado só para uma delas.
+
     .PARAMETER Nome
     O nome do comando na distribuição, como ansible-playbook.
 
@@ -18,8 +21,11 @@
     .PARAMETER CaminhoDoPowerShell
     O PowerShell que o .exe abre.
 
+    .PARAMETER PastaDoModulo
+    A pasta que os scripts passam ao Import-Module, como a que Get-PastaDoModulo devolve.
+
     .EXAMPLE
-    New-ShimDeComando -Nome 'ansible-playbook' -Pasta 'C:\shims' -CaminhoDoPowerShell 'C:\Program Files\PowerShell\7\pwsh.exe'
+    New-ShimDeComando -Nome 'ansible-playbook' -Pasta 'C:\shims' -CaminhoDoPowerShell 'C:\Program Files\PowerShell\7\pwsh.exe' -PastaDoModulo (Get-PastaDoModulo)
 
     Cria ansible-playbook.ps1, ansible-playbook.exe, ansible-playbook.shim e exe\ansible-playbook.ps1 em C:\shims.
     #>
@@ -28,16 +34,19 @@
     param(
         [Parameter(Mandatory)] [string] $Nome,
         [Parameter(Mandatory)] [string] $Pasta,
-        [Parameter(Mandatory)] [string] $CaminhoDoPowerShell
+        [Parameter(Mandatory)] [string] $CaminhoDoPowerShell,
+        [Parameter(Mandatory)] [string] $PastaDoModulo
     )
 
+    $importacaoDoModulo = "Import-Module '$($PastaDoModulo.Replace("'", "''"))' -ErrorAction Stop"
+
     $caminhoDoScript = Join-Path -Path $Pasta -ChildPath "$Nome.ps1"
-    Set-Content -LiteralPath $caminhoDoScript -Value "`$input | WinPlaybook\Invoke-WinPlaybook '$Nome' @args; exit `$LASTEXITCODE" -Encoding UTF8
+    Set-Content -LiteralPath $caminhoDoScript -Value "$importacaoDoModulo; `$input | WinPlaybook\Invoke-WinPlaybook '$Nome' @args; exit `$LASTEXITCODE" -Encoding UTF8
 
     $pastaDosScriptsDoExe = Join-Path -Path $Pasta -ChildPath 'exe'
     $null = New-Item -ItemType Directory -Path $pastaDosScriptsDoExe -Force
     $caminhoDoScriptDoExe = Join-Path -Path $pastaDosScriptsDoExe -ChildPath "$Nome.ps1"
-    Set-Content -LiteralPath $caminhoDoScriptDoExe -Value "WinPlaybook\Invoke-WinPlaybook '$Nome' @args; exit `$LASTEXITCODE" -Encoding UTF8
+    Set-Content -LiteralPath $caminhoDoScriptDoExe -Value "$importacaoDoModulo; WinPlaybook\Invoke-WinPlaybook '$Nome' @args; exit `$LASTEXITCODE" -Encoding UTF8
 
     Copy-Item -LiteralPath (Get-CaminhoDoModeloDeShim) -Destination (Join-Path -Path $Pasta -ChildPath "$Nome.exe") -Force
 
