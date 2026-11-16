@@ -15,7 +15,10 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
     Context 'quando o argumento não é um caminho absoluto' {
         It 'converte <Descricao>' -ForEach @(
             @{ Descricao = 'um caminho relativo que começa com .\'; Argumento = '.\site.yml'; Esperado = './site.yml' }
+            @{ Descricao = 'um caminho relativo que começa com .\ e ainda não existe'; Argumento = '.\saida\inventario.json'; Esperado = './saida/inventario.json' }
             @{ Descricao = 'um caminho relativo com barras invertidas'; Argumento = 'playbooks\site.yml'; Esperado = 'playbooks/site.yml' }
+            @{ Descricao = 'um arquivo que ainda não existe numa pasta que existe'; Argumento = 'playbooks\novo.yml'; Esperado = 'playbooks/novo.yml' }
+            @{ Descricao = 'um arquivo que ainda não existe depois de uma opção'; Argumento = '--output=playbooks\novo.json'; Esperado = '--output=playbooks/novo.json' }
             @{ Descricao = 'um caminho relativo depois de @'; Argumento = '@vars\prod.yml'; Esperado = '@vars/prod.yml' }
             @{ Descricao = 'um caminho relativo depois de uma opção e de @'; Argumento = '--extra-vars=@vars\prod.yml'; Esperado = '--extra-vars=@vars/prod.yml' }
         ) {
@@ -27,8 +30,9 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
         }
 
         It 'mantém <Descricao> sem mudança' -ForEach @(
-            @{ Descricao = 'um caminho relativo que não existe'; Argumento = 'inexistente\site.yml' }
+            @{ Descricao = 'um caminho relativo cuja pasta não existe'; Argumento = 'inexistente\site.yml' }
             @{ Descricao = 'um texto com barra invertida que não é caminho'; Argumento = 'echo \n' }
+            @{ Descricao = 'um padrão de hosts com barra invertida'; Argumento = '~web\d+' }
             @{ Descricao = 'um argumento sem caminhos'; Argumento = '--check' }
             @{ Descricao = 'um argumento vazio'; Argumento = '' }
         ) {

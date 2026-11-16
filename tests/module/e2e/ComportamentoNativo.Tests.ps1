@@ -106,6 +106,20 @@
             NoWindows = @('-i', 'inventario.yml', '--list')
         }
         @{
+            Descricao = 'o arquivo de saída ainda não existe e começa com .\'
+            Projeto   = 'arquivo-de-saida'
+            Comando   = 'ansible-inventory'
+            NoLinux   = @('-i', 'inventario.yml', '--list', '--output', './inventario.json')
+            NoWindows = @('-i', 'inventario.yml', '--list', '--output', '.\inventario.json')
+        }
+        @{
+            Descricao = 'o arquivo de saída ainda não existe numa pasta que existe'
+            Projeto   = 'arquivo-de-saida'
+            Comando   = 'ansible-inventory'
+            NoLinux   = @('-i', 'inventario.yml', '--list', '--output', 'saida/inventario.json')
+            NoWindows = @('-i', 'inventario.yml', '--list', '--output', 'saida\inventario.json')
+        }
+        @{
             Descricao = 'o ansible-doc mostra a documentação de um módulo'
             Projeto   = 'ola'
             Comando   = 'ansible-doc'
