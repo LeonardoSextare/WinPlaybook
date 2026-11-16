@@ -78,6 +78,20 @@
             NoWindows = @('-i', '<projeto>\inventario.yml', 'site.yml')
         }
         @{
+            Descricao = 'o inventário vem por um caminho absoluto depois de uma opção com ='
+            Projeto   = 'inventario'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('--inventory=<projeto>/inventario.yml', 'site.yml')
+            NoWindows = @('--inventory=<projeto>\inventario.yml', 'site.yml')
+        }
+        @{
+            Descricao = 'o padrão de hosts depois de uma opção com = tem dois-pontos'
+            Projeto   = 'inventario'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('-i', 'inventario.yml', '--limit=servidores:web1', 'site.yml')
+            NoWindows = @('-i', 'inventario.yml', '--limit=servidores:web1', 'site.yml')
+        }
+        @{
             Descricao = 'o inventário é listado em JSON'
             Projeto   = 'inventario'
             Comando   = 'ansible-inventory'

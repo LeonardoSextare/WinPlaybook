@@ -18,5 +18,6 @@
         throw 'Informe o comando que vai rodar na distribuição WSL, por exemplo: Invoke-WinPlaybook ansible --version'
     }
 
-    Invoke-ComandoNoWsl -Comando $args[0] -Argumentos @($args | Select-Object -Skip 1)
+    $argumentos = Get-ArgumentoDoShim -Comando $args[0] -Argumentos @($args | Select-Object -Skip 1) -CaminhoDoChamador $MyInvocation.PSCommandPath
+    Invoke-ComandoNoWsl -Comando $args[0] -Argumentos @($argumentos)
 }
