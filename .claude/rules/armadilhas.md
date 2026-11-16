@@ -55,6 +55,15 @@ bugs, e como o código lida com cada um.
   português), e a saída em UTF-8 do Linux perde os acentos quando o PowerShell
   a captura. O `Invoke-ComandoNoWsl` usa UTF-8 no console enquanto o `wsl`
   roda e restaura o valor original no `finally`.
+- No `/etc/fstab`, uma `\` seguida de três dígitos vira o caractere desse
+  código octal, e o espaço separa os campos. Um caminho do Windows como
+  `C:\Temp\714b` chega ao `mount` como lixo. O
+  `Initialize-DistribuicaoDoWinPlaybook` escreve a `\` como `\134` e o espaço
+  como `\040` na pasta .ssh que monta.
+- Quando uma pasta do Windows do `/etc/fstab` não existe, o WSL escreve
+  `Processing /etc/fstab with mount -a failed` no stderr do primeiro comando
+  depois do boot. O `Initialize-DistribuicaoDoWinPlaybook` só põe a pasta
+  .ssh no `/etc/fstab` quando ela existe.
 
 ## Ansible
 

@@ -113,7 +113,8 @@ mantenedor antes de virar padrão.
   depois do `Import-Module`, cria ou reaproveita a `WinPlaybookE2E` e devolve o
   nome. Ela é criada e preparada pelas mesmas funções do módulo que o
   `Install-WinPlaybook` usa, então é igual à distro do usuário, e o disco dela
-  fica em `%LOCALAPPDATA%\WinPlaybookTestes`. Na primeira vez, a preparação
+  fica em `%LOCALAPPDATA%\WinPlaybookTestes`. O `~/.ssh` dela é a pasta de
+  `Get-PastaDoSshDeTeste`, nunca a `.ssh` do desenvolvedor. Na primeira vez, a preparação
   baixa o Debian, os pacotes do sistema e o Ansible; os testes em si não usam
   internet. No CI, o job começa sem a distro e a cria assim.
 - Usam uma configuração no `$TestDrive`: o teste troca o `$env:LOCALAPPDATA`
