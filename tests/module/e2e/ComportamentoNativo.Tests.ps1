@@ -136,6 +136,20 @@
             NoWindows = @('-i', 'inventario.yml', '--list', '--output', 'saida\inventario.json')
         }
         @{
+            Descricao = 'a pasta atual tem um ansible.cfg'
+            Projeto   = 'configuracao-do-projeto'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('playbooks/site.yml')
+            NoWindows = @('playbooks\site.yml')
+        }
+        @{
+            Descricao = 'o ansible-config mostra a configuração da pasta atual'
+            Projeto   = 'configuracao-do-projeto'
+            Comando   = 'ansible-config'
+            NoLinux   = @('dump', '--only-changed')
+            NoWindows = @('dump', '--only-changed')
+        }
+        @{
             Descricao = 'o ansible-doc mostra a documentação de um módulo'
             Projeto   = 'ola'
             Comando   = 'ansible-doc'

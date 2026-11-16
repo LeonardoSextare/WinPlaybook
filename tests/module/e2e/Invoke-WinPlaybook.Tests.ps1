@@ -158,9 +158,7 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'encontra as collections a partir do arquivo' {
-            Set-ItResult -Skipped -Because 'o Ansible ignora o ansible.cfg de pastas com permissão de escrita para todos, como as unidades do Windows no WSL, até a #33'
-
-            $saida = Invoke-WinPlaybook ansible-playbook playbooks/site.yml 2>&1 | Out-String
+            $saida =Invoke-WinPlaybook ansible-playbook playbooks/site.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*oi da collection demo.test*'
