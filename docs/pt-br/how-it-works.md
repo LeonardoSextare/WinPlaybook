@@ -28,7 +28,8 @@ O `Install-WinPlaybook` cria a distribuição com o Debian do catálogo do WSL,
 com o disco em `C:\Users\<usuário>\AppData\Local\WinPlaybook\distro`, e a
 prepara para o Ansible:
 
-- instala o Python, o git, o ssh e o `sshpass`;
+- instala o Python, o git, o ssh, o `sshpass` e o `rsync`, que o
+  `ansible.posix.synchronize` usa;
 - cria o usuário `winplaybook`, que executa os comandos;
 - instala o Ansible com o [uv](https://docs.astral.sh/uv/), em
   `/home/winplaybook/.local/bin`, no Python mais novo em que ele funciona;
