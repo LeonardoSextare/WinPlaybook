@@ -3,6 +3,7 @@
     CaminhoNaoAbsoluto         = 'O caminho ''{0}'' não é um caminho absoluto do Windows.'
     ComandoAusenteNoWsl        = 'WinPlaybook: comando {0} ausente na distribuição WSL. Rode o Install-WinPlaybook para atualizar os comandos.'
     ComandosNaoListados        = 'Não foi possível listar os comandos da distribuição WSL {0} (código de saída do wsl: {1}).'
+    CompiladorNaoEncontrado    = 'O compilador de C# do .NET Framework não está em {0}. O WinPlaybook compila com ele os shims .exe. Instale o .NET Framework 4.8 (https://dotnet.microsoft.com/download/dotnet-framework/net48) e rode o Install-WinPlaybook de novo.'
     DesinstalarWinPlaybook     = 'Apagar a distribuição WSL {0}, com tudo o que há nela, e os shims de comando de {1}'
     DistribuicaoNaoCriada      = 'Não foi possível criar a distribuição WSL {0}. Confira a conexão com a internet e se o WSL está atualizado (wsl --update). O WSL respondeu: {1}'
     DistribuicaoNaoEscolhida   = 'O WinPlaybook não está instalado. Instale com: Install-WinPlaybook'
@@ -15,7 +16,7 @@
     PastaDeOutroDono           = 'A pasta {0} já existe e não foi criada pelo WinPlaybook. Escolha outro -Path, ou apague a pasta.'
     PowerShell7NaoInstalado    = 'O PowerShell 7 (pwsh) não está instalado. Instale com: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Não foi possível descobrir onde a distribuição WSL {0} monta as unidades do Windows (código de saída do wsl: {1}).'
-    ShimNaoEmpacotado          = 'O shim.exe não está em {0}. Reinstale o WinPlaybook, ou rode scripts/Save-Shim.ps1 num clone do repositório.'
+    ShimNaoCompilado           = 'Não foi possível compilar o executável dos shims. O compilador respondeu: {0}'
     WslNaoEncontrado           = 'O WSL não foi encontrado. O WinPlaybook roda o Ansible numa distribuição WSL: instale o WSL com wsl --install e tente de novo.'
     WslNaoInstalado            = 'O WSL não está instalado. Instale com: wsl --install --no-distribution (pede permissão de administrador e pode pedir para reiniciar o Windows) e rode o Install-WinPlaybook de novo.'
 }

@@ -1,7 +1,7 @@
 ﻿function Invoke-WinPlaybook {
     <#
     .SYNOPSIS
-    Executa um comando na distribuição WSL escolhida na instalação, a partir da pasta atual.
+    Executa um comando na distribuição WSL do WinPlaybook, a partir da pasta atual.
 
     .DESCRIPTION
     O primeiro argumento é o comando, e os outros vão para ele sem mudança, exceto os
@@ -24,6 +24,5 @@
         throw (Get-Mensagem -Nome 'InformeOComando')
     }
 
-    $argumentos = Get-ArgumentoDoShim -Comando $args[0] -Argumentos @($args | Select-Object -Skip 1) -CaminhoDoChamador $MyInvocation.PSCommandPath
-    Invoke-ComandoNoWsl -Comando $args[0] -Argumentos @($argumentos) -Entrada @($input)
+    Invoke-ComandoNoWsl -Comando $args[0] -Argumentos @($args | Select-Object -Skip 1) -Entrada @($input)
 }

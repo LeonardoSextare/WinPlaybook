@@ -55,22 +55,4 @@ Describe 'Invoke-WinPlaybook' {
     It 'recusa uma chamada sem comando' {
         { Invoke-WinPlaybook } | Should-Throw -ExceptionMessage 'Informe o comando*'
     }
-
-    Context 'quando é chamado pelo shim que o PowerShell abriu com -File' {
-        BeforeAll {
-            $caminhoDoShim = Join-Path $TestDrive 'ansible-playbook.ps1'
-            Set-Content -LiteralPath $caminhoDoShim -Value "WinPlaybook\Invoke-WinPlaybook 'ansible-playbook' @args"
-            Mock Get-ArgumentoDoProcesso -ModuleName WinPlaybook {
-                'pwsh.exe', '-NoProfile', '-File', $caminhoDoShim, '--inventory=C:\infra\hosts.yml', 'site.yml'
-            }
-        }
-
-        It 'executa o comando com os argumentos que o processo recebeu' {
-            & $caminhoDoShim '--inventory=C' '\infra\hosts.yml' 'site.yml'
-
-            Should-Invoke Invoke-ComandoNoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Comando -eq 'ansible-playbook' -and ($Argumentos -join ' ') -eq '--inventory=C:\infra\hosts.yml site.yml'
-            }
-        }
-    }
 }

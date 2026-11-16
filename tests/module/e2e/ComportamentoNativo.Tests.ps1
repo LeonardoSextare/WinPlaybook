@@ -37,6 +37,14 @@
             Entrada   = 'segredo.yml'
         }
         @{
+            Descricao = 'um argumento é só um traço'
+            Projeto   = 'senha-do-vault'
+            Comando   = 'ansible-vault'
+            NoLinux   = @('decrypt', '--vault-password-file', 'senha.txt', '--output', '-', '-')
+            NoWindows = @('decrypt', '--vault-password-file', 'senha.txt', '--output', '-', '-')
+            Entrada   = 'segredo.yml'
+        }
+        @{
             Descricao = 'o comando mostra a versão'
             Projeto   = 'ola'
             Comando   = 'ansible'
@@ -218,6 +226,7 @@
 BeforeAll {
     . (Join-Path $PSScriptRoot '../helpers/AnsibleNativo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Shim.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
@@ -226,14 +235,15 @@ BeforeAll {
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
 
+    $caminhoDoExecutavel = New-ExecutavelDeShimDeTeste -Pasta (Join-Path $TestDrive 'executavel')
     $pastaDosShims = Join-Path $TestDrive 'shims'
     $null = New-Item -ItemType Directory -Path $pastaDosShims
-    $parametrosDosShims = @{ Pasta = $pastaDosShims; CaminhoDoPowerShell = (Get-Process -Id $PID).Path; Distribuicao = $nomeDaDistribuicao }
+    $parametrosDosShims = @{ Pasta = $pastaDosShims; CaminhoDoPowerShell = (Get-Process -Id $PID).Path; Distribuicao = $nomeDaDistribuicao; CaminhoDoExecutavel = $caminhoDoExecutavel }
     InModuleScope WinPlaybook -Parameters $parametrosDosShims {
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
         foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
-            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo)
+            New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo) -CaminhoDoExecutavel $CaminhoDoExecutavel
         }
     }
 

@@ -5,9 +5,10 @@
 
     .DESCRIPTION
     O PowerShell executa o <comando>.ps1 no próprio processo, e o que chega pelo pipeline vai
-    para o comando. Os outros programas executam o <comando>.exe, uma cópia do shim
-    empacotado, que lê o <comando>.shim e abre o PowerShell escolhido com o exe\<comando>.ps1.
-    Esse script não lê a entrada padrão, que chega ao comando sem passar pelo PowerShell.
+    para o comando. Os outros programas executam o <comando>.exe, uma cópia do executável de
+    New-ExecutavelDeShim, que lê o <comando>.shim e abre o PowerShell escolhido com o
+    exe\<comando>.ps1. Esse script decodifica os argumentos que o executável codificou e não
+    lê a entrada padrão, que chega ao comando sem passar pelo PowerShell.
 
     Os dois scripts carregam o módulo pela pasta dele, então funcionam nas duas edições do
     PowerShell, mesmo quando o módulo foi instalado só para uma delas.
@@ -24,8 +25,11 @@
     .PARAMETER PastaDoModulo
     A pasta que os scripts passam ao Import-Module, como a que Get-PastaDoModulo devolve.
 
+    .PARAMETER CaminhoDoExecutavel
+    O executável que New-ExecutavelDeShim compilou, copiado como o <comando>.exe.
+
     .EXAMPLE
-    New-ShimDeComando -Nome 'ansible-playbook' -Pasta 'C:\shims' -CaminhoDoPowerShell 'C:\Program Files\PowerShell\7\pwsh.exe' -PastaDoModulo (Get-PastaDoModulo)
+    New-ShimDeComando -Nome 'ansible-playbook' -Pasta 'C:\shims' -CaminhoDoPowerShell 'C:\Program Files\PowerShell\7\pwsh.exe' -PastaDoModulo (Get-PastaDoModulo) -CaminhoDoExecutavel 'C:\Temp\shim.exe'
 
     Cria ansible-playbook.ps1, ansible-playbook.exe, ansible-playbook.shim e exe\ansible-playbook.ps1 em C:\shims.
     #>
@@ -35,7 +39,8 @@
         [Parameter(Mandatory)] [string] $Nome,
         [Parameter(Mandatory)] [string] $Pasta,
         [Parameter(Mandatory)] [string] $CaminhoDoPowerShell,
-        [Parameter(Mandatory)] [string] $PastaDoModulo
+        [Parameter(Mandatory)] [string] $PastaDoModulo,
+        [Parameter(Mandatory)] [string] $CaminhoDoExecutavel
     )
 
     $importacaoDoModulo = "Import-Module '$($PastaDoModulo.Replace("'", "''"))' -ErrorAction Stop"
@@ -46,9 +51,10 @@
     $pastaDosScriptsDoExe = Join-Path -Path $Pasta -ChildPath 'exe'
     $null = New-Item -ItemType Directory -Path $pastaDosScriptsDoExe -Force
     $caminhoDoScriptDoExe = Join-Path -Path $pastaDosScriptsDoExe -ChildPath "$Nome.ps1"
-    Set-Content -LiteralPath $caminhoDoScriptDoExe -Value "$importacaoDoModulo; WinPlaybook\Invoke-WinPlaybook '$Nome' @args; exit `$LASTEXITCODE" -Encoding UTF8
+    $decodificacaoDosArgumentos = '$argumentos = @($args | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_.Substring(1))) })'
+    Set-Content -LiteralPath $caminhoDoScriptDoExe -Value "$importacaoDoModulo; $decodificacaoDosArgumentos; WinPlaybook\Invoke-WinPlaybook '$Nome' @argumentos; exit `$LASTEXITCODE" -Encoding UTF8
 
-    Copy-Item -LiteralPath (Get-CaminhoDoModeloDeShim) -Destination (Join-Path -Path $Pasta -ChildPath "$Nome.exe") -Force
+    Copy-Item -LiteralPath $CaminhoDoExecutavel -Destination (Join-Path -Path $Pasta -ChildPath "$Nome.exe") -Force
 
     Set-Content -LiteralPath (Join-Path -Path $Pasta -ChildPath "$Nome.shim") -Encoding UTF8 -Value @(
         "path = $CaminhoDoPowerShell"
