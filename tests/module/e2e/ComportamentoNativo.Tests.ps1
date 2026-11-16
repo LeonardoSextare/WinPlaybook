@@ -71,6 +71,22 @@
             NoWindows = @('<projeto>\site.yml')
         }
         @{
+            Descricao      = 'o projeto está no disco do Linux'
+            Projeto        = 'ola'
+            Comando        = 'ansible-playbook'
+            NoLinux        = @('site.yml')
+            NoWindows      = @('site.yml')
+            PastaDoProjeto = 'DiscoDoLinux'
+        }
+        @{
+            Descricao      = 'o playbook vem por um caminho absoluto do disco do Linux'
+            Projeto        = 'ola'
+            Comando        = 'ansible-playbook'
+            NoLinux        = @('<projeto>/site.yml')
+            NoWindows      = @('<projeto>\site.yml')
+            PastaDoProjeto = 'DiscoDoLinux'
+        }
+        @{
             Descricao = 'as variáveis extras vêm de um arquivo depois de @'
             Projeto   = 'inventario'
             Comando   = 'ansible-playbook'
@@ -208,8 +224,9 @@ BeforeAll {
         Executa o cenário pelos shims do WinPlaybook, a partir de uma cópia do projeto no Windows.
 
         .DESCRIPTION
-        Devolve um objeto com CodigoDeSaida, Saida, Erro e Arquivos, com a pasta do projeto
-        trocada por <projeto>.
+        Com PastaDoProjeto = DiscoDoLinux, a cópia fica no disco do Linux da distribuição, e o
+        Windows a vê pelo caminho \\wsl.localhost. Devolve um objeto com CodigoDeSaida, Saida,
+        Erro e Arquivos, com a pasta do projeto trocada por <projeto>.
 
         .PARAMETER Cenario
         O cenário, com Projeto, Comando e os argumentos no formato do Windows (NoWindows).
@@ -227,31 +244,47 @@ BeforeAll {
             [Parameter(Mandatory)] [ValidateSet('PowerShell', 'OutroPrograma')] [string] $Chamador
         )
 
-        $projeto = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
-        Copy-Item -LiteralPath (Join-Path $pastaDosProjetos $Cenario.Projeto) -Destination $projeto -Recurse
-        $argumentos = @($Cenario.NoWindows | ForEach-Object { $_.Replace('<projeto>', $projeto) })
-
-        $ehChamadoPeloPowerShell = $Chamador -eq 'PowerShell'
-        if ($ehChamadoPeloPowerShell) {
-            Push-Location -LiteralPath $projeto
-            try {
-                $resultado = Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims "$($Cenario.Comando).ps1") -Argumentos $argumentos
-            }
-            finally {
-                Pop-Location
-            }
+        $origem = Join-Path $pastaDosProjetos $Cenario.Projeto
+        $ficaNoDiscoDoLinux = $Cenario.PastaDoProjeto -eq 'DiscoDoLinux'
+        if ($ficaNoDiscoDoLinux) {
+            $projetoNoLinux = Copy-ProjetoParaDistribuicao -Distribuicao $nomeDaDistribuicao -Origem $origem
+            $projeto = "\\wsl.localhost\$nomeDaDistribuicao" + $projetoNoLinux.Replace('/', '\')
         }
         else {
-            $linhaDeComando = ConvertTo-LinhaDeComando -Argumentos $argumentos
-            $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims "$($Cenario.Comando).exe") -Argumentos $linhaDeComando -PastaDeTrabalho $projeto
+            $projeto = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+            Copy-Item -LiteralPath $origem -Destination $projeto -Recurse
         }
 
-        $projetoNaDistribuicao = ConvertTo-CaminhoNaDistribuicao -Distribuicao $nomeDaDistribuicao -Caminho $projeto
-        return [pscustomobject]@{
-            CodigoDeSaida = $resultado.CodigoDeSaida
-            Saida         = Format-SaidaDoAnsible -Texto $resultado.Saida -PastasDoProjeto $projetoNaDistribuicao
-            Erro          = Format-SaidaDoAnsible -Texto $resultado.Erro -PastasDoProjeto $projetoNaDistribuicao
-            Arquivos      = @(Get-ArquivoDoProjeto -Distribuicao $nomeDaDistribuicao -Pasta $projeto)
+        try {
+            $argumentos = @($Cenario.NoWindows | ForEach-Object { $_.Replace('<projeto>', $projeto) })
+
+            $ehChamadoPeloPowerShell = $Chamador -eq 'PowerShell'
+            if ($ehChamadoPeloPowerShell) {
+                Push-Location -LiteralPath $projeto
+                try {
+                    $resultado = Invoke-ScriptDePowerShell -Caminho (Join-Path $pastaDosShims "$($Cenario.Comando).ps1") -Argumentos $argumentos
+                }
+                finally {
+                    Pop-Location
+                }
+            }
+            else {
+                $linhaDeComando = ConvertTo-LinhaDeComando -Argumentos $argumentos
+                $resultado = Invoke-LinhaDeComando -Programa (Join-Path $pastaDosShims "$($Cenario.Comando).exe") -Argumentos $linhaDeComando -PastaDeTrabalho $projeto
+            }
+
+            $projetoNaDistribuicao = ConvertTo-CaminhoNaDistribuicao -Distribuicao $nomeDaDistribuicao -Caminho $projeto
+            return [pscustomobject]@{
+                CodigoDeSaida = $resultado.CodigoDeSaida
+                Saida         = Format-SaidaDoAnsible -Texto $resultado.Saida -PastasDoProjeto $projetoNaDistribuicao
+                Erro          = Format-SaidaDoAnsible -Texto $resultado.Erro -PastasDoProjeto $projetoNaDistribuicao
+                Arquivos      = @(Get-ArquivoDoProjeto -Distribuicao $nomeDaDistribuicao -Pasta $projeto)
+            }
+        }
+        finally {
+            if ($ficaNoDiscoDoLinux) {
+                Remove-PastaDaDistribuicao -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux
+            }
         }
     }
 }

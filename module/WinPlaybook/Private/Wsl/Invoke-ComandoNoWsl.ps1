@@ -61,7 +61,7 @@
         $Comando
     )
     foreach ($argumento in $Argumentos) {
-        $argumentosDoWsl += ConvertTo-ArgumentoDoWsl -Argumento $argumento -RaizDeMontagem $raizDeMontagem -PastaAtual $pastaAtual
+        $argumentosDoWsl += ConvertTo-ArgumentoDoWsl -Argumento $argumento -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem -PastaAtual $pastaAtual
     }
 
     $ehPassagemLegada = Test-PassagemDeArgumentosLegada

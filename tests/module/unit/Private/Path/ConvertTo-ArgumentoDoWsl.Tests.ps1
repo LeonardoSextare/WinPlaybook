@@ -23,7 +23,7 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'um caminho relativo depois de uma opção e de @'; Argumento = '--extra-vars=@vars\prod.yml'; Esperado = '--extra-vars=@vars/prod.yml' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
-                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
             }
 
             $resultado | Should-Be $Esperado
@@ -37,7 +37,7 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'um argumento vazio'; Argumento = '' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
-                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
             }
 
             $resultado | Should-Be $Argumento
@@ -51,7 +51,7 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 $ErrorActionPreference = 'Stop'
-                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
             }
 
             $resultado | Should-Be $Argumento
@@ -66,10 +66,37 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'o caminho depois de uma opção e de @'; Argumento = '--extra-vars=@D:\vars\prod.yml'; Esperado = '--extra-vars=@/mnt/d/vars/prod.yml' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
-                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
             }
 
             $resultado | Should-Be $Esperado
+        }
+    }
+
+    Context 'quando o argumento é um caminho do disco do Linux' {
+        It 'converte <Descricao>' -ForEach @(
+            @{ Descricao = 'o caminho \\wsl.localhost da distribuição'; Argumento = '\\wsl.localhost\Ubuntu\home\eu\site.yml'; Esperado = '/home/eu/site.yml' }
+            @{ Descricao = 'o caminho \\wsl$ da distribuição'; Argumento = '\\wsl$\Ubuntu\home\eu\site.yml'; Esperado = '/home/eu/site.yml' }
+            @{ Descricao = 'o caminho com outra caixa'; Argumento = '\\WSL.LOCALHOST\ubuntu\home\eu\site.yml'; Esperado = '/home/eu/site.yml' }
+            @{ Descricao = 'o caminho depois de uma opção'; Argumento = '--inventory=\\wsl.localhost\Ubuntu\home\eu\hosts.yml'; Esperado = '--inventory=/home/eu/hosts.yml' }
+            @{ Descricao = 'o caminho depois de @'; Argumento = '@\\wsl.localhost\Ubuntu\home\eu\vars.yml'; Esperado = '@/home/eu/vars.yml' }
+        ) {
+            $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+            }
+
+            $resultado | Should-Be $Esperado
+        }
+
+        It 'mantém <Descricao> sem mudança' -ForEach @(
+            @{ Descricao = 'o caminho de outra distribuição'; Argumento = '\\wsl.localhost\Debian\home\eu\site.yml' }
+            @{ Descricao = 'o caminho de outro computador da rede'; Argumento = '\\servidor\pasta\site.yml' }
+        ) {
+            $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
+            }
+
+            $resultado | Should-Be $Argumento
         }
     }
 }
