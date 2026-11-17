@@ -35,7 +35,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains($Trecho) }
         }
 
-        It 'instala o <_>' -ForEach @('python3', 'git', 'openssh-client', 'sshpass', 'rsync', 'curl') {
+        It 'instala o <_>' -ForEach @('python3', 'git', 'openssh-client', 'sshpass', 'rsync', 'socat', 'curl') {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script -match "apt-get install [^;]*\b$_\b" }
         }
 

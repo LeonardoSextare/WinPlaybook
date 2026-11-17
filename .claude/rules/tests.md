@@ -158,4 +158,4 @@ mantenedor antes de virar padrão.
   só no pacote, que é o que o usuário recebe. Para isso, o job troca o
   `module/WinPlaybook` pelo pacote do `scripts/Build-PacoteDoModulo.ps1`. Um
   teste que depende de um arquivo do módulo além do manifesto, dos
-  `Mensagens.psd1` e do `Shim.cs` quebra no pacote.
+  `Mensagens.psd1` e dos `.cs` quebra no pacote.

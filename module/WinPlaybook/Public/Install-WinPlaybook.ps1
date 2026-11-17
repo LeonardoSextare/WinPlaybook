@@ -12,7 +12,9 @@
 
     O ssh da distribuição usa a pasta .ssh do Windows (%USERPROFILE%\.ssh) como ~/.ssh, com
     as chaves, o known_hosts e o config dela, sem cópias. Quando a pasta ainda não existe, a
-    distribuição usa um ~/.ssh próprio; rode de novo depois de criá-la.
+    distribuição usa um ~/.ssh próprio; rode de novo depois de criá-la. Quando o agente SSH
+    do Windows está rodando, o ssh da distribuição usa as chaves que estão nele, pelo relay
+    do agente SSH, que fica na subpasta exe da pasta dos shims.
 
     Para cada comando do Ansible, cria um .ps1, que o PowerShell executa, e um .exe, que os
     outros programas executam, e coloca a pasta deles no Path do usuário. O .exe é compilado
@@ -109,8 +111,10 @@
 
     $pastaDoExecutavel = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-$([guid]::NewGuid().ToString('N'))"
     $caminhoDoExecutavel = Join-Path -Path $pastaDoExecutavel -ChildPath 'shim.exe'
+    $caminhoDoRelay = Join-Path -Path $pastaDoExecutavel -ChildPath 'relay-do-agente-ssh.exe'
     try {
         New-ExecutavelDeShim -Caminho $caminhoDoExecutavel
+        New-ExecutavelDoRelay -Caminho $caminhoDoRelay
 
         $pastaDaDistribuicao = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro'
         $distribuicaoJaExistia = $distribuicao -in @(Get-DistribuicaoDoWsl)
@@ -163,6 +167,7 @@
         foreach ($comando in $comandos) {
             New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell -PastaDoModulo $pastaDoModulo -CaminhoDoExecutavel $caminhoDoExecutavel
         }
+        Install-RelayDoAgenteSsh -CaminhoDoExecutavel $caminhoDoRelay -PastaDosShims $pastaDosShims -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
         Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
     }
     finally {

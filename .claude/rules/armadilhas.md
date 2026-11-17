@@ -112,6 +112,16 @@ bugs, e como o código lida com cada um.
   UTF-8 sem BOM. O `Invoke-ComandoNoWsl` manda o pipeline em UTF-8, e o script
   na distribuição tira o BOM e os `\r` com o `sed`.
 
+## Agente SSH
+
+- Num handle de named pipe aberto em modo síncrono, o Windows serializa as
+  operações: uma leitura pendente bloqueia a escrita no mesmo handle. O relay
+  do agente SSH lê o pipe numa thread e escreve em outra, e com um handle
+  síncrono ele trava ou quebra o pipe, conforme o servidor. O
+  `RelayDoAgenteSsh.cs` abre o pipe com `PipeOptions.Asynchronous`, e o
+  `tests/module/integration/RelayDoAgenteSsh.Tests.ps1` confere a ida e a
+  volta de um pedido nas duas edições.
+
 ## Caminhos e texto
 
 - `-Path` interpreta colchetes como curinga. Cmdlets que acessam arquivos

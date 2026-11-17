@@ -48,7 +48,7 @@ function Initialize-DistribuicaoWslDeTeste {
             New-DistribuicaoDoWinPlaybook -Nome $Nome -Pasta $Pasta
         }
 
-        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && test -f /etc/ssh/ssh_config.d/winplaybook.conf && test -x "$HOME/.local/bin/ansible-playbook"' -Argumentos 'winplaybook' -Usuario 'winplaybook'
+        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && command -v socat > /dev/null &&test -f /etc/ssh/ssh_config.d/winplaybook.conf && test -x "$HOME/.local/bin/ansible-playbook"' -Argumentos 'winplaybook' -Usuario 'winplaybook'
         $estaPreparada = $verificacao.CodigoDeSaida -eq 0
         if (-not $estaPreparada) {
             Initialize-DistribuicaoDoWinPlaybook -Nome $Nome -PastaDoSsh $PastaDoSsh

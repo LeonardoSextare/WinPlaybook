@@ -17,7 +17,7 @@ Describe 'Invoke-ComandoNoWsl' {
             $global:LASTEXITCODE = 0
             $args
         }
-        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/' } }
+        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; SshAgentPipe = $null } }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
 
         Push-Location $pastaDoProjeto
@@ -124,6 +124,81 @@ Describe 'Invoke-ComandoNoWsl' {
             $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
             Should-Invoke wsl -ModuleName WinPlaybook -Times 1 -Exactly
+        }
+    }
+
+    Context 'quando o agente SSH do Windows está rodando e o relay está instalado' {
+        BeforeAll {
+            $pastaDosShims = Join-Path $TestDrive 'bin'
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe/relay-do-agente-ssh.exe') -Force
+            $relayNaDistribuicao = '/mnt/' + $pastaDosShims.Substring(0, 1).ToLowerInvariant() + $pastaDosShims.Substring(2).Replace('\', '/') + '/exe/relay-do-agente-ssh.exe'
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Test-PipeDoWindows -ModuleName WinPlaybook { $true }
+        }
+
+        It 'procura o agente no pipe padrão do OpenSSH' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            Should-Invoke Test-PipeDoWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Nome -eq 'openssh-ssh-agent' }
+        }
+
+        It 'passa o relay e o pipe do agente antes do comando' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            ($argumentosDoWsl[9..11] -join ' ') | Should-Be "$relayNaDistribuicao openssh-ssh-agent ansible-playbook"
+        }
+
+        It 'liga o SSH_AUTH_SOCK do comando ao relay pelo socat' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $argumentosDoWsl[7] | Should-BeLikeString '*export SSH_AUTH_SOCK=*socat UNIX-LISTEN:"$SSH_AUTH_SOCK"*EXEC:*relay*'
+        }
+
+        Context 'quando a configuração escolhe outro pipe para o agente' {
+            BeforeAll {
+                Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = 'outro-agente' } }
+            }
+
+            It 'usa o pipe escolhido' {
+                $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+                $argumentosDoWsl[10] | Should-Be 'outro-agente'
+            }
+        }
+    }
+
+    Context 'quando o agente SSH do Windows não está rodando' {
+        BeforeAll {
+            $pastaDosShims = Join-Path $TestDrive 'bin'
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe/relay-do-agente-ssh.exe') -Force
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Test-PipeDoWindows -ModuleName WinPlaybook { $false }
+        }
+
+        It 'executa o comando sem o SSH_AUTH_SOCK do WinPlaybook' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $argumentosDoWsl[7] | Should-NotBeLikeString '*SSH_AUTH_SOCK*'
+        }
+
+        It 'passa o comando logo depois da mensagem' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $argumentosDoWsl[9] | Should-Be 'ansible-playbook'
+        }
+    }
+
+    Context 'quando o relay do agente SSH não está na pasta dos shims' {
+        BeforeAll {
+            $pastaSemRelay = Join-Path $TestDrive 'bin-sem-relay'
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaSemRelay; SshAgentPipe = $null } }
+            Mock Test-PipeDoWindows -ModuleName WinPlaybook { $true }
+        }
+
+        It 'executa o comando sem o SSH_AUTH_SOCK do WinPlaybook' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $argumentosDoWsl[7] | Should-NotBeLikeString '*SSH_AUTH_SOCK*'
         }
     }
 
@@ -253,7 +328,7 @@ Describe 'Invoke-ComandoNoWsl' {
 
     Context 'quando o WinPlaybook não foi instalado' {
         BeforeAll {
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null; ShimFolder = $null; SshAgentPipe = $null } }
         }
 
         It 'explica como instalar' {

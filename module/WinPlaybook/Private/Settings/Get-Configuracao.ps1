@@ -4,8 +4,9 @@
     Devolve a configuração do WinPlaybook, com valores vazios no que ainda não foi salvo.
 
     .DESCRIPTION
-    As chaves são ShimFolder, ShimPowerShellPath, WslDistribution, WslMountRoot, AnsibleVersion e
-    PythonPackages.
+    As chaves são ShimFolder, ShimPowerShellPath, WslDistribution, WslMountRoot, AnsibleVersion,
+    PythonPackages e SshAgentPipe, o named pipe do agente SSH do Windows, que vazio é o
+    openssh-ssh-agent.
 
     .EXAMPLE
     (Get-Configuracao).ShimFolder
@@ -23,6 +24,7 @@
         WslMountRoot       = $null
         AnsibleVersion     = $null
         PythonPackages     = $null
+        SshAgentPipe       = $null
     }
 
     $caminhoDoArquivo = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'settings.json'

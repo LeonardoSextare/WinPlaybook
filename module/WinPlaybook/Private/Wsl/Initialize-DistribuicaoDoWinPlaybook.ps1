@@ -6,8 +6,8 @@
     .DESCRIPTION
     Grava o /etc/wsl.conf e o /etc/fstab da distribuição, instala os programas que o Ansible
     usa (o Python, que roda os módulos num host com conexão local, o git, o ssh, o sshpass, o
-    rsync, que o ansible.posix.synchronize usa, e o curl) e cria o usuário winplaybook, que
-    passa a ser o padrão. A configuração vale depois que a distribuição reinicia, e por isso
+    rsync, que o ansible.posix.synchronize usa, o socat, que liga o ssh ao agente SSH do
+    Windows, e o curl) e cria o usuário winplaybook, que passa a ser o padrão. A configuração vale depois que a distribuição reinicia, e por isso
     ela é parada no fim:
 
     - as unidades do Windows são montadas com metadata, pastas 755 e arquivos 644, como num
@@ -56,7 +56,7 @@
         'printf ''export LANG=C.UTF-8\n'' > /etc/profile.d/winplaybook.sh;'
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
-        'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync sshpass > /dev/null;'
+        'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync socat sshpass > /dev/null;'
         'printf ''HashKnownHosts no\n'' > /etc/ssh/ssh_config.d/winplaybook.conf;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
