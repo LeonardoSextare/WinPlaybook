@@ -31,6 +31,31 @@ Enquanto a transição não termina, a publicação de releases está pausada.
 Esta seção é um aviso temporário: quando a transição terminar, ela é removida
 por inteiro.
 
+## Objetivo: o Ansible nativo no Windows
+
+O usuário gerencia tudo pelo Windows: as pastas, os programas, o `Path`, as
+variáveis de ambiente, as credenciais e ferramentas como o VS Code. O
+WinPlaybook leva esse ambiente para o WSL, traduz o que for preciso, executa o
+Ansible e devolve o resultado ao Windows. Para o usuário, o Ansible é um
+programa nativo do Windows, ao pé da letra. Ele não usa um Linux e nem uma
+mistura de Windows e Linux em que precisa pensar onde cada coisa funciona.
+
+Esse objetivo orienta todas as decisões do projeto:
+
+- **A tradução é do WinPlaybook:** toda diferença entre o Windows e o Linux que
+  o usuário percebe é um problema a resolver no WinPlaybook. Isso vale para um
+  programa do `Path` que não roda na distribuição, para um caminho do Linux
+  que o playbook passa a um programa do Windows e para uma ferramenta, como a
+  extensão Ansible do VS Code, que precisa de um patch. Uma solução não pede
+  que o usuário conheça o lado Linux ou contorne a diferença.
+- **Difícil não é impossível:** um problema não é descartado por ser
+  complexo ou por não ter solução conhecida. Quando a tradução ainda não
+  existe, ele vira uma issue com o que se sabe dele, como uma biblioteca
+  própria, um hook ou um patch que poderiam resolvê-lo.
+- **Funcionar antes de otimizar:** uma latência de até alguns segundos por
+  comando é aceitável enquanto a tradução não estiver completa. A otimização
+  vem depois que tudo funcionar.
+
 ## Stack
 
 O projeto usa as ferramentas abaixo. Qualquer mudança ou adição na stack é
