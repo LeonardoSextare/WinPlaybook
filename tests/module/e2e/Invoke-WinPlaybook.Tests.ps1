@@ -469,6 +469,7 @@ Describe 'Invoke-WinPlaybook' {
             $null = New-Item -ItemType Directory -Path $pastaDeFerramentas
             [IO.File]::WriteAllText((Join-Path $pastaDeFerramentas 'saudacao.bat'), "@echo off`r`necho oi do bat %1`r`n")
             Copy-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('System')) 'hostname.exe') -Destination (Join-Path $pastaDeFerramentas 'NomeDaMaquina.exe')
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'texto do windows.txt'), "conteudo lido pelo Windows`r`n")
             $pathOriginal = $env:Path
             $env:Path = "$env:Path;$pastaDeFerramentas"
             Push-Location $TestDrive
@@ -484,6 +485,8 @@ Describe 'Invoke-WinPlaybook' {
             @{ Descricao = 'powershell pelo nome curto'; Comando = 'powershell -NoProfile -Command "Write-Output (6*7)"'; Esperado = '*42*' }
             @{ Descricao = '.bat pelo nome curto, com argumentos'; Comando = 'saudacao mundo'; Esperado = '*oi do bat mundo*' }
             @{ Descricao = '.exe pelo nome sem extensão em minúscula'; Comando = 'nomedamaquina'; Esperado = "*$([Environment]::MachineName)*" }
+            @{ Descricao = 'programa do Windows com um caminho da distribuição no argumento'; Comando = 'cmd /c type "$PWD/texto do windows.txt"'; Esperado = '*conteudo lido pelo Windows*' }
+            @{ Descricao = '.bat com um caminho do disco do Linux no argumento'; Comando = 'saudacao /tmp/qualquer'; Esperado = '*oi do bat *wsl*tmp*qualquer*' }
         ) {
             $saida = Invoke-WinPlaybook sh -c $Comando 2>&1 | Out-String
 

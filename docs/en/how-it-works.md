@@ -51,7 +51,9 @@ order of `Path` and `PATHEXT`, as on Windows. The distribution commands come
 first, so a name that exists on both sides, such as `git` and `ssh`, runs the
 distribution command. The WinPlaybook shims stay out, and the Windows Python
 and pip work only with the extension (`python.exe`), so that the Ansible
-interpreter discovery doesn't choose the Windows Python.
+interpreter discovery doesn't choose the Windows Python. The arguments that are
+distribution paths, such as `{{ playbook_dir }}`, reach the Windows program as
+Windows paths.
 
 The collections and roles that `ansible-galaxy` installs go to your Windows
 profile, in `C:\Users\<user>\.ansible\collections` and
