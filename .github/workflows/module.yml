@@ -154,8 +154,7 @@ jobs:
   publicacao:
     name: Publicação
     needs: versao
-    # Pausada enquanto o WinPlaybook passa para o WSL (milestone 1.0.0): a main pode ter versões incompletas.
-    if: false && needs.versao.outputs.deve_lancar == 'true'
+    if: needs.versao.outputs.deve_lancar == 'true'
     runs-on: ubuntu-latest
 
     permissions:
