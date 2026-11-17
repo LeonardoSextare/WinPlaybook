@@ -11,12 +11,13 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
     BeforeAll {
         Mock wsl -ModuleName WinPlaybook { }
         $pastaDoSshInexistente = Join-Path $TestDrive 'sem-perfil/.ssh'
+        $pastaDoPerfil = Join-Path $TestDrive 'perfil-do-windows'
     }
 
     Context 'quando a preparação funciona' {
         BeforeAll {
             Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
-            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente; PastaDoPerfil = $pastaDoPerfil } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'Leonardo Silva' }
         }
 
         It 'prepara a distribuição como root, para o usuário winplaybook' {
@@ -30,9 +31,23 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             @{ Descricao = 'o Path do Windows fora do PATH'; Trecho = 'appendWindowsPath=false' }
             @{ Descricao = 'o systemd desligado'; Trecho = 'systemd=false' }
             @{ Descricao = 'o idioma C.UTF-8'; Trecho = 'LANG=C.UTF-8' }
-            @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = '''HashKnownHosts no\n'' > /etc/ssh/ssh_config.d/winplaybook.conf' }
+            @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = '''HashKnownHosts no\n' }
+            @{ Descricao = 'o usuário do Windows como padrão do ssh'; Trecho = 'User "%s"\n'' "$3" > /etc/ssh/ssh_config.d/winplaybook.conf' }
+            @{ Descricao = 'o .ansible.cfg do perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg"' }
+            @{ Descricao = 'as collections e as roles no perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta"' }
+            @{ Descricao = 'as collections que já estavam na distribuição levadas para o perfil'; Trecho = 'cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"' }
         ) {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains($Trecho) }
+        }
+
+        It 'passa o usuário e a pasta do perfil do Windows ao script' {
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter {
+                $Argumentos[2] -eq 'Leonardo Silva' -and $Argumentos[3] -eq $pastaDoPerfil
+            }
+        }
+
+        It 'cria no perfil do Windows a pasta <_>' -ForEach '.ansible\collections', '.ansible\roles' {
+            Test-Path -LiteralPath (Join-Path $pastaDoPerfil $_) -PathType Container | Should-BeTrue
         }
 
         It 'instala o <_>' -ForEach @('python3', 'git', 'openssh-client', 'sshpass', 'rsync', 'socat', 'curl') {
@@ -49,7 +64,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             $pastaDoSsh = Join-Path $TestDrive 'perfil com espaço/.ssh'
             $null = New-Item -ItemType Directory -Path $pastaDoSsh -Force
             Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
-            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSsh } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSsh; PastaDoPerfil = $pastaDoPerfil } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'Leonardo Silva' }
         }
 
         It 'monta a pasta no ~/.ssh, com a barra e o espaço escritos como o fstab exige' {
@@ -66,7 +81,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
     Context 'quando a pasta .ssh do Windows não existe' {
         BeforeAll {
             Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook { [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' } }
-            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh }
+            InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente; PastaDoPerfil = $pastaDoPerfil } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'Leonardo Silva' }
         }
 
         It 'não monta nada no ~/.ssh' {
@@ -80,11 +95,11 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
         }
 
         It 'explica o que conferir e mostra a resposta da distribuição' {
-            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh } } | Should-Throw -ExceptionMessage '*preparar a distribuição WSL WinPlaybook*internet*Temporary failure resolving deb.debian.org'
+            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente; PastaDoPerfil = $pastaDoPerfil } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'Leonardo Silva' } } | Should-Throw -ExceptionMessage '*preparar a distribuição WSL WinPlaybook*internet*Temporary failure resolving deb.debian.org'
         }
 
         It 'não para a distribuição' {
-            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh } } | Should-Throw
+            { InModuleScope WinPlaybook -Parameters @{ PastaDoSsh = $pastaDoSshInexistente; PastaDoPerfil = $pastaDoPerfil } { Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'Leonardo Silva' } } | Should-Throw
 
             Should-Invoke wsl -ModuleName WinPlaybook -Times 0 -Exactly
         }

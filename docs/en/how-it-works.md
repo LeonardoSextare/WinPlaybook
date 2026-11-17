@@ -43,14 +43,14 @@ and prepares it for Ansible:
   distribution doesn't run the WinPlaybook shims or a Windows program with the
   same name as a Linux command.
 
-The collections and roles that `ansible-galaxy` installs go to
-`/home/winplaybook/.ansible`, on the distribution disk, and stay there between
-runs. On Windows, this folder is at
-`\\wsl.localhost\WinPlaybook\home\winplaybook\.ansible`.
+The collections and roles that `ansible-galaxy` installs go to your Windows
+profile, in `C:\Users\<user>\.ansible\collections` and
+`C:\Users\<user>\.ansible\roles`, as with Ansible installed on Windows.
+Ansible also reads `C:\Users\<user>\.ansible.cfg` when the project doesn't
+have an `ansible.cfg` file.
 
 If you run `Install-WinPlaybook` again, it keeps the distribution and
-everything in it, such as the collections, and reinstalls Ansible and the
-shims.
+reinstalls Ansible and the shims.
 
 ## Shims
 
@@ -210,6 +210,10 @@ The SSH client of the distribution writes new hosts to `known_hosts` without
 a hash, like the Windows SSH client, so the file keeps a single format. To
 write hashed entries from both, set `HashKnownHosts yes` in the `config` file
 of the `.ssh` folder.
+
+When the inventory and the `config` file don't set a user for the connection,
+the SSH client of the distribution uses your Windows user name, like the
+Windows SSH client.
 
 If the `.ssh` folder doesn't exist yet, `Install-WinPlaybook` creates it
 empty, as the Windows SSH client would on first use. Keys that you create

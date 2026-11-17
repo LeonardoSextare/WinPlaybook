@@ -21,7 +21,12 @@
       HashKnownHosts no config do ~/.ssh continua valendo;
     - o Path do Windows fica fora do PATH da distribuição;
     - o systemd fica desligado, e a distribuição inicia mais rápido;
-    - o idioma é o C.UTF-8, que o Ansible exige.
+    - o idioma é o C.UTF-8, que o Ansible exige;
+    - o ssh conecta com o nome do usuário do Windows quando a conexão não define um usuário,
+      como o ssh do Windows;
+    - o Ansible usa o .ansible.cfg do perfil do Windows e guarda as collections e as roles
+      que o ansible-galaxy instala nas pastas .ansible\collections e .ansible\roles do
+      perfil. As que já estavam na distribuição vão para essas pastas.
 
     Rodar de novo deixa a distribuição no mesmo estado.
 
@@ -31,8 +36,14 @@
     .PARAMETER PastaDoSsh
     A pasta .ssh do Windows, como C:\Users\<usuário>\.ssh.
 
+    .PARAMETER PastaDoPerfil
+    A pasta do perfil do usuário no Windows, como C:\Users\<usuário>.
+
+    .PARAMETER UsuarioDoWindows
+    O nome do usuário do Windows.
+
     .EXAMPLE
-    Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh 'C:\Users\<usuário>\.ssh'
+    Initialize-DistribuicaoDoWinPlaybook -Nome 'WinPlaybook' -PastaDoSsh 'C:\Users\eu\.ssh' -PastaDoPerfil 'C:\Users\eu' -UsuarioDoWindows 'eu'
 
     .LINK
     https://learn.microsoft.com/windows/wsl/wsl-config#wslconf
@@ -41,8 +52,15 @@
     [OutputType([void])]
     param(
         [Parameter(Mandatory)] [string] $Nome,
-        [Parameter(Mandatory)] [string] $PastaDoSsh
+        [Parameter(Mandatory)] [string] $PastaDoSsh,
+        [Parameter(Mandatory)] [string] $PastaDoPerfil,
+        [Parameter(Mandatory)] [string] $UsuarioDoWindows
     )
+
+    $pastaDoAnsible = Join-Path -Path $PastaDoPerfil -ChildPath '.ansible'
+    foreach ($pasta in 'collections', 'roles') {
+        $null = New-Item -ItemType Directory -Path (Join-Path -Path $pastaDoAnsible -ChildPath $pasta) -Force
+    }
 
     $pastaDoSshNoFstab = ''
     $pastaDoSshExiste = Test-Path -LiteralPath $PastaDoSsh -PathType Container
@@ -57,14 +75,22 @@
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
         'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync socat sshpass > /dev/null;'
-        'printf ''HashKnownHosts no\n'' > /etc/ssh/ssh_config.d/winplaybook.conf;'
+        'printf ''HashKnownHosts no\nUser "%s"\n'' "$3" > /etc/ssh/ssh_config.d/winplaybook.conf;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
         '[ -d "$pasta_do_ssh" ] || install -d -m 700 -o "$1" -g "$1" "$pasta_do_ssh";'
-        'if [ -n "$2" ]; then printf ''%s %s drvfs metadata,uid=%s,gid=%s,umask=077,fmask=111 0 0\n'' "$2" "$pasta_do_ssh" "$(id -u "$1")" "$(id -g "$1")" > /etc/fstab; else : > /etc/fstab; fi'
+        'if [ -n "$2" ]; then printf ''%s %s drvfs metadata,uid=%s,gid=%s,umask=077,fmask=111 0 0\n'' "$2" "$pasta_do_ssh" "$(id -u "$1")" "$(id -g "$1")" > /etc/fstab; else : > /etc/fstab; fi;'
+        'perfil=$(wslpath -a "$4");'
+        'pasta_do_ansible="/home/$1/.ansible";'
+        'install -d -o "$1" -g "$1" "$pasta_do_ansible";'
+        'for pasta in collections roles; do'
+        'if [ -d "$pasta_do_ansible/$pasta" ] && [ ! -L "$pasta_do_ansible/$pasta" ]; then cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"; rm -rf "$pasta_do_ansible/$pasta"; fi;'
+        'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta";'
+        'done;'
+        'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg"'
     ) -join ' '
 
-    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos 'winplaybook', $pastaDoSshNoFstab -Usuario 'root'
+    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos 'winplaybook', $pastaDoSshNoFstab, $UsuarioDoWindows, $PastaDoPerfil -Usuario 'root'
     $preparou = $resultado.CodigoDeSaida -eq 0
     if (-not $preparou) {
         throw (Get-Mensagem -Nome 'DistribuicaoNaoPreparada' -Valores $Nome, $resultado.Saida)

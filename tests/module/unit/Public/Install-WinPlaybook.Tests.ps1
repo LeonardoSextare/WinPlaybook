@@ -22,6 +22,8 @@ Describe 'Install-WinPlaybook' {
         Mock Get-RaizDeMontagemDoWsl -ModuleName WinPlaybook { '/mnt/' }
         Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
+        Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
+        Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
         $null = New-Item -ItemType File -Path $powerShellAtual, $powerShellDesktop -Force
@@ -51,6 +53,7 @@ Describe 'Install-WinPlaybook' {
         $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
         $pastaDoSsh = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-ssh')
+        $pastaDoPerfil = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-perfil')
     }
 
     Context 'quando a pasta .ssh do usuário não existe' {
@@ -287,6 +290,20 @@ Describe 'Install-WinPlaybook' {
     Context 'quando a instalação do Ansible falha' {
         BeforeAll {
             Mock Install-AnsibleNaDistribuicao -ModuleName WinPlaybook { throw 'sem internet' }
+        }
+
+        It 'apaga as pastas do Ansible que a preparação criou no perfil' {
+            Mock Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { $null = New-Item -ItemType Directory -Path (Join-Path $PastaDoPerfil '.ansible\collections'), (Join-Path $PastaDoPerfil '.ansible\roles') -Force }
+
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
+
+            Test-Path -LiteralPath (Join-Path $pastaDoPerfil '.ansible') | Should-BeFalse
+        }
+
+        It 'prepara a distribuição com o perfil e o nome do usuário do Windows' {
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
+
+            Should-Invoke Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $PastaDoPerfil -eq $pastaDoPerfil -and $UsuarioDoWindows -eq 'eu' }
         }
 
         It 'falha sem criar a pasta dos shims nem mudar o Path' {

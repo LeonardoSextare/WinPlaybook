@@ -26,8 +26,9 @@ function Initialize-DistribuicaoWslDeTeste {
     A distribuição se chama WinPlaybookE2E e guarda o disco em
     %LOCALAPPDATA%\WinPlaybookTestes\WinPlaybookE2E. As funções do próprio módulo a criam e
     a preparam na primeira vez, com internet, e as outras vezes reaproveitam a distribuição
-    já preparada. O ~/.ssh dela é a pasta de Get-PastaDoSshDeTeste. O módulo WinPlaybook
-    precisa estar importado.
+    já preparada. O ~/.ssh dela é a pasta de Get-PastaDoSshDeTeste, o perfil do Windows dela
+    é a pasta %LOCALAPPDATA%\WinPlaybookTestes\perfil, e o usuário do Windows é
+    usuario-de-teste. O módulo WinPlaybook precisa estar importado.
 
     .EXAMPLE
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
@@ -37,9 +38,10 @@ function Initialize-DistribuicaoWslDeTeste {
     param()
 
     $parametros = @{
-        Nome       = 'WinPlaybookE2E'
-        Pasta      = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\WinPlaybookE2E'
-        PastaDoSsh = Get-PastaDoSshDeTeste
+        Nome          = 'WinPlaybookE2E'
+        Pasta         = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\WinPlaybookE2E'
+        PastaDoSsh    = Get-PastaDoSshDeTeste
+        PastaDoPerfil = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
     }
     $null = New-Item -ItemType Directory -Path $parametros.PastaDoSsh -Force
     InModuleScope WinPlaybook -Parameters $parametros {
@@ -48,10 +50,10 @@ function Initialize-DistribuicaoWslDeTeste {
             New-DistribuicaoDoWinPlaybook -Nome $Nome -Pasta $Pasta
         }
 
-        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && command -v socat > /dev/null &&test -f /etc/ssh/ssh_config.d/winplaybook.conf && test -x "$HOME/.local/bin/ansible-playbook"' -Argumentos 'winplaybook' -Usuario 'winplaybook'
+        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && command -v socat > /dev/null && grep -q "^User " /etc/ssh/ssh_config.d/winplaybook.conf && test "$(readlink "$HOME/.ansible/roles")" = "$(wslpath -a "$2")/.ansible/roles" && test -x "$HOME/.local/bin/ansible-playbook"' -Argumentos 'winplaybook', $PastaDoPerfil -Usuario 'winplaybook'
         $estaPreparada = $verificacao.CodigoDeSaida -eq 0
         if (-not $estaPreparada) {
-            Initialize-DistribuicaoDoWinPlaybook -Nome $Nome -PastaDoSsh $PastaDoSsh
+            Initialize-DistribuicaoDoWinPlaybook -Nome $Nome -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'usuario-de-teste'
             Install-AnsibleNaDistribuicao -Nome $Nome -VersaoDoAnsible ''
         }
     }

@@ -255,6 +255,42 @@ Describe 'Invoke-WinPlaybook' {
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*hashknownhosts no*'
         }
+
+        It 'conecta com o nome do usuário do Windows quando a conexão não define um usuário' {
+            $saida = Invoke-WinPlaybook ssh -G exemplo.winplaybook.teste 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*user usuario-de-teste*'
+        }
+    }
+
+    Context 'quando o perfil do Windows tem um .ansible.cfg' {
+        BeforeAll {
+            $pastaDoPerfil = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
+            $caminhoDoConfig = Join-Path $pastaDoPerfil '.ansible.cfg'
+            [IO.File]::WriteAllText($caminhoDoConfig, "[defaults]`nforks = 13`n")
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            Remove-Item -LiteralPath $caminhoDoConfig -Force
+            Remove-Item -LiteralPath (Join-Path $pastaDoPerfil '.ansible\roles\role_de_teste') -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'usa a configuração do perfil quando a pasta não tem um ansible.cfg' {
+            $saida = Invoke-WinPlaybook ansible-config dump --only-changed 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*DEFAULT_FORKS*= 13*'
+        }
+
+        It 'guarda as roles da pasta pessoal do Ansible no perfil do Windows' {
+            $saida = Invoke-WinPlaybook sh -c 'ansible-galaxy role init --init-path ~/.ansible/roles role_de_teste' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            Test-Path -LiteralPath (Join-Path $pastaDoPerfil '.ansible\roles\role_de_teste\tasks\main.yml') | Should-BeTrue -Because $saida
+        }
     }
 
     Context 'quando o config da pasta .ssh do Windows liga o hash do known_hosts' {

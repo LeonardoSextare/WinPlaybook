@@ -36,5 +36,6 @@
     if ($criouAPastaDoSsh) {
         Remove-PastaVazia -Pasta (Get-PastaDoSshDoUsuario)
     }
+    Remove-PastaDoAnsibleVazia -PastaDoPerfil (Get-PastaDoPerfilDoUsuario)
     Remove-Configuracao
 }

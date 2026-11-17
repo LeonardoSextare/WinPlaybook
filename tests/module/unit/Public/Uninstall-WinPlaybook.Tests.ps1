@@ -24,12 +24,15 @@ Describe 'Uninstall-WinPlaybook' {
         Mock Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook { }
         Mock Remove-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
+        Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
+        Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
     }
 
     BeforeEach {
         $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
         $pastaDoSsh = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-ssh')
+        $pastaDoPerfil = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-perfil')
     }
 
     Context 'quando a instalação criou a pasta .ssh do usuário' {
@@ -49,6 +52,30 @@ Describe 'Uninstall-WinPlaybook' {
             Uninstall-WinPlaybook -Confirm:$false
 
             Test-Path -LiteralPath (Join-Path $pastaDoSsh 'id_ed25519') | Should-BeTrue
+        }
+    }
+
+    Context 'quando o perfil do usuário tem as pastas do Ansible' {
+        BeforeEach {
+            $null = Install-WinPlaybook
+            $pastaDasCollections = Join-Path $pastaDoPerfil '.ansible\collections'
+            $pastaDasRoles = Join-Path $pastaDoPerfil '.ansible\roles'
+            $null = New-Item -ItemType Directory -Path $pastaDasCollections, $pastaDasRoles -Force
+        }
+
+        It 'apaga as pastas vazias' {
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath (Join-Path $pastaDoPerfil '.ansible') | Should-BeFalse
+        }
+
+        It 'mantém as collections instaladas' {
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDasCollections 'ansible_collections\comunidade\galaxy.yml') -Force
+
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath (Join-Path $pastaDasCollections 'ansible_collections\comunidade\galaxy.yml') | Should-BeTrue
+            Test-Path -LiteralPath $pastaDasRoles | Should-BeFalse
         }
     }
 
