@@ -80,6 +80,8 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'o caminho com outra caixa'; Argumento = '\\WSL.LOCALHOST\ubuntu\home\eu\site.yml'; Esperado = '/home/eu/site.yml' }
             @{ Descricao = 'o caminho depois de uma opção'; Argumento = '--inventory=\\wsl.localhost\Ubuntu\home\eu\hosts.yml'; Esperado = '--inventory=/home/eu/hosts.yml' }
             @{ Descricao = 'o caminho depois de @'; Argumento = '@\\wsl.localhost\Ubuntu\home\eu\vars.yml'; Esperado = '@/home/eu/vars.yml' }
+            @{ Descricao = 'o caminho de outro computador da rede'; Argumento = '\\servidor\infra\site.yml'; Esperado = '/mnt/unc/servidor/infra/site.yml' }
+            @{ Descricao = 'o caminho de rede depois de uma opção'; Argumento = '--inventory=\\servidor\infra\hosts.yml'; Esperado = '--inventory=/mnt/unc/servidor/infra/hosts.yml' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
@@ -88,9 +90,21 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             $resultado | Should-Be $Esperado
         }
 
+        It 'converte <Descricao> para a pasta real' -ForEach @(
+            @{ Descricao = 'o caminho numa unidade do subst'; Argumento = 'W:\site.yml'; Esperado = '/mnt/c/infra/site.yml' }
+            @{ Descricao = 'o caminho numa unidade de rede'; Argumento = '--inventory=Z:\hosts.yml'; Esperado = '--inventory=/mnt/unc/servidor/infra/hosts.yml' }
+            @{ Descricao = 'a raiz de uma unidade do subst'; Argumento = 'w:\'; Esperado = '/mnt/c/infra/' }
+        ) {
+            $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
+                ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual -DestinoDeUnidade @{ W = 'C:\infra'; Z = '\\servidor\infra' }
+            }
+
+            $resultado | Should-Be $Esperado
+        }
+
         It 'mantém <Descricao> sem mudança' -ForEach @(
             @{ Descricao = 'o caminho de outra distribuição'; Argumento = '\\wsl.localhost\Debian\home\eu\site.yml' }
-            @{ Descricao = 'o caminho de outro computador da rede'; Argumento = '\\servidor\pasta\site.yml' }
+            @{ Descricao = 'o caminho de outra distribuição pelo wsl$'; Argumento = '\\wsl$\Debian\home\eu\site.yml' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual

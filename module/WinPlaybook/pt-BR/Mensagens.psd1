@@ -15,6 +15,7 @@
     InformeOComando            = 'Informe o comando que vai rodar na distribuição WSL, por exemplo: Invoke-WinPlaybook ansible --version'
     InstalarWinPlaybook        = 'Criar ou atualizar a distribuição WSL {0} com o Ansible e instalar os shims de comando em {1}'
     PastaDeOutroDono           = 'A pasta {0} já existe e não foi criada pelo WinPlaybook. Escolha outro -Path, ou apague a pasta.'
+    PastaNaoMontada            = 'Não foi possível acessar {0} na distribuição WSL. Confira se a unidade ou o compartilhamento está acessível no Windows e tente de novo. A distribuição respondeu: {1}'
     PowerShell7NaoInstalado    = 'O PowerShell 7 (pwsh) não está instalado. Instale com: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Não foi possível descobrir onde a distribuição WSL {0} monta as unidades do Windows (código de saída do wsl: {1}).'
     RelayNaoInstalado          = 'Não foi possível deixar executável na distribuição WSL o relay do agente SSH, em {0}. Rode o Install-WinPlaybook de novo. A distribuição respondeu: {1}'

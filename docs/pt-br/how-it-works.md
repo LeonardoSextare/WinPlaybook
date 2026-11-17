@@ -146,6 +146,10 @@ caminhos do Windows e deixa os outros como estão. Cada caminho continua
 apontando para o mesmo arquivo, agora visto de dentro da distribuição:
 
 - um caminho com a letra da unidade vai para a pasta dela em `/mnt`;
+- um caminho numa unidade criada com o `subst` vai para a pasta real dela;
+- um caminho de rede, ou numa unidade de rede mapeada, vai para
+  `/mnt/unc/<servidor>/<compartilhamento>`, que a distribuição monta com as
+  suas credenciais do Windows;
 - um caminho do disco da distribuição, em `\\wsl.localhost\WinPlaybook\`,
   vira o caminho dele no Linux;
 - um caminho relativo com `\` passa a usar `/` quando começa com `.\` ou
@@ -161,6 +165,7 @@ Exemplos com a pasta atual em `C:\infra`, que tem as pastas `vars` e
 | `.\playbooks\site.yml`                               | `./playbooks/site.yml`               |
 | `C:\infra\inventory\prod.yml`                        | `/mnt/c/infra/inventory/prod.yml`    |
 | `D:\outros\hosts.yml`                                | `/mnt/d/outros/hosts.yml`            |
+| `\\servidor\infra\site.yml`                          | `/mnt/unc/servidor/infra/site.yml`   |
 | `--inventory=C:\infra\hosts.yml`                     | `--inventory=/mnt/c/infra/hosts.yml` |
 | `@vars\prod.yml`                                     | `@vars/prod.yml`                     |
 | `saida\relatorio.json`, que ainda não existe         | `saida/relatorio.json`               |

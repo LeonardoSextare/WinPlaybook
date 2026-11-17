@@ -151,6 +151,11 @@ to the Linux format and leaves the other arguments unchanged. Each path still
 points to the same file, now seen from inside the distribution:
 
 - A path with a drive letter goes to the folder of that drive in `/mnt`.
+- A path on a drive created with `subst` goes to the real folder of the
+  drive.
+- A network path, or a path on a mapped network drive, goes to
+  `/mnt/unc/<server>/<share>`, which the distribution mounts with your
+  Windows credentials.
 - A path on the distribution disk, in `\\wsl.localhost\WinPlaybook\`, becomes
   its Linux path.
 - A relative path with `\` changes to `/` when it starts with `.\` or `..\`,
@@ -166,6 +171,7 @@ Examples with the current folder in `C:\infra`, which has the `vars` and
 | `.\playbooks\site.yml`                               | `./playbooks/site.yml`               |
 | `C:\infra\inventory\prod.yml`                        | `/mnt/c/infra/inventory/prod.yml`    |
 | `D:\other\hosts.yml`                                 | `/mnt/d/other/hosts.yml`             |
+| `\\server\infra\site.yml`                            | `/mnt/unc/server/infra/site.yml`     |
 | `--inventory=C:\infra\hosts.yml`                     | `--inventory=/mnt/c/infra/hosts.yml` |
 | `@vars\prod.yml`                                     | `@vars/prod.yml`                     |
 | `output\report.json`, which doesn't exist yet        | `output/report.json`                 |

@@ -65,6 +65,25 @@ bugs, e como o código lida com cada um.
   depois do boot. O `Initialize-DistribuicaoDoWinPlaybook` só põe a pasta
   .ssh no `/etc/fstab` quando ela existe.
 
+## Unidades e pastas de rede
+
+- O WSL monta só as unidades fixas. Uma unidade do `subst`, uma unidade de
+  rede mapeada ou uma pasta UNC (`\\servidor\compartilhamento`) não existe na
+  distribuição, e o `wsl --cd` com uma delas escreve
+  `wsl: Failed to translate` e começa na pasta pessoal, sem falhar. O
+  `Invoke-ComandoNoWsl` troca a unidade pela pasta real que o
+  `Get-DestinoDeUnidade` informa e monta os compartilhamentos de rede com o
+  `Mount-PastaDoWindows`. A montagem fica por compartilhamento, e não por
+  letra, porque uma letra pode apontar para outra pasta depois, e a montagem
+  antiga continuaria lá até a distribuição parar. O
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` roda um playbook das três.
+- Um programa externo que o módulo chama herda a entrada padrão do shim e pode
+  consumir o que chegaria ao Ansible, como o texto cifrado de um
+  `ansible-vault decrypt` chamado por outro programa. O
+  `Get-DestinoDeUnidade` chama o `subst.exe` com `$null |`, que dá a ele uma
+  entrada vazia. Os cenários com entrada padrão do
+  `ComportamentoNativo.Tests.ps1` conferem.
+
 ## Processos na distribuição
 
 - Quando o processo do Windows que chamou o `wsl.exe` termina, como num

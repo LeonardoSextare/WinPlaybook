@@ -4,8 +4,9 @@
     Converte um caminho do Windows num argumento de comando para o caminho dele na distribuição WSL.
 
     .DESCRIPTION
-    Um caminho absoluto vira um caminho dentro da pasta onde a distribuição monta as
-    unidades. Um caminho do disco do Linux da distribuição, como
+    Um caminho absoluto, com a letra da unidade ou de rede (\\servidor\compartilhamento),
+    vira um caminho dentro da pasta onde a distribuição monta as unidades, como
+    ConvertTo-CaminhoDoWsl faz. Um caminho do disco do Linux da distribuição, como
     \\wsl.localhost\Ubuntu\home\eu\site.yml, vira o caminho dele no Linux. Um caminho
     relativo com barras invertidas passa a usar barras normais quando começa com .\ ou ..\,
     ou quando a pasta dele existe, mesmo que o arquivo ainda não exista, porque outros
@@ -24,6 +25,10 @@
 
     .PARAMETER PastaAtual
     A pasta de onde o comando é executado, para conferir se a pasta de um caminho relativo existe.
+
+    .PARAMETER DestinoDeUnidade
+    A pasta real das unidades do subst e de rede, como Get-DestinoDeUnidade devolve. Um
+    caminho numa dessas unidades vira o caminho da pasta real.
 
     .EXAMPLE
     ConvertTo-ArgumentoDoWsl -Argumento '.\site.yml' -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual 'C:\repo'
@@ -46,7 +51,8 @@
         [Parameter(Mandatory)] [AllowEmptyString()] [string] $Argumento,
         [Parameter(Mandatory)] [string] $Distribuicao,
         [Parameter(Mandatory)] [string] $RaizDeMontagem,
-        [Parameter(Mandatory)] [string] $PastaAtual
+        [Parameter(Mandatory)] [string] $PastaAtual,
+        [hashtable] $DestinoDeUnidade = @{}
     )
 
     $null = $Argumento -match '^(?<prefixo>(--[\w-]+=)?@?)(?<valor>.*)$'
@@ -55,7 +61,13 @@
 
     $ehCaminhoAbsolutoDoWindows = $valor -match '^[A-Za-z]:[\\/]'
     if ($ehCaminhoAbsolutoDoWindows) {
-        return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
+        $unidade = $valor.Substring(0, 1).ToUpperInvariant()
+        $caminhoReal = $valor
+        $unidadeApontaParaOutraPasta = $DestinoDeUnidade.ContainsKey($unidade)
+        if ($unidadeApontaParaOutraPasta) {
+            $caminhoReal = $DestinoDeUnidade[$unidade].TrimEnd('\') + '\' + $valor.Substring(3)
+        }
+        return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $caminhoReal -RaizDeMontagem $RaizDeMontagem)
     }
 
     foreach ($raizDaDistribuicao in ('\\wsl.localhost\' + $Distribuicao + '\'), ('\\wsl$\' + $Distribuicao + '\')) {
@@ -63,6 +75,11 @@
         if ($ehCaminhoDoDiscoDoLinux) {
             return $prefixo + '/' + $valor.Substring($raizDaDistribuicao.Length).Replace('\', '/')
         }
+    }
+
+    $ehCaminhoDeRede = ($valor -match '^\\\\(?<servidor>[^\\/]+)[\\/][^\\/]+') -and ($Matches.servidor -notin 'wsl.localhost', 'wsl$')
+    if ($ehCaminhoDeRede) {
+        return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
     }
 
     $ehCaminhoRelativoDoWindows = Test-CaminhoRelativoDoWindows -Caminho $valor -PastaAtual $PastaAtual
