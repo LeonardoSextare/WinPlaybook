@@ -10,7 +10,7 @@ Describe 'Get-ScriptDoSupervisor' {
     It 'executa o comando que vem nos argumentos depois do próprio script' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
-        $script | Should-BeLikeString '*subprocess.Popen(sys.argv`[3:`]*'
+        $script | Should-BeLikeString '*subprocess.Popen(sys.argv`[1:`]*'
     }
 
     It 'entrega ao comando a entrada que não é um terminal por um pipe próprio' {

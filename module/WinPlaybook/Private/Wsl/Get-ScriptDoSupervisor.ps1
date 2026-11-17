@@ -4,9 +4,10 @@
     Devolve o script Python que executa o comando na distribuição e o encerra junto com o Windows.
 
     .DESCRIPTION
-    O script recebe, depois do próprio código, um JSON codificado em Base64, com as variáveis
-    de ambiente do comando (variaveis) e as pastas do Path do Windows na montagem com
-    execução (pathDoWindows), e então o comando e os argumentos dele. Ele executa o comando
+    O script recebe nos argumentos o comando e os argumentos dele, e na variável
+    WINPLAYBOOK_ENVIRONMENT um JSON com as variáveis de ambiente do
+    comando (variaveis) e as pastas do Path do Windows na montagem com execução
+    (pathDoWindows). Ele executa o comando
     com essas variáveis somadas às da distribuição e sai com o código de
     saída dele, ou com 128 mais o número do sinal que o encerrou. Os processos que o comando
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
@@ -284,11 +285,11 @@ signal.signal(signal.SIGTERM, guardar_sinal_de_fim)
 signal.signal(signal.SIGINT, ignorar_interrupcao)
 
 entrada = criar_entrada_do_usuario()
-ambiente = json.loads(base64.b64decode(sys.argv[2]).decode('utf-8'))
+ambiente = json.loads(os.environ.pop('WINPLAYBOOK_ENVIRONMENT'))
 os.environ.update(ambiente['variaveis'])
 os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
 preparar_config_do_ssh()
-comando = subprocess.Popen(sys.argv[3:], stdin=entrada)
+comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)
 while comando.poll() is None and not sinais_de_fim:

@@ -86,6 +86,15 @@ bugs, e como o código lida com cada um.
 
 ## Processos na distribuição
 
+- A linha de comando de um processo do Windows tem no máximo 32.767
+  caracteres. Passar o código do supervisor e o JSON das variáveis como
+  argumentos do `wsl.exe` estourou o limite num ambiente com muitas variáveis
+  (`The filename or extension is too long`). O `Invoke-ComandoNoWsl` passa o
+  caminho do arquivo que o `Get-CaminhoDoSupervisor` grava na pasta
+  temporária e o JSON na variável `WINPLAYBOOK_ENVIRONMENT`, pelo `WSLENV`. O
+  teste unitário "mantém a linha de comando curta com um ambiente grande"
+  confere.
+
 - Quando o processo do Windows que chamou o `wsl.exe` termina, como num
   terminal fechado ou num comando que o VS Code cancela, o WSL manda SIGHUP
   para a sessão do comando. Os workers do Ansible abrem uma sessão própria e
