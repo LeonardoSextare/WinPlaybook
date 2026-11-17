@@ -107,6 +107,37 @@ As próximas execuções do `Install-WinPlaybook` mantêm essas escolhas. Para
 voltar à versão mais nova, passe `-AnsibleVersion ''`. Para tirar os pacotes,
 passe `-PythonPackage @()`.
 
+## Usar chaves SSH com passphrase
+
+O Ansible não responde ao pedido de passphrase de uma chave SSH. Para usar
+uma chave com passphrase, ligue o agente SSH do Windows e adicione a chave a
+ele. O WinPlaybook encontra o agente sozinho.
+
+1. Num PowerShell como administrador, ligue o agente e deixe-o iniciar com o
+   Windows:
+
+    ```powershell
+    Get-Service ssh-agent | Set-Service -StartupType Automatic
+    Start-Service ssh-agent
+    ```
+
+2. No seu terminal, adicione a chave e digite a passphrase:
+
+    ```powershell
+    ssh-add $env:USERPROFILE\.ssh\id_ed25519
+    ```
+
+    O agente guarda a chave, então você não repete esse passo depois de
+    reiniciar o Windows.
+
+3. Confira se a distribuição enxerga a chave:
+
+    ```powershell
+    Invoke-WinPlaybook ssh-add -l
+    ```
+
+    A saída mostra a chave que você adicionou.
+
 ## Atualizar
 
 Atualize o módulo com o comando da sua versão do PowerShell:
