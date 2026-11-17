@@ -221,5 +221,8 @@ versão a partir dos commits desde a última tag. `feat` gera MINOR, e `fix`,
 própria, e um bug que ela trouxer aponta para essa versão. Enquanto o projeto
 está abaixo da 1.0.0, uma breaking change também gera MINOR.
 
+O projeto fica na versão 0 até atingir o [objetivo](#objetivo-o-ansible-nativo-no-windows).
+A 1.0.0 é decisão do mantenedor, e nenhuma mudança a gera sozinha.
+
 Quando há versão nova, o release publica o módulo na PowerShell Gallery e cria
 o release no GitHub, com as notas geradas pelo git-cliff, em português.
