@@ -158,6 +158,8 @@ mantenedor antes de virar padrão.
 - `Invoke-Pester -Path tests/<camada> -Output Detailed`, ou `tests` para todas
   as camadas.
 - Rodar nas duas edições: PowerShell 7 e Windows PowerShell 5.1.
+- No CI, os e2e rodam em dois jobs paralelos, um por edição do PowerShell, e
+  o check "Testes e2e" só passa quando os dois passam.
 - No CI, os testes unitários rodam no código e no pacote publicado, e os e2e
   só no pacote, que é o que o usuário recebe. Para isso, o job troca o
   `module/WinPlaybook` pelo pacote do `scripts/Build-PacoteDoModulo.ps1`. Um
