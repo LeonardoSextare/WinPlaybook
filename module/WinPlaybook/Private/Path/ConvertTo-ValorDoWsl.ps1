@@ -22,6 +22,10 @@
     .PARAMETER PastaAtual
     A pasta de onde o comando é executado, para os caminhos relativos.
 
+    .PARAMETER DestinoDeUnidade
+    A pasta real das unidades do subst e de rede, como Get-DestinoDeUnidade devolve. Um
+    caminho numa dessas unidades vira o caminho da pasta real.
+
     .EXAMPLE
     ConvertTo-ValorDoWsl -Valor 'C:\roles;D:\roles' -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual 'C:\repo'
 
@@ -33,10 +37,11 @@
         [Parameter(Mandatory)] [AllowEmptyString()] [string] $Valor,
         [Parameter(Mandatory)] [string] $Distribuicao,
         [Parameter(Mandatory)] [string] $RaizDeMontagem,
-        [Parameter(Mandatory)] [string] $PastaAtual
+        [Parameter(Mandatory)] [string] $PastaAtual,
+        [hashtable] $DestinoDeUnidade = @{}
     )
 
-    $parametrosDaConversao = @{ Distribuicao = $Distribuicao; RaizDeMontagem = $RaizDeMontagem; PastaAtual = $PastaAtual }
+    $parametrosDaConversao = @{ Distribuicao = $Distribuicao; RaizDeMontagem = $RaizDeMontagem; PastaAtual = $PastaAtual; DestinoDeUnidade = $DestinoDeUnidade }
 
     $itensDaListaDoWindows = $Valor.Split(';')
     $ehListaDoWindows = $itensDaListaDoWindows.Count -gt 1

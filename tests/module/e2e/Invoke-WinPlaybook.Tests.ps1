@@ -340,6 +340,53 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando a pasta do projeto está numa <Descricao>' -ForEach @(
+        @{ Descricao = 'unidade criada com o subst'; Tipo = 'subst' }
+        @{ Descricao = 'unidade de rede mapeada'; Tipo = 'rede' }
+        @{ Descricao = 'pasta de rede (UNC)'; Tipo = 'unc' }
+    ) {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive "projeto-$Tipo"
+            Copy-Item $projetoOla $projeto -Recurse
+            $caminhoDeRede = '\\localhost\' + $projeto.Substring(0, 1) + '$' + $projeto.Substring(2)
+            $letraLivre = [char[]] ([int][char]'Z'..[int][char]'H') | Where-Object { -not (Test-Path -LiteralPath "${_}:\") } | Select-Object -First 1
+            $pastaDeTrabalho = $caminhoDeRede
+            if ($Tipo -eq 'subst') {
+                $null = subst.exe "${letraLivre}:" $projeto
+                $pastaDeTrabalho = "${letraLivre}:\"
+            }
+            if ($Tipo -eq 'rede') {
+                $null = net.exe use "${letraLivre}:" $caminhoDeRede
+                $pastaDeTrabalho = "${letraLivre}:\"
+            }
+            Push-Location -LiteralPath $pastaDeTrabalho
+        }
+
+        AfterAll {
+            Pop-Location
+            if ($Tipo -eq 'subst') {
+                $null = subst.exe "${letraLivre}:" /D
+            }
+            if ($Tipo -eq 'rede') {
+                $null = net.exe use "${letraLivre}:" /delete /y
+            }
+        }
+
+        It 'executa o playbook' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
+        }
+
+        It 'aceita o caminho absoluto do playbook' {
+            $saida = Invoke-WinPlaybook ansible-playbook (Join-Path $pastaDeTrabalho 'site.yml') 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*oi do WinPlaybook*'
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive

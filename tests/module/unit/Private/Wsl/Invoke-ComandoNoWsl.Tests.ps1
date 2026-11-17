@@ -12,6 +12,7 @@ Describe 'Invoke-ComandoNoWsl' {
     BeforeAll {
         $pastaDoProjeto = Join-Path $TestDrive 'projeto'
         $null = New-Item -ItemType Directory -Path (Join-Path $pastaDoProjeto 'playbooks') -Force
+        $pastaDoProjetoNaDistribuicao = '/mnt/' + $pastaDoProjeto.Substring(0, 1).ToLowerInvariant() + $pastaDoProjeto.Substring(2).Replace('\', '/')
 
         Mock wsl -ModuleName WinPlaybook {
             $global:LASTEXITCODE = 0
@@ -19,12 +20,53 @@ Describe 'Invoke-ComandoNoWsl' {
         }
         Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; SshAgentPipe = $null } }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
+        Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{} }
+        Mock Mount-PastaDoWindows -ModuleName WinPlaybook { }
 
         Push-Location $pastaDoProjeto
     }
 
     AfterAll {
         Pop-Location
+    }
+
+    It 'não monta nada quando os caminhos estão em unidades que o WSL monta sozinho' {
+        $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'D:\repo\site.yml' }
+
+        Should-NotInvoke Mount-PastaDoWindows -ModuleName WinPlaybook
+    }
+
+    Context 'quando um argumento está numa unidade do subst ou de rede' {
+        BeforeAll {
+            Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{ W = 'C:\infra'; Z = '\\servidor\infra\projetos' } }
+        }
+
+        It 'passa o caminho da pasta real da unidade do subst' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'W:\site.yml' }
+
+            $argumentosDoWsl[-1] | Should-Be '/mnt/c/infra/site.yml'
+            Should-NotInvoke Mount-PastaDoWindows -ModuleName WinPlaybook
+        }
+
+        It 'monta o compartilhamento da unidade de rede e passa o caminho dele' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'Z:\site.yml' }
+
+            $argumentosDoWsl[-1] | Should-Be '/mnt/unc/servidor/infra/projetos/site.yml'
+            Should-Invoke Mount-PastaDoWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Distribuicao -eq 'Ubuntu' -and $Montagem.Count -eq 1 -and $Montagem[0].Origem -eq '\\servidor\infra'
+            }
+        }
+    }
+
+    Context 'quando um argumento está num compartilhamento de rede' {
+        It 'monta o compartilhamento na distribuição e passa o caminho dele' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '\\servidor\infra\site.yml' }
+
+            $argumentosDoWsl[-1] | Should-Be '/mnt/unc/servidor/infra/site.yml'
+            Should-Invoke Mount-PastaDoWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Montagem[0].Origem -eq '\\servidor\infra' -and $Montagem[0].PontoDeMontagem -eq '/mnt/unc/servidor/infra'
+            }
+        }
     }
 
     It 'executa na distribuição escolhida na instalação' {
@@ -36,7 +78,7 @@ Describe 'Invoke-ComandoNoWsl' {
     It 'começa na pasta atual' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-        ($argumentosDoWsl[2..3] -join ' ') | Should-Be "--cd $pastaDoProjeto"
+        ($argumentosDoWsl[2..3] -join ' ') | Should-Be "--cd $pastaDoProjetoNaDistribuicao"
     }
 
     It 'executa um login shell sem interpretar os argumentos como código de shell' {
@@ -99,7 +141,7 @@ Describe 'Invoke-ComandoNoWsl' {
         It 'começa na pasta real do drive' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-            $argumentosDoWsl[3] | Should-Be (Join-Path $pastaDoProjeto 'playbooks')
+            $argumentosDoWsl[3] | Should-Be "$pastaDoProjetoNaDistribuicao/playbooks"
         }
     }
 

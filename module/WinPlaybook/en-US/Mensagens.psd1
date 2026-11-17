@@ -15,6 +15,7 @@
     InformeOComando            = 'Specify the command to run in the WSL distribution, for example: Invoke-WinPlaybook ansible --version'
     InstalarWinPlaybook        = 'Create or update the WSL distribution {0} with Ansible and install the command shims in {1}'
     PastaDeOutroDono           = 'The folder {0} already exists and wasn''t created by WinPlaybook. Choose another -Path, or delete the folder.'
+    PastaNaoMontada            = 'Could not access {0} in the WSL distribution. Check that the drive or share is available in Windows and try again. The distribution said: {1}'
     PowerShell7NaoInstalado    = 'PowerShell 7 (pwsh) is not installed. Install it with: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Could not find where the WSL distribution {0} mounts the Windows drives (wsl exit code: {1}).'
     RelayNaoInstalado          = 'Could not make the SSH agent relay, in {0}, executable in the WSL distribution. Run Install-WinPlaybook again. The distribution said: {1}'

@@ -8,6 +8,11 @@
     ~/.local/bin. Os argumentos chegam ao comando sem que um shell os interprete, e os
     caminhos do Windows viram os caminhos deles na distribuição.
 
+    A pasta atual e os caminhos podem estar numa unidade do subst, numa unidade de rede
+    mapeada ou num compartilhamento de rede (\\servidor\compartilhamento). Uma unidade vira
+    a pasta real para onde aponta, e antes do comando a distribuição monta os
+    compartilhamentos de rede, que o WSL não monta sozinho.
+
     Quando o processo do Windows que chamou o comando termina, como num terminal fechado ou
     numa execução que o VS Code cancela, o comando e todos os processos que ele criou na
     distribuição também terminam.
@@ -138,23 +143,30 @@
         $execucaoDoComando
     ) -join ' '
 
+    $parametrosDaConversao = @{ Distribuicao = $distribuicao; RaizDeMontagem = $raizDeMontagem; PastaAtual = $pastaAtual; DestinoDeUnidade = (Get-DestinoDeUnidade) }
+    $pastaAtualNaDistribuicao = ConvertTo-ArgumentoDoWsl -Argumento $pastaAtual @parametrosDaConversao
+    $argumentosNaDistribuicao = @(foreach ($argumento in $Argumentos) { ConvertTo-ArgumentoDoWsl -Argumento $argumento @parametrosDaConversao })
+    $variaveisDoAnsible = Get-VariavelDoAnsible @parametrosDaConversao
+
+    $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + @($variaveisDoAnsible.Values)
+    $montagens = @(Get-MontagemNecessaria -Texto $textosDoComando -RaizDeMontagem $raizDeMontagem)
+    $temPastaParaMontar = $montagens.Count -gt 0
+    if ($temPastaParaMontar) {
+        Mount-PastaDoWindows -Distribuicao $distribuicao -Montagem $montagens
+    }
+
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
-        '--cd', $pastaAtual
+        '--cd', $pastaAtualNaDistribuicao
         '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor
         $argumentosDoAgente
         $Comando
-    )
-    foreach ($argumento in $Argumentos) {
-        $argumentosDoWsl += ConvertTo-ArgumentoDoWsl -Argumento $argumento -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem -PastaAtual $pastaAtual
-    }
+    ) + $argumentosNaDistribuicao
 
     $ehPassagemLegada = Test-PassagemDeArgumentosLegada
     if ($ehPassagemLegada) {
         $argumentosDoWsl = @(ConvertTo-ArgumentoNativoLegado -Argumento $argumentosDoWsl)
     }
-
-    $variaveisDoAnsible = Get-VariavelDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem -PastaAtual $pastaAtual
 
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding

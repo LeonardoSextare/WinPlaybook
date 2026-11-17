@@ -18,6 +18,9 @@ Describe 'ConvertTo-CaminhoDoWsl' {
             @{ RaizDeMontagem = '/mnt/'; Caminho = 'C:\my repo\[x].yml'; Esperado = '/mnt/c/my repo/[x].yml' }
             @{ RaizDeMontagem = '/mnt'; Caminho = 'C:\repo'; Esperado = '/mnt/c/repo' }
             @{ RaizDeMontagem = '/'; Caminho = 'C:\repo'; Esperado = '/c/repo' }
+            @{ RaizDeMontagem = '/mnt/'; Caminho = '\\servidor\infra\site.yml'; Esperado = '/mnt/unc/servidor/infra/site.yml' }
+            @{ RaizDeMontagem = '/mnt/'; Caminho = '\\servidor\infra'; Esperado = '/mnt/unc/servidor/infra' }
+            @{ RaizDeMontagem = '/mnt/'; Caminho = '\\servidor\infra\'; Esperado = '/mnt/unc/servidor/infra' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters $_ {
                 ConvertTo-CaminhoDoWsl -Caminho $Caminho -RaizDeMontagem $RaizDeMontagem
@@ -31,7 +34,7 @@ Describe 'ConvertTo-CaminhoDoWsl' {
         It 'recusa <_>' -ForEach @(
             'site.yml'
             'C:site.yml'
-            '\\server\share\site.yml'
+            '\\servidor'
         ) {
             {
                 InModuleScope WinPlaybook -Parameters @{ Caminho = $_ } {
