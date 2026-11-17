@@ -423,6 +423,48 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o comando chama programas do Path do Windows' {
+        BeforeAll {
+            $pastaDeFerramentas = Join-Path $TestDrive 'ferramentas'
+            $null = New-Item -ItemType Directory -Path $pastaDeFerramentas
+            [IO.File]::WriteAllText((Join-Path $pastaDeFerramentas 'saudacao.bat'), "@echo off`r`necho oi do bat %1`r`n")
+            Copy-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('System')) 'hostname.exe') -Destination (Join-Path $pastaDeFerramentas 'NomeDaMaquina.exe')
+            $pathOriginal = $env:Path
+            $env:Path = "$env:Path;$pastaDeFerramentas"
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:Path = $pathOriginal
+        }
+
+        It 'executa o <Descricao>' -ForEach @(
+            @{ Descricao = 'cmd.exe pelo nome completo'; Comando = 'cmd.exe /c echo oi do cmd'; Esperado = '*oi do cmd*' }
+            @{ Descricao = 'powershell pelo nome curto'; Comando = 'powershell -NoProfile -Command "Write-Output (6*7)"'; Esperado = '*42*' }
+            @{ Descricao = '.bat pelo nome curto, com argumentos'; Comando = 'saudacao mundo'; Esperado = '*oi do bat mundo*' }
+            @{ Descricao = '.exe pelo nome sem extensão em minúscula'; Comando = 'nomedamaquina'; Esperado = "*$([Environment]::MachineName)*" }
+        ) {
+            $saida = Invoke-WinPlaybook sh -c $Comando 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString $Esperado
+        }
+
+        It 'não executa os shims do WinPlaybook pelo Path' {
+            $saida = Invoke-WinPlaybook sh -c 'command -v ansible-playbook' 2>&1 | Out-String
+
+            $saida.Trim() | Should-Be '/home/winplaybook/.local/bin/ansible-playbook'
+        }
+
+        It 'usa o Python da distribuição na detecção de interpretador de um host local' {
+            $saida = Invoke-WinPlaybook ansible all -i 'meu-pc,' -c local -m ansible.builtin.setup -a 'filter=ansible_python_version' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*/usr/bin/python3*'
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive

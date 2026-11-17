@@ -19,14 +19,18 @@
       no Windows. Quando ela não existe, a distribuição usa um ~/.ssh próprio;
     - o ssh grava os hosts novos no known_hosts sem hash, como o ssh do Windows. Um
       HashKnownHosts no config do ~/.ssh continua valendo;
-    - o Path do Windows fica fora do PATH da distribuição;
+    - o WSL não põe o Path do Windows no PATH da distribuição. Os programas dele entram pelo
+      supervisor de Get-ScriptDoSupervisor, sem os shims do WinPlaybook;
     - o systemd fica desligado, e a distribuição inicia mais rápido;
     - o idioma é o C.UTF-8, que o Ansible exige;
     - o ssh conecta com o nome do usuário do Windows quando a conexão não define um usuário,
       como o ssh do Windows;
     - o Ansible usa o .ansible.cfg do perfil do Windows e guarda as collections e as roles
       que o ansible-galaxy instala nas pastas .ansible\collections e .ansible\roles do
-      perfil. As que já estavam na distribuição vão para essas pastas.
+      perfil. As que já estavam na distribuição vão para essas pastas;
+    - cada unidade fixa do Windows é montada uma segunda vez, em /opt/winplaybook/exec, com
+      permissão de execução, para os programas do Windows rodarem da distribuição. Os .bat
+      e .cmd rodam pelo cmd.exe do Windows, com o /usr/local/lib/winplaybook/executar-bat.
 
     Rodar de novo deixa a distribuição no mesmo estado.
 
@@ -87,10 +91,20 @@
         'if [ -d "$pasta_do_ansible/$pasta" ] && [ ! -L "$pasta_do_ansible/$pasta" ]; then cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"; rm -rf "$pasta_do_ansible/$pasta"; fi;'
         'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta";'
         'done;'
-        'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg"'
+        'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg";'
+        'install -d /usr/local/lib/winplaybook;'
+        'printf ''#!/bin/sh\narquivo=$(wslpath -w "$1"); shift\nexec %s /d /c "$arquivo" "$@"\n'' "$5" > /usr/local/lib/winplaybook/executar-bat;'
+        'chmod 755 /usr/local/lib/winplaybook/executar-bat;'
+        'usuario="$1"; shift 5;'
+        'for unidade in "$@"; do'
+        'mkdir -p "/opt/winplaybook/exec/$unidade";'
+        'printf ''%s:\\134 /opt/winplaybook/exec/%s drvfs uid=%s,gid=%s,umask=22,nofail 0 0\n'' "$(printf %s "$unidade" | tr a-z A-Z)" "$unidade" "$(id -u "$usuario")" "$(id -g "$usuario")" >> /etc/fstab;'
+        'done'
     ) -join ' '
 
-    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos 'winplaybook', $pastaDoSshNoFstab, $UsuarioDoWindows, $PastaDoPerfil -Usuario 'root'
+    $cmdNaDistribuicao = @(ConvertTo-PathDoWindowsNaDistribuicao -Path ([Environment]::GetFolderPath('System')))[0] + '/cmd.exe'
+    $argumentos = @('winplaybook', $pastaDoSshNoFstab, $UsuarioDoWindows, $PastaDoPerfil, $cmdNaDistribuicao) + @(Get-UnidadeFixa)
+    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'root'
     $preparou = $resultado.CodigoDeSaida -eq 0
     if (-not $preparou) {
         throw (Get-Mensagem -Nome 'DistribuicaoNaoPreparada' -Valores $Nome, $resultado.Saida)

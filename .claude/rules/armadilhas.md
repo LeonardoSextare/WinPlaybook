@@ -111,6 +111,15 @@ bugs, e como o código lida com cada um.
 
 ## Ansible
 
+- A detecção de interpretador do Ansible, num host com conexão local, procura
+  `python3.14`, `python3.13` e os outros nomes no `PATH` e fica com o mais
+  novo. Com o `Path` do Windows no `PATH`, ela escolheria um Python do
+  Windows, como os aliases da Microsoft Store, e o módulo falharia com
+  `Module result deserialization failed`. O supervisor de
+  `Get-ScriptDoSupervisor` não cria o nome sem extensão do Python e do pip, e
+  o `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` confere que a detecção
+  escolhe o `/usr/bin/python3`.
+
 - Numa função avançada, o `-i` do Ansible vira um parâmetro ambíguo do
   PowerShell. A função que repassa argumentos ao Ansible é simples, sem
   `[CmdletBinding()]` nem `param()`, e usa `$args`.

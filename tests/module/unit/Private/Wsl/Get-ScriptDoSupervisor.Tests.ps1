@@ -19,6 +19,18 @@ Describe 'Get-ScriptDoSupervisor' {
         $script | Should-BeLikeString '*if os.isatty(0):*os.pipe()*stdin=entrada*'
     }
 
+    It 'põe as pastas do Path do Windows no fim do PATH' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])") | Should-BeTrue
+    }
+
+    It 'não cria o nome sem extensão do Python e do pip, que a detecção de interpretador do Ansible procura' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

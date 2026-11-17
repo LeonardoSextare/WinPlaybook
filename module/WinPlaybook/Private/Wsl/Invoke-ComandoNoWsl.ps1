@@ -148,7 +148,9 @@
     $pastaAtualNaDistribuicao = ConvertTo-ArgumentoDoWsl -Argumento $pastaAtual @parametrosDaConversao
     $argumentosNaDistribuicao = @(foreach ($argumento in $Argumentos) { ConvertTo-ArgumentoDoWsl -Argumento $argumento @parametrosDaConversao })
     $variaveisDoWindows = Get-VariavelDoWindows @parametrosDaConversao
-    $ambiente = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $variaveisDoWindows -Compress)))
+    $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
+    $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows }
+    $ambiente = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $ambienteDoComando -Compress)))
 
     $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })
     $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + $valoresDoAnsible
