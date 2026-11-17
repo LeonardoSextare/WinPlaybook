@@ -17,6 +17,8 @@
       pasta 700 e os arquivos 600, como o ssh exige. Assim o ssh usa as chaves, o
       known_hosts e o config do Windows, sem cópias e sem mudar as permissões dos arquivos
       no Windows. Quando ela não existe, a distribuição usa um ~/.ssh próprio;
+    - o ssh grava os hosts novos no known_hosts sem hash, como o ssh do Windows. Um
+      HashKnownHosts no config do ~/.ssh continua valendo;
     - o Path do Windows fica fora do PATH da distribuição;
     - o systemd fica desligado, e a distribuição inicia mais rápido;
     - o idioma é o C.UTF-8, que o Ansible exige.
@@ -55,6 +57,7 @@
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
         'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync sshpass > /dev/null;'
+        'printf ''HashKnownHosts no\n'' > /etc/ssh/ssh_config.d/winplaybook.conf;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
         '[ -d "$pasta_do_ssh" ] || install -d -m 700 -o "$1" -g "$1" "$pasta_do_ssh";'

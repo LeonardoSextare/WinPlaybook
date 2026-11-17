@@ -30,6 +30,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             @{ Descricao = 'o Path do Windows fora do PATH'; Trecho = 'appendWindowsPath=false' }
             @{ Descricao = 'o systemd desligado'; Trecho = 'systemd=false' }
             @{ Descricao = 'o idioma C.UTF-8'; Trecho = 'LANG=C.UTF-8' }
+            @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = '''HashKnownHosts no\n'' > /etc/ssh/ssh_config.d/winplaybook.conf' }
         ) {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains($Trecho) }
         }
