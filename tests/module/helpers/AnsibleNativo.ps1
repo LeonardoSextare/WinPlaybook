@@ -177,11 +177,15 @@ function Invoke-AnsibleNativo {
 
     $atribuicoes = @($Variaveis.Keys | Sort-Object | ForEach-Object { "$_=$($Variaveis[$_])" })
     $argumentosDoWsl = @('--distribution', $Distribuicao, '--cd', $Pasta, '--exec', 'sh', '-lc', 'exec env "$@"', 'sh') + $atribuicoes + @($Comando) + $Argumentos
+    if ($CaminhoDaEntrada) {
+        $entradaNaDistribuicao = ConvertTo-CaminhoNaDistribuicao -Distribuicao $Distribuicao -Caminho $CaminhoDaEntrada
+        $argumentosDoWsl = @('--distribution', $Distribuicao, '--cd', $Pasta, '--exec', 'sh', '-lc', 'entrada="$1"; shift; cat "$entrada" | env "$@"', 'sh', $entradaNaDistribuicao) + $atribuicoes + @($Comando) + $Argumentos
+    }
 
     $utf8Original = $env:WSL_UTF8
     $env:WSL_UTF8 = '1'
     try {
-        return Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos (ConvertTo-LinhaDeComando -Argumentos $argumentosDoWsl) -CaminhoDaEntrada $CaminhoDaEntrada
+        return Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos (ConvertTo-LinhaDeComando -Argumentos $argumentosDoWsl)
     }
     finally {
         $env:WSL_UTF8 = $utf8Original

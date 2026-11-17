@@ -9,6 +9,9 @@
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
     script.
 
+    Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
+    usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
+
     Quando o processo do Windows que chamou o WSL termina, o script recebe SIGHUP, ou SIGTERM,
     e encerra o comando e todos esses processos. Um Ctrl+C chega ao comando, que decide o que
     fazer, e o script continua esperando por ele.
@@ -29,6 +32,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 import time
 
 PR_SET_CHILD_SUBREAPER = 36
@@ -88,12 +92,37 @@ def encerrar_descendentes():
             time.sleep(0.1)
 
 
+def repassar_entrada(destino):
+    try:
+        while True:
+            bloco = os.read(0, 65536)
+            if not bloco:
+                return
+            while bloco:
+                bloco = bloco[os.write(destino, bloco):]
+    except OSError:
+        pass
+    finally:
+        os.close(destino)
+
+
+def criar_entrada_do_usuario():
+    if os.isatty(0):
+        return None
+    leitura, escrita = os.pipe()
+    threading.Thread(target=repassar_entrada, args=(escrita,), daemon=True).start()
+    return leitura
+
+
 ctypes.CDLL(None).prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0)
 signal.signal(signal.SIGHUP, guardar_sinal_de_fim)
 signal.signal(signal.SIGTERM, guardar_sinal_de_fim)
 signal.signal(signal.SIGINT, ignorar_interrupcao)
 
-comando = subprocess.Popen(sys.argv[2:])
+entrada = criar_entrada_do_usuario()
+comando = subprocess.Popen(sys.argv[2:], stdin=entrada)
+if entrada is not None:
+    os.close(entrada)
 while comando.poll() is None and not sinais_de_fim:
     try:
         comando.wait(timeout=0.2)
