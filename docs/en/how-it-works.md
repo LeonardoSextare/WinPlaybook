@@ -29,8 +29,9 @@ flowchart LR
 catalog, with its disk in `C:\Users\<user>\AppData\Local\WinPlaybook\distro`,
 and prepares it for Ansible:
 
-- It installs Python, Git, SSH, `sshpass`, and `rsync`, which
-  `ansible.posix.synchronize` uses.
+- It installs Python, Git, SSH, `sshpass`, `rsync`, which
+  `ansible.posix.synchronize` uses, and `socat`, which connects SSH to the
+  Windows SSH agent.
 - It creates the `winplaybook` user, which runs the commands.
 - It installs Ansible with [uv](https://docs.astral.sh/uv/), in
   `/home/winplaybook/.local/bin`, on the newest Python version where Ansible
@@ -204,11 +205,17 @@ of the `.ssh` folder.
 If the `.ssh` folder didn't exist during installation, the distribution uses
 its own folder. Run `Install-WinPlaybook` again after you create it.
 
+When the Windows SSH agent is on, the SSH client of the distribution uses the
+keys in the agent, and a key with a passphrase works without asking for the
+passphrase. The distribution can't reach the named pipe of the agent, so each
+command opens a socket in Linux, with `socat`, and connects it to the agent
+through a relay: a Windows executable that `Install-WinPlaybook` compiles and
+stores in `C:\Users\<user>\AppData\Local\WinPlaybook\bin\exe`. The socket
+exists only while the command runs. To turn on the agent, see
+[Use SSH keys with a passphrase](install.md#use-ssh-keys-with-a-passphrase).
+
 ## Limitations
 
-- SSH keys with a passphrase don't work: the Windows SSH agent doesn't reach
-  the distribution, and Ansible doesn't answer the passphrase prompt of the
-  key.
 - Files on the Windows drives can't run as programs in the distribution. An
   inventory script or a vault password script stored on them is read as text,
   and Windows programs don't run from inside the distribution.

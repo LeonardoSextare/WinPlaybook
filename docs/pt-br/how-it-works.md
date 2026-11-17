@@ -28,8 +28,9 @@ O `Install-WinPlaybook` cria a distribuição com o Debian do catálogo do WSL,
 com o disco em `C:\Users\<usuário>\AppData\Local\WinPlaybook\distro`, e a
 prepara para o Ansible:
 
-- instala o Python, o git, o ssh, o `sshpass` e o `rsync`, que o
-  `ansible.posix.synchronize` usa;
+- instala o Python, o git, o ssh, o `sshpass`, o `rsync`, que o
+  `ansible.posix.synchronize` usa, e o `socat`, que liga o ssh ao agente SSH
+  do Windows;
 - cria o usuário `winplaybook`, que executa os comandos;
 - instala o Ansible com o [uv](https://docs.astral.sh/uv/), em
   `/home/winplaybook/.local/bin`, no Python mais novo em que ele funciona;
@@ -199,10 +200,17 @@ nos dois, use `HashKnownHosts yes` no `config` da pasta `.ssh`.
 Se a pasta `.ssh` ainda não existia na instalação, a distribuição usa uma
 pasta própria. Execute o `Install-WinPlaybook` de novo depois de criá-la.
 
+Quando o agente SSH do Windows está ligado, o ssh da distribuição usa as
+chaves que estão nele, e uma chave com passphrase funciona sem pedir a
+passphrase. A distribuição não alcança o _named pipe_ do agente, então cada
+comando abre um _socket_ no Linux, com o `socat`, e o liga ao agente por um
+_relay_: um executável do Windows que o `Install-WinPlaybook` compila e guarda
+em `C:\Users\<usuário>\AppData\Local\WinPlaybook\bin\exe`. O _socket_ existe
+só enquanto o comando roda. Para ligar o agente, veja
+[Usar chaves SSH com passphrase](install.md#usar-chaves-ssh-com-passphrase).
+
 ## Limitações
 
-- Chaves SSH com senha não funcionam: o agente SSH do Windows não chega à
-  distribuição, e o Ansible não responde ao pedido de senha da chave.
 - Os arquivos das unidades do Windows não são executáveis na distribuição.
   Um _script_ de inventário ou de senha do vault guardado nelas é lido como
   texto, e os programas do Windows não rodam de dentro da distribuição.
