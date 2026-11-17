@@ -100,6 +100,14 @@ bugs, e como o código lida com cada um.
   o `/dev/null`. O script do `Invoke-ComandoNoWsl` guarda a entrada no
   descritor 3 (`exec 3<&0`) antes e a devolve ao comando com `0<&3 3<&-`. Os
   cenários com entrada padrão do `ComportamentoNativo.Tests.ps1` conferem.
+- O WSL entrega a entrada padrão redirecionada do Windows como um pipe do root
+  com modo 600. O usuário `winplaybook` lê o descritor 0, mas não consegue
+  reabri-lo pelo `/dev/stdin` (`Permission denied`). Quando a entrada não é
+  um terminal, o supervisor de `Get-ScriptDoSupervisor` a repassa ao comando
+  por um pipe do próprio usuário. O cenário do `/dev/stdin` do
+  `ComportamentoNativo.Tests.ps1` confere, e o lado nativo do teste lê a
+  entrada com `cat arquivo |`, porque o mesmo pipe do root quebraria o
+  `/dev/stdin` dele também.
 
 ## Ansible
 

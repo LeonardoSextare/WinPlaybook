@@ -37,6 +37,14 @@
             Entrada   = 'segredo.yml'
         }
         @{
+            Descricao = 'o playbook é lido do /dev/stdin'
+            Projeto   = 'ola'
+            Comando   = 'ansible-playbook'
+            NoLinux   = @('/dev/stdin')
+            NoWindows = @('/dev/stdin')
+            Entrada   = 'site.yml'
+        }
+        @{
             Descricao = 'um argumento é só um traço'
             Projeto   = 'senha-do-vault'
             Comando   = 'ansible-vault'
