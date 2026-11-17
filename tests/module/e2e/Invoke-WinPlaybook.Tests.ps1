@@ -1,7 +1,9 @@
 ﻿BeforeAll {
     . (Join-Path $PSScriptRoot '../helpers/AgenteSsh.ps1')
+    . (Join-Path $PSScriptRoot '../helpers/Processo.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
-    Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
+    $caminhoDoModulo = (Resolve-Path (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1')).Path
+    Import-Module $caminhoDoModulo -Force
 
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
 
@@ -328,6 +330,22 @@ Describe 'Invoke-WinPlaybook' {
                 Invoke-ScriptNaDistribuicao -Distribuicao $Distribuicao -Script 'ls -d /tmp/winplaybook-agente.* 2> /dev/null; cat /proc/[0-9]*/comm 2> /dev/null | grep -x socat' -Usuario 'root'
             }
             $sobras.Saida | Should-Be ''
+        }
+
+        It 'encerra o comando na distribuição quando o processo do Windows termina' {
+            $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive
+
+            $resultado.ComecouNaDistribuicao | Should-BeTrue
+            $resultado.ProcessosQueSobraram | Should-Be 0
+        }
+    }
+
+    Context 'quando o processo do Windows termina no meio do comando' {
+        It 'encerra o comando e os processos que ele criou na distribuição' {
+            $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive
+
+            $resultado.ComecouNaDistribuicao | Should-BeTrue
+            $resultado.ProcessosQueSobraram | Should-Be 0
         }
     }
 

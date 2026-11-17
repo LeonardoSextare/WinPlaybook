@@ -65,6 +65,23 @@ bugs, e como o código lida com cada um.
   depois do boot. O `Initialize-DistribuicaoDoWinPlaybook` só põe a pasta
   .ssh no `/etc/fstab` quando ela existe.
 
+## Processos na distribuição
+
+- Quando o processo do Windows que chamou o `wsl.exe` termina, como num
+  terminal fechado ou num comando que o VS Code cancela, o WSL manda SIGHUP
+  para a sessão do comando. Os workers do Ansible abrem uma sessão própria e
+  não recebem o sinal, e o playbook continua rodando sem ninguém. O
+  `Invoke-ComandoNoWsl` executa o comando pelo supervisor de
+  `Get-ScriptDoSupervisor`, que adota os processos órfãos (subreaper) e
+  encerra todos quando recebe SIGHUP ou SIGTERM. O
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` mata o processo do Windows
+  no meio de uma tarefa e confere que nada sobra na distribuição.
+- Num `sh` não interativo, um comando em segundo plano (`&`) recebe o
+  `/dev/null` como entrada antes das outras redireções, e um `0<&0` só repete
+  o `/dev/null`. O script do `Invoke-ComandoNoWsl` guarda a entrada no
+  descritor 3 (`exec 3<&0`) antes e a devolve ao comando com `0<&3 3<&-`. Os
+  cenários com entrada padrão do `ComportamentoNativo.Tests.ps1` conferem.
+
 ## Ansible
 
 - Numa função avançada, o `-i` do Ansible vira um parâmetro ambíguo do

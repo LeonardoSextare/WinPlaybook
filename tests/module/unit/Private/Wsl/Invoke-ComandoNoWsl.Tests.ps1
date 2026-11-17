@@ -51,16 +51,28 @@ Describe 'Invoke-ComandoNoWsl' {
         $argumentosDoWsl[8] | Should-Be 'WinPlaybook: comando ansible-playbook ausente na distribuição WSL. Rode o Install-WinPlaybook para atualizar os comandos.'
     }
 
-    It 'passa o comando e os argumentos dele depois da mensagem' {
+    It 'passa em Base64, depois da mensagem, o supervisor que encerra o comando junto com o Windows' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[9])) | Should-Be (InModuleScope WinPlaybook { Get-ScriptDoSupervisor })
+    }
+
+    It 'executa o comando pelo python3 do sistema, com o supervisor' {
+        $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        $argumentosDoWsl[7] | Should-BeLikeString '*exec /usr/bin/python3 -c*"$supervisor" "$@"'
+    }
+
+    It 'passa o comando e os argumentos dele depois do supervisor' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '-i', 'inventory.yml', 'site.yml' }
 
-        ($argumentosDoWsl[9..12] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
+        ($argumentosDoWsl[10..13] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
     }
 
     It 'executa um comando sem argumentos' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
-        ($argumentosDoWsl[9..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
+        ($argumentosDoWsl[10..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
     }
 
     It 'converte os caminhos do Windows dos argumentos' {
@@ -145,7 +157,7 @@ Describe 'Invoke-ComandoNoWsl' {
         It 'passa o relay e o pipe do agente antes do comando' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-            ($argumentosDoWsl[9..11] -join ' ') | Should-Be "$relayNaDistribuicao openssh-ssh-agent ansible-playbook"
+            ($argumentosDoWsl[10..12] -join ' ') | Should-Be "$relayNaDistribuicao openssh-ssh-agent ansible-playbook"
         }
 
         It 'liga o SSH_AUTH_SOCK do comando ao relay pelo socat' {
@@ -162,7 +174,7 @@ Describe 'Invoke-ComandoNoWsl' {
             It 'usa o pipe escolhido' {
                 $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-                $argumentosDoWsl[10] | Should-Be 'outro-agente'
+                $argumentosDoWsl[11] | Should-Be 'outro-agente'
             }
         }
     }
@@ -184,7 +196,7 @@ Describe 'Invoke-ComandoNoWsl' {
         It 'passa o comando logo depois da mensagem' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-            $argumentosDoWsl[9] | Should-Be 'ansible-playbook'
+            $argumentosDoWsl[10] | Should-Be 'ansible-playbook'
         }
     }
 
