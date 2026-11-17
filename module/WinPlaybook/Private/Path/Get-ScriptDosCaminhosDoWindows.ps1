@@ -11,7 +11,10 @@
     chaves SSH e de outros arquivos, e nos path_dwim do DataLoader, que resolvem os arquivos
     de lookups, includes, templates e do copy. Uma lista de caminhos do ansible.cfg, como o
     roles_path, pode separar caminhos do Windows por ponto e vírgula, e um inventário INI
-    mantém as barras invertidas de um caminho do Windows sem aspas. A raiz de montagem vem da variável
+    mantém as barras invertidas de um caminho do Windows sem aspas. No caminho de volta, o
+    que os comandos do Ansible, como o ansible-playbook e o ansible-lint, escrevem na saída
+    troca os caminhos da raiz de montagem pelos do Windows, com barras normais (/mnt/c/infra vira C:/infra, e /mnt/unc/servidor/infra vira
+    //servidor/infra), que continuam válidos num JSON. A raiz de montagem vem da variável
     WINPLAYBOOK_MOUNT_ROOT, e o padrão é /mnt/.
 
     .EXAMPLE
@@ -26,6 +29,7 @@
     $script = @'
 import importlib.abc
 import importlib.util
+import io
 import os
 import re
 import sys
@@ -93,6 +97,69 @@ def ajustar_shlex(modulo):
     modulo.shlex_split = shlex_split_com_windows
 
 
+PROGRAMA_DO_ANSIBLE = re.compile(r'^ansible(-[a-z]+)?$')
+programa_mostra_caminhos_do_windows = []
+
+
+def mostrar_caminho_do_windows(ocorrencia):
+    if ocorrencia.group('servidor'):
+        return b'//' + ocorrencia.group('servidor') + b'/' + ocorrencia.group('compartilhamento')
+    return ocorrencia.group('unidade').upper() + b':'
+
+
+def traduzir_saida(dados):
+    raiz = re.escape(os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/').rstrip('/').encode())
+    padrao = rb'(?<![\w/.-])' + raiz + rb'/(?:unc/(?P<servidor>[^/\s\'"]+)/(?P<compartilhamento>[^/\s\'"]+)|(?P<unidade>[a-z])(?![\w.-]))'
+    return re.sub(padrao, mostrar_caminho_do_windows, dados)
+
+
+def mostra_caminhos_do_windows():
+    if not programa_mostra_caminhos_do_windows:
+        programa = os.path.basename(getattr(sys, 'argv', [''])[0] or '')
+        programa_mostra_caminhos_do_windows.append(bool(PROGRAMA_DO_ANSIBLE.match(programa)))
+    return programa_mostra_caminhos_do_windows[0]
+
+
+class SaidaComCaminhosDoWindows(io.BufferedIOBase):
+    def __init__(self, original):
+        self._original = original
+
+    def write(self, dados):
+        tamanho = len(dados)
+        if mostra_caminhos_do_windows():
+            dados = traduzir_saida(bytes(dados))
+        self._original.write(dados)
+        return tamanho
+
+    def flush(self):
+        return self._original.flush()
+
+    def fileno(self):
+        return self._original.fileno()
+
+    def isatty(self):
+        return self._original.isatty()
+
+    def writable(self):
+        return True
+
+    def readable(self):
+        return False
+
+    @property
+    def closed(self):
+        return self._original.closed
+
+    def __getattr__(self, nome):
+        return getattr(self._original, nome)
+
+
+def mostrar_saida_com_caminhos_do_windows(saida):
+    if saida is None or not hasattr(saida, 'buffer'):
+        return saida
+    return io.TextIOWrapper(SaidaComCaminhosDoWindows(saida.buffer), encoding=saida.encoding, errors=saida.errors, line_buffering=saida.line_buffering, write_through=True)
+
+
 AJUSTES = {
     'ansible.parsing.dataloader': lambda modulo: ajustar_data_loader(modulo.DataLoader),
     'ansible.config.manager': ajustar_gerenciador_de_configuracao,
@@ -121,6 +188,8 @@ class AjusteDoAnsible(importlib.abc.MetaPathFinder):
 
 os.path.expanduser = expanduser
 sys.meta_path.insert(0, AjusteDoAnsible())
+sys.stdout = mostrar_saida_com_caminhos_do_windows(sys.stdout)
+sys.stderr = mostrar_saida_com_caminhos_do_windows(sys.stderr)
 '@
 
     return $script

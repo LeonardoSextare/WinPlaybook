@@ -399,8 +399,8 @@ BeforeAll {
             $projetoNaDistribuicao = ConvertTo-CaminhoNaDistribuicao -Distribuicao $nomeDaDistribuicao -Caminho $projeto
             return [pscustomobject]@{
                 CodigoDeSaida = $resultado.CodigoDeSaida
-                Saida         = Format-SaidaDoAnsible -Texto $resultado.Saida -PastasDoProjeto $projetoNaDistribuicao
-                Erro          = Format-SaidaDoAnsible -Texto $resultado.Erro -PastasDoProjeto $projetoNaDistribuicao
+                Saida         = Format-SaidaDoAnsible -Texto $resultado.Saida -PastasDoProjeto $projetoNaDistribuicao, $projeto.Replace([char]92, [char]47)
+                Erro          = Format-SaidaDoAnsible -Texto $resultado.Erro -PastasDoProjeto $projetoNaDistribuicao, $projeto.Replace([char]92, [char]47)
                 Arquivos      = @(Get-ArquivoDoProjeto -Distribuicao $nomeDaDistribuicao -Pasta $projeto)
             }
         }

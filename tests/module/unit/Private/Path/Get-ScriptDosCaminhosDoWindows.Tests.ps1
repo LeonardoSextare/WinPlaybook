@@ -25,6 +25,12 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
         $script.Contains("'ansible.utils.shlex': ajustar_shlex") | Should-BeTrue
     }
 
+    It 'mostra os caminhos do Windows no que os comandos do Ansible escrevem' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains('sys.stdout = mostrar_saida_com_caminhos_do_windows(sys.stdout)') | Should-BeTrue
+    }
+
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {
         $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
 
