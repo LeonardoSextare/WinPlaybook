@@ -105,6 +105,8 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
         It 'mantém <Descricao> sem mudança' -ForEach @(
             @{ Descricao = 'o caminho de outra distribuição'; Argumento = '\\wsl.localhost\Debian\home\eu\site.yml' }
             @{ Descricao = 'o caminho de outra distribuição pelo wsl$'; Argumento = '\\wsl$\Debian\home\eu\site.yml' }
+            @{ Descricao = 'um named pipe do Windows'; Argumento = '\\.\pipe\openssh-ssh-agent' }
+            @{ Descricao = 'um caminho de dispositivo do Windows'; Argumento = '\\?\C:\infra\site.yml' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual

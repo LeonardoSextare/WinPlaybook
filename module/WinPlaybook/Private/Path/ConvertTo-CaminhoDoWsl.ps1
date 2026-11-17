@@ -33,7 +33,7 @@
 
     $raiz = $RaizDeMontagem.TrimEnd('/') + '/'
 
-    $ehCaminhoDeRede = $Caminho -match '^\\\\[^\\/]+[\\/][^\\/]+'
+    $ehCaminhoDeRede = $Caminho -match '^\\\\(?![.?][\\/])[^\\/]+[\\/][^\\/]+'
     if ($ehCaminhoDeRede) {
         return $raiz + 'unc/' + $Caminho.Substring(2).Replace('\', '/').TrimEnd('/')
     }
