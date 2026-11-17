@@ -234,6 +234,14 @@ When the inventory and the `config` file don't set a user for the connection,
 the SSH client of the distribution uses your Windows user name, like the
 Windows SSH client.
 
+The `config` file can have Windows paths, such as in an `IdentityFile` entry or
+in a `ProxyCommand` entry with `ssh.exe`. The SSH client of the distribution uses
+a translated copy of it, which it rebuilds on every command, and the Windows
+file stays unchanged: a path in the `.ssh` folder becomes the distribution
+`~/.ssh` folder, the `IdentityAgent` entry of the Windows agent becomes the
+distribution agent, and the `ssh.exe` program in `ProxyCommand` becomes the
+SSH client of the distribution.
+
 If the `.ssh` folder doesn't exist yet, `Install-WinPlaybook` creates it
 empty, as the Windows SSH client would on first use. Keys that you create
 later work right away. `Uninstall-WinPlaybook` deletes this folder only if

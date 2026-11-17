@@ -39,6 +39,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             @{ Descricao = 'as collections que já estavam na distribuição levadas para o perfil'; Trecho = 'cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"' }
             @{ Descricao = 'cada unidade fixa montada de novo com execução, sem travar o boot quando ela some'; Trecho = '/opt/winplaybook/exec/%s drvfs uid=%s,gid=%s,umask=22,nofail 0 0' }
             @{ Descricao = 'os .bat e .cmd executados pelo cmd.exe'; Trecho = 'exec %s /d /c "$arquivo" "$@"' }
+            @{ Descricao = 'o ssh que usa a cópia traduzida do config do ssh'; Trecho = '[ -f "$configuracao" ] && exec /usr/bin/ssh -F "$configuracao" "$@"' }
         ) {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains($Trecho) }
         }

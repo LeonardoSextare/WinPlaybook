@@ -313,6 +313,46 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o config da pasta .ssh do Windows tem caminhos do Windows' {
+        BeforeAll {
+            Push-Location $TestDrive
+            $pastaDoSsh = Get-PastaDoSshDeTeste
+            $caminhoDoConfig = Join-Path $pastaDoSsh 'config'
+            $linhas = @(
+                'Host servidor-do-windows'
+                "    IdentityFile $pastaDoSsh\id_do_windows"
+                '    IdentityAgent \\.\pipe\openssh-ssh-agent'
+                '    ProxyCommand C:\Windows\System32\OpenSSH\ssh.exe -W %h:%p bastiao'
+                "    UserKnownHostsFile `"$env:SystemDrive\Pasta Com Espaco\known_hosts`""
+            )
+            [IO.File]::WriteAllText($caminhoDoConfig, ($linhas -join "`n") + "`n")
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath $caminhoDoConfig -Force
+            Pop-Location
+        }
+
+        It 'usa <Descricao>' -ForEach @(
+            @{ Descricao = 'a chave da pasta .ssh pelo ~/.ssh da distribuição'; Esperado = '*identityfile ~/.ssh/id_do_windows*' }
+            @{ Descricao = 'o agente pelo SSH_AUTH_SOCK'; Esperado = '*identityagent SSH_AUTH_SOCK*' }
+            @{ Descricao = 'o ssh da distribuição no ProxyCommand'; Esperado = '*proxycommand ssh -W %h:%p bastiao*' }
+            @{ Descricao = 'o caminho com espaço convertido para a raiz de montagem'; Esperado = '*userknownhostsfile /mnt/?/Pasta Com Espaco/known_hosts*' }
+            @{ Descricao = 'ainda o config da distribuição, depois do config do usuário'; Esperado = '*user usuario-de-teste*' }
+        ) {
+            $saida = Invoke-WinPlaybook ssh -G servidor-do-windows 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString $Esperado
+        }
+
+        It 'mantém o config do Windows como estava' {
+            $null = Invoke-WinPlaybook ssh -G servidor-do-windows 2>&1
+
+            Get-Content -LiteralPath $caminhoDoConfig -Raw | Should-BeLikeString '*ProxyCommand C:\Windows\System32\OpenSSH\ssh.exe*'
+        }
+    }
+
     Context 'quando o agente SSH do Windows está rodando' {
         BeforeAll {
             $agente = Start-AgenteSshFalso
