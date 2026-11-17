@@ -31,6 +31,12 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
         $script.Contains('sys.stdout = mostrar_saida_com_caminhos_do_windows(sys.stdout)') | Should-BeTrue
     }
 
+    It 'tira os CR dos scripts com shebang que o ansible.builtin.script envia' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains("'ansible.plugins.action': ajustar_action_base") | Should-BeTrue
+    }
+
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {
         $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
 

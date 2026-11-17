@@ -44,13 +44,14 @@ function Initialize-DistribuicaoWslDeTeste {
         PastaDoPerfil = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
     }
     $null = New-Item -ItemType Directory -Path $parametros.PastaDoSsh -Force
+    $parametros.HashDosCaminhosDoWindows = InModuleScope WinPlaybook { -join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes((Get-ScriptDosCaminhosDoWindows))) | ForEach-Object { $_.ToString('x2') }) }
     InModuleScope WinPlaybook -Parameters $parametros {
         $estaInstalada = $Nome -in @(Get-DistribuicaoDoWsl)
         if (-not $estaInstalada) {
             New-DistribuicaoDoWinPlaybook -Nome $Nome -Pasta $Pasta
         }
 
-        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && command -v socat > /dev/null && grep -q "^User " /etc/ssh/ssh_config.d/winplaybook.conf && test "$(readlink "$HOME/.ansible/roles")" = "$(wslpath -a "$2")/.ansible/roles" && test -x /usr/local/lib/winplaybook/executar-windows && test -x /usr/local/bin/ssh && test -x "$HOME/.local/bin/ansible-playbook" && ls "$HOME"/.local/share/uv/tools/ansible/lib/python3*/site-packages/winplaybook.pth > /dev/null 2>&1' -Argumentos 'winplaybook', $PastaDoPerfil -Usuario 'winplaybook'
+        $verificacao = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script 'grep -qx "default=$1" /etc/wsl.conf && mountpoint -q "$HOME/.ssh" && command -v rsync > /dev/null && command -v socat > /dev/null && grep -q "^User " /etc/ssh/ssh_config.d/winplaybook.conf && test "$(readlink "$HOME/.ansible/roles")" = "$(wslpath -a "$2")/.ansible/roles" && test -x /usr/local/lib/winplaybook/executar-windows && test -x /usr/local/bin/ssh && test -x "$HOME/.local/bin/ansible-playbook" && ls "$HOME"/.local/share/uv/tools/ansible/lib/python3*/site-packages/winplaybook.pth > /dev/null 2>&1 && [ "$(sha256sum "$HOME"/.local/share/uv/tools/ansible/lib/python3*/site-packages/winplaybook_caminhos_do_windows.py | cut -c1-64)" = "$3" ]' -Argumentos 'winplaybook', $PastaDoPerfil, $HashDosCaminhosDoWindows -Usuario 'winplaybook'
         $estaPreparada = $verificacao.CodigoDeSaida -eq 0
         if (-not $estaPreparada) {
             Initialize-DistribuicaoDoWinPlaybook -Nome $Nome -PastaDoSsh $PastaDoSsh -PastaDoPerfil $PastaDoPerfil -UsuarioDoWindows 'usuario-de-teste'

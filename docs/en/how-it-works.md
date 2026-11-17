@@ -189,6 +189,11 @@ Windows drives as on Windows, with forward slashes: an error points to
 `C:/infra/site.yml`, not to `/mnt/c/infra/site.yml`. The forward slashes
 keep JSON output valid, and Windows and VS Code can open these paths.
 
+A script with a shebang (`#!/bin/sh`) and CRLF line endings, like the ones
+that Git for Windows writes by default, runs with `ansible.builtin.script`:
+Ansible sends a copy without the CR characters, and the project file stays
+unchanged.
+
 Examples with the current folder in `C:\infra`, which has the `vars` and
 `output` folders:
 
