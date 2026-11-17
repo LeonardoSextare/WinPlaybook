@@ -15,7 +15,17 @@ Toda tarefa segue as etapas abaixo, na ordem.
 - A exceção é a stack: mudança ou adição de ferramenta ou dependência é
   discutida com o mantenedor antes de entrar no código.
 - Uma tarefa por vez: ao abrir o PR, reporte o resultado e espere a próxima.
-  Não emende outra tarefa por conta própria, mesmo que ela pareça óbvia.
+  Não emende outra tarefa por conta própria, mesmo que ela pareça óbvia. A
+  exceção é uma fila que o mantenedor libera, como o roadmap: nela, ao abrir
+  o PR de uma tarefa, siga para a próxima.
+
+## Issues
+
+- Issues, comentários e PRs são escritos em português, como o resto do
+  projeto.
+- Um bug ou comportamento inesperado encontrado durante uma tarefa vira uma
+  issue, com o que se sabe dele, e entra no roadmap na posição em que se
+  encaixa. A tarefa atual continua no escopo dela.
 
 ## 1. Entender o pedido
 
