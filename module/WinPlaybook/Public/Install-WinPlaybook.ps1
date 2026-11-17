@@ -17,6 +17,11 @@
     do Windows está rodando, o ssh da distribuição usa as chaves que estão nele, pelo relay
     do agente SSH, que fica na subpasta exe da pasta dos shims.
 
+    O Ansible usa o perfil do Windows como o do usuário: o .ansible.cfg do perfil, as
+    pastas .ansible\collections e .ansible\roles, que a instalação cria, para o que o
+    ansible-galaxy instala, e o nome do usuário do Windows como usuário padrão do ssh. A
+    desinstalação apaga essas pastas só se continuarem vazias.
+
     Para cada comando do Ansible, cria um .ps1, que o PowerShell executa, e um .exe, que os
     outros programas executam, e coloca a pasta deles no Path do usuário. O .exe é compilado
     na instalação pelo compilador de C# do .NET Framework, que vem no Windows. A pasta também é
@@ -123,13 +128,14 @@
             New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
         }
 
+        $pastaDoPerfil = Get-PastaDoPerfilDoUsuario
         $pastaDoSsh = Get-PastaDoSshDoUsuario
         $vaiCriarAPastaDoSsh = -not (Test-Path -LiteralPath $pastaDoSsh -PathType Container)
         try {
             if ($vaiCriarAPastaDoSsh) {
                 $null = New-Item -ItemType Directory -Path $pastaDoSsh
             }
-            Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh $pastaDoSsh
+            Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh $pastaDoSsh -PastaDoPerfil $pastaDoPerfil -UsuarioDoWindows (Get-NomeDoUsuarioDoWindows)
             Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
             $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
             $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
@@ -138,6 +144,7 @@
             if ($vaiCriarAPastaDoSsh) {
                 Remove-PastaVazia -Pasta $pastaDoSsh
             }
+            Remove-PastaDoAnsibleVazia -PastaDoPerfil $pastaDoPerfil
             if (-not $distribuicaoJaExistia) {
                 Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
             }

@@ -41,13 +41,14 @@ prepara para o Ansible:
   execute os _shims_ do próprio WinPlaybook nem um programa do Windows com o
   mesmo nome de um comando do Linux.
 
-As _collections_ e as _roles_ que o `ansible-galaxy` instala ficam em
-`/home/winplaybook/.ansible`, no disco da distribuição, e continuam lá entre
-uma execução e outra. No Windows, essa pasta aparece em
-`\\wsl.localhost\WinPlaybook\home\winplaybook\.ansible`.
+As _collections_ e as _roles_ que o `ansible-galaxy` instala ficam no seu
+perfil do Windows, em `C:\Users\<usuário>\.ansible\collections` e
+`C:\Users\<usuário>\.ansible\roles`, como num Ansible instalado no Windows. O
+Ansible também lê o `C:\Users\<usuário>\.ansible.cfg`, quando o projeto não
+tem um `ansible.cfg`.
 
-Executar o `Install-WinPlaybook` de novo mantém a distribuição e o que há
-nela, como as _collections_, e reinstala o Ansible e os _shims_.
+Executar o `Install-WinPlaybook` de novo mantém a distribuição e reinstala o
+Ansible e os _shims_.
 
 ## Shims
 
@@ -203,6 +204,9 @@ arquivos no Windows.
 O ssh da distribuição grava os hosts novos no `known_hosts` sem _hash_, como
 o ssh do Windows, então o arquivo fica num formato só. Para gravar com _hash_
 nos dois, use `HashKnownHosts yes` no `config` da pasta `.ssh`.
+
+Quando o inventário e o `config` não definem um usuário para a conexão, o ssh
+da distribuição usa o seu nome de usuário do Windows, como o ssh do Windows.
 
 Se a pasta `.ssh` ainda não existe, o `Install-WinPlaybook` a cria vazia,
 como o ssh do Windows faria no primeiro uso. As chaves que você criar depois
