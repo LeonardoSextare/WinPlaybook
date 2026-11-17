@@ -148,6 +148,10 @@ mantenedor antes de virar padrão.
   login shell, sem que um shell interprete os argumentos.
 - Um comportamento do Ansible que o WinPlaybook passa a reproduzir entra como
   cenário nesse arquivo, no mesmo commit da mudança.
+- As variáveis de ambiente do Windows chegam ao lado do WinPlaybook, mas não ao
+  lado nativo. O arquivo tira do processo, durante os testes, as que mudam a
+  saída do Ansible, como as `ANSIBLE_` e o `NO_COLOR`, e cada cenário define
+  as suas.
 
 ## Execução
 

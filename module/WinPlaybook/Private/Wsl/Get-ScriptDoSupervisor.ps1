@@ -4,7 +4,9 @@
     Devolve o script Python que executa o comando na distribuição e o encerra junto com o Windows.
 
     .DESCRIPTION
-    O script recebe o comando e os argumentos dele, executa o comando e sai com o código de
+    O script recebe, depois do próprio código, as variáveis de ambiente do comando, em JSON
+    codificado em Base64, e então o comando e os argumentos dele. Ele executa o comando com
+    essas variáveis somadas às da distribuição e sai com o código de
     saída dele, ou com 128 mais o número do sinal que o encerrou. Os processos que o comando
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
     script.
@@ -27,7 +29,9 @@
     param()
 
     $script = @'
+import base64
 import ctypes
+import json
 import os
 import signal
 import subprocess
@@ -120,7 +124,8 @@ signal.signal(signal.SIGTERM, guardar_sinal_de_fim)
 signal.signal(signal.SIGINT, ignorar_interrupcao)
 
 entrada = criar_entrada_do_usuario()
-comando = subprocess.Popen(sys.argv[2:], stdin=entrada)
+os.environ.update(json.loads(base64.b64decode(sys.argv[2]).decode('utf-8')))
+comando = subprocess.Popen(sys.argv[3:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)
 while comando.poll() is None and not sinais_de_fim:

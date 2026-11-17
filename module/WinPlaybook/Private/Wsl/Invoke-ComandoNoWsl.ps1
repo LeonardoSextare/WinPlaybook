@@ -23,8 +23,9 @@
     A saída do comando chega em UTF-8, então os acentos ficam certos também quando o
     PowerShell a captura, como em $saida = ansible-playbook site.yml.
 
-    As variáveis de ambiente ANSIBLE_ do Windows chegam ao comando, com os caminhos do
-    Windows convertidos. As outras variáveis chegam quando estão no WSLENV, como o WSL faz.
+    As variáveis de ambiente do Windows chegam ao comando com os caminhos convertidos, menos
+    as que a distribuição define do próprio jeito, como Get-VariavelDoWindows descreve. As
+    variáveis do WSLENV chegam como o WSL as passa.
 
     Quando o agente SSH do Windows está rodando e o relay do agente está na pasta dos shims,
     o comando recebe um SSH_AUTH_SOCK que leva ao agente. Assim o ssh da distribuição usa as
@@ -89,7 +90,7 @@
     }
 
     $supervisor = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-ScriptDoSupervisor)))
-    $comandoSupervisionado = '/usr/bin/python3 -c ''import base64, sys; exec(base64.b64decode(sys.argv[1]))'' "$supervisor" "$@"'
+    $comandoSupervisionado = '/usr/bin/python3 -c ''import base64, sys; exec(base64.b64decode(sys.argv[1]))'' "$supervisor" "$ambiente" "$@"'
 
     $temEntrada = $Entrada.Count -gt 0
     $execucaoDoComando = "exec $comandoSupervisionado"
@@ -136,7 +137,7 @@
     }
 
     $script = @(
-        'mensagem_de_comando_ausente="$0"; supervisor="$1"; shift;'
+        'mensagem_de_comando_ausente="$0"; supervisor="$1"; ambiente="$2"; shift 2;'
         $leituraDoAgente
         'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
         $preparacaoDoAgente
@@ -146,9 +147,11 @@
     $parametrosDaConversao = @{ Distribuicao = $distribuicao; RaizDeMontagem = $raizDeMontagem; PastaAtual = $pastaAtual; DestinoDeUnidade = (Get-DestinoDeUnidade) }
     $pastaAtualNaDistribuicao = ConvertTo-ArgumentoDoWsl -Argumento $pastaAtual @parametrosDaConversao
     $argumentosNaDistribuicao = @(foreach ($argumento in $Argumentos) { ConvertTo-ArgumentoDoWsl -Argumento $argumento @parametrosDaConversao })
-    $variaveisDoAnsible = Get-VariavelDoAnsible @parametrosDaConversao
+    $variaveisDoWindows = Get-VariavelDoWindows @parametrosDaConversao
+    $ambiente = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $variaveisDoWindows -Compress)))
 
-    $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + @($variaveisDoAnsible.Values)
+    $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })
+    $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + $valoresDoAnsible
     $montagens = @(Get-MontagemNecessaria -Texto $textosDoComando -RaizDeMontagem $raizDeMontagem)
     $temPastaParaMontar = $montagens.Count -gt 0
     if ($temPastaParaMontar) {
@@ -158,7 +161,7 @@
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
         '--cd', $pastaAtualNaDistribuicao
-        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor
+        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor, $ambiente
         $argumentosDoAgente
         $Comando
     ) + $argumentosNaDistribuicao
@@ -171,14 +174,7 @@
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding
     $utf8DoWslOriginal = $env:WSL_UTF8
-    $wslenvOriginal = $env:WSLENV
-    $valoresOriginaisDoAnsible = @{}
     try {
-        foreach ($nome in $variaveisDoAnsible.Keys) {
-            $valoresOriginaisDoAnsible[$nome] = [Environment]::GetEnvironmentVariable($nome)
-            [Environment]::SetEnvironmentVariable($nome, $variaveisDoAnsible[$nome])
-        }
-        $env:WSLENV = (@($variaveisDoAnsible.Keys) + @("$wslenvOriginal".Split(':') | Where-Object { $_ })) -join ':'
         [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
         $env:WSL_UTF8 = '1'
 
@@ -192,10 +188,6 @@
     }
     finally {
         $env:WSL_UTF8 = $utf8DoWslOriginal
-        $env:WSLENV = $wslenvOriginal
-        foreach ($nome in $valoresOriginaisDoAnsible.Keys) {
-            [Environment]::SetEnvironmentVariable($nome, $valoresOriginaisDoAnsible[$nome])
-        }
         [Console]::OutputEncoding = $codificacaoDoConsole
     }
 
