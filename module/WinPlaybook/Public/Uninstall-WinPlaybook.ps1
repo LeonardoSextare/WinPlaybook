@@ -8,7 +8,8 @@
     roles que o ansible-galaxy instalou e as chaves SSH guardadas no Linux. Por isso o
     comando pede confirmação; use -Confirm:$false para pular. Também apaga a configuração do
     WinPlaybook. A pasta escolhida com o -Path do Install-WinPlaybook fica, e só a pasta
-    WinPlaybook criada dentro dela é apagada.
+    WinPlaybook criada dentro dela é apagada. A pasta .ssh do usuário que a instalação
+    criou é apagada só se continuar vazia.
 
     .EXAMPLE
     Uninstall-WinPlaybook
@@ -29,7 +30,11 @@
         return
     }
 
+    $criouAPastaDoSsh = [bool] (Get-Configuracao).CreatedSshFolder
     Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro')
     Remove-PastaDosShims -Pasta $pastaDosShims
+    if ($criouAPastaDoSsh) {
+        Remove-PastaVazia -Pasta (Get-PastaDoSshDoUsuario)
+    }
     Remove-Configuracao
 }

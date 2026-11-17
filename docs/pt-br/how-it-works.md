@@ -197,8 +197,10 @@ O ssh da distribuição grava os hosts novos no `known_hosts` sem _hash_, como
 o ssh do Windows, então o arquivo fica num formato só. Para gravar com _hash_
 nos dois, use `HashKnownHosts yes` no `config` da pasta `.ssh`.
 
-Se a pasta `.ssh` ainda não existia na instalação, a distribuição usa uma
-pasta própria. Execute o `Install-WinPlaybook` de novo depois de criá-la.
+Se a pasta `.ssh` ainda não existe, o `Install-WinPlaybook` a cria vazia,
+como o ssh do Windows faria no primeiro uso. As chaves que você criar depois
+funcionam na hora. O `Uninstall-WinPlaybook` apaga essa pasta só se ela
+continuar vazia.
 
 Quando o agente SSH do Windows está ligado, o ssh da distribuição usa as
 chaves que estão nele, e uma chave com passphrase funciona sem pedir a

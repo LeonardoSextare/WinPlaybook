@@ -12,7 +12,8 @@
 
     O ssh da distribuição usa a pasta .ssh do Windows (%USERPROFILE%\.ssh) como ~/.ssh, com
     as chaves, o known_hosts e o config dela, sem cópias. Quando a pasta ainda não existe, a
-    distribuição usa um ~/.ssh próprio; rode de novo depois de criá-la. Quando o agente SSH
+    instalação a cria vazia, como o ssh do Windows faria no primeiro uso, e a desinstalação a
+    apaga se ela continuar vazia. Quando o agente SSH
     do Windows está rodando, o ssh da distribuição usa as chaves que estão nele, pelo relay
     do agente SSH, que fica na subpasta exe da pasta dos shims.
 
@@ -122,13 +123,21 @@
             New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
         }
 
+        $pastaDoSsh = Get-PastaDoSshDoUsuario
+        $vaiCriarAPastaDoSsh = -not (Test-Path -LiteralPath $pastaDoSsh -PathType Container)
         try {
-            Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh (Join-Path -Path ([Environment]::GetFolderPath('UserProfile')) -ChildPath '.ssh')
+            if ($vaiCriarAPastaDoSsh) {
+                $null = New-Item -ItemType Directory -Path $pastaDoSsh
+            }
+            Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh $pastaDoSsh
             Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
             $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
             $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
         }
         catch {
+            if ($vaiCriarAPastaDoSsh) {
+                Remove-PastaVazia -Pasta $pastaDoSsh
+            }
             if (-not $distribuicaoJaExistia) {
                 Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
             }
@@ -162,6 +171,7 @@
             WslMountRoot       = $raizDeMontagem
             AnsibleVersion     = $versaoDoAnsible
             PythonPackages     = $pacotesPython
+            CreatedSshFolder   = $vaiCriarAPastaDoSsh -or [bool] $configuracao.CreatedSshFolder
         }
 
         foreach ($comando in $comandos) {

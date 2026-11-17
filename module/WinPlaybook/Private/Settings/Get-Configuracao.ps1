@@ -25,6 +25,7 @@
         AnsibleVersion     = $null
         PythonPackages     = $null
         SshAgentPipe       = $null
+        CreatedSshFolder   = $null
     }
 
     $caminhoDoArquivo = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'settings.json'

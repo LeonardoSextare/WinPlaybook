@@ -147,9 +147,10 @@ Funções privadas:
   `WinPlaybook`, com o disco em `%LOCALAPPDATA%\WinPlaybook\distro`. As
   distribuições do usuário não são tocadas.
 - O `~/.ssh` da distribuição é a pasta `.ssh` do perfil do usuário no
-  Windows, montada. O WinPlaybook não cria, não altera e não apaga nada nessa
-  pasta; só o ssh grava nela, como faria no Windows (o `known_hosts`, por
-  exemplo).
+  Windows, montada. Quando ela não existe, a instalação a cria vazia, e a
+  desinstalação a apaga se ela continuar vazia. Fora isso, o WinPlaybook não
+  cria, não altera e não apaga nada nessa pasta; só o ssh grava nela, como
+  faria no Windows (o `known_hosts`, por exemplo).
 - A configuração fica em `%LOCALAPPDATA%\WinPlaybook\settings.json`, em lugar
   fixo, e só as funções de `Settings/` leem e gravam esse arquivo.
 - A desinstalação desfaz toda alteração que o WinPlaybook fez no sistema,
