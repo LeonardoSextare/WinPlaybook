@@ -8,6 +8,10 @@
     ~/.local/bin. Os argumentos chegam ao comando sem que um shell os interprete, e os
     caminhos do Windows viram os caminhos deles na distribuição.
 
+    Quando o processo do Windows que chamou o comando termina, como num terminal fechado ou
+    numa execução que o VS Code cancela, o comando e todos os processos que ele criou na
+    distribuição também terminam.
+
     Um comando que não existe na distribuição é recusado com o código de saída 127. Quando a
     distribuição não existe mais, o erro explica como instalá-la de novo.
 
@@ -79,13 +83,27 @@
         $usaOAgenteSshDoWindows = (Test-Path -LiteralPath $caminhoDoRelay) -and (Test-PipeDoWindows -Nome $pipeDoAgente)
     }
 
+    $supervisor = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-ScriptDoSupervisor)))
+    $comandoSupervisionado = '/usr/bin/python3 -c ''import base64, sys; exec(base64.b64decode(sys.argv[1]))'' "$supervisor" "$@"'
+
     $temEntrada = $Entrada.Count -gt 0
-    $execucaoDoComando = 'exec "$@"'
-    if ($usaOAgenteSshDoWindows) {
-        $execucaoDoComando = '"$@"'
-    }
-    if ($temEntrada) {
-        $execucaoDoComando = 'sed -e ''1s/^\xEF\xBB\xBF//'' -e ''s/\r$//'' | "$@"'
+    $execucaoDoComando = "exec $comandoSupervisionado"
+    $shellPrecisaContinuar = $usaOAgenteSshDoWindows -or $temEntrada
+    if ($shellPrecisaContinuar) {
+        $comandoEmSegundoPlano = "$comandoSupervisionado 0<&3 3<&- &"
+        if ($temEntrada) {
+            $comandoEmSegundoPlano = "sed -e '1s/^\xEF\xBB\xBF//' -e 's/\r$//' 0<&3 3<&- | $comandoSupervisionado &"
+        }
+        $execucaoDoComando = @(
+            'exec 3<&0;'
+            $comandoEmSegundoPlano
+            'pid_do_comando=$!;'
+            'trap ''kill -TERM "$pid_do_comando" 2> /dev/null'' HUP TERM;'
+            'trap : INT;'
+            'wait "$pid_do_comando"; codigo_de_saida=$?;'
+            'while kill -0 "$pid_do_comando" 2> /dev/null; do wait "$pid_do_comando"; codigo_de_saida=$?; done;'
+            'exit "$codigo_de_saida"'
+        ) -join ' '
     }
 
     $mensagemDeComandoAusente = Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores $Comando
@@ -103,7 +121,6 @@
             'socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork,umask=177 EXEC:"$pasta_do_agente/relay $pipe_do_agente" 2> /dev/null &'
             'pid_do_socat=$!;'
             'trap ''kill "$pid_do_socat" 2> /dev/null; rm -rf "$pasta_do_agente"'' EXIT;'
-            'trap : INT TERM HUP;'
             'tentativas=0; while [ ! -S "$SSH_AUTH_SOCK" ] && [ "$tentativas" -lt 100 ]; do sleep 0.01; tentativas=$((tentativas + 1)); done;'
             'fi;'
         )
@@ -114,7 +131,7 @@
     }
 
     $script = @(
-        'mensagem_de_comando_ausente="$0";'
+        'mensagem_de_comando_ausente="$0"; supervisor="$1"; shift;'
         $leituraDoAgente
         'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
         $preparacaoDoAgente
@@ -124,7 +141,7 @@
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
         '--cd', $pastaAtual
-        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente
+        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor
         $argumentosDoAgente
         $Comando
     )

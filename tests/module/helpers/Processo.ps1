@@ -154,3 +154,78 @@ function Invoke-ScriptDePowerShell {
         Erro          = (@($linhasDosErros) -join "`n").Trim()
     }
 }
+
+function Get-SobraDeComandoInterrompido {
+    <#
+    .SYNOPSIS
+    Interrompe um comando do Ansible no meio, matando o processo do Windows que o chamou, e devolve quantos processos dele continuam na distribuição.
+
+    .DESCRIPTION
+    Abre outro PowerShell, da mesma edição, com a entrada e a saída redirecionadas, como a
+    extensão do VS Code abre os comandos. Ele importa o módulo e executa um ansible com uma
+    tarefa longa, marcada com um texto único. Quando a tarefa aparece na distribuição, a
+    árvore de processos do Windows é encerrada. Devolve um objeto com ComecouNaDistribuicao, se a
+    tarefa chegou a rodar, e ProcessosQueSobraram, o número de processos com a marca que
+    continuam na distribuição depois de 15 segundos. A configuração do WinPlaybook vem do
+    $env:LOCALAPPDATA atual.
+
+    .PARAMETER CaminhoDoModulo
+    O caminho do manifesto do módulo WinPlaybook.
+
+    .PARAMETER Distribuicao
+    A distribuição WSL em que o comando roda.
+
+    .PARAMETER PastaDeTrabalho
+    A pasta de onde o comando é chamado.
+
+    .EXAMPLE
+    $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao 'WinPlaybookE2E' -PastaDeTrabalho $TestDrive
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)] [string] $CaminhoDoModulo,
+        [Parameter(Mandatory)] [string] $Distribuicao,
+        [Parameter(Mandatory)] [string] $PastaDeTrabalho
+    )
+
+    $marca = "winplaybook$([guid]::NewGuid().ToString('N'))"
+    $padraoDaMarca = "[$($marca[0])]$($marca.Substring(1))"
+    $script = "Import-Module '$CaminhoDoModulo'; Invoke-WinPlaybook ansible localhost -m ansible.builtin.shell -a 'sleep 120; echo $marca'"
+    $padraoDaTarefa = "^/bin/sh -c sleep 120; echo $marca`$"
+    $contagemDaTarefa = ConvertTo-LinhaDeComando -Argumentos '--distribution', $Distribuicao, '--exec', 'pgrep', '-c', '-f', $padraoDaTarefa
+    $contagem = ConvertTo-LinhaDeComando -Argumentos '--distribution', $Distribuicao, '--exec', 'pgrep', '-c', '-f', $padraoDaMarca
+
+    $informacoes = New-Object System.Diagnostics.ProcessStartInfo
+    $informacoes.FileName = (Get-Process -Id $PID).Path
+    $informacoes.Arguments = ConvertTo-LinhaDeComando -Argumentos '-NoProfile', '-Command', $script
+    $informacoes.WorkingDirectory = $PastaDeTrabalho
+    $informacoes.UseShellExecute = $false
+    $informacoes.CreateNoWindow = $true
+    $informacoes.RedirectStandardInput = $true
+    $informacoes.RedirectStandardOutput = $true
+    $informacoes.RedirectStandardError = $true
+    $processo = [System.Diagnostics.Process]::Start($informacoes)
+    try {
+        $limite = (Get-Date).AddSeconds(60)
+        do {
+            Start-Sleep -Milliseconds 500
+            $emExecucao = [int] (Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos $contagemDaTarefa).Saida
+        } while ($emExecucao -eq 0 -and (Get-Date) -lt $limite -and -not $processo.HasExited)
+    }
+    finally {
+        $null = & taskkill.exe /T /F /PID $processo.Id 2>&1
+    }
+
+    $limite = (Get-Date).AddSeconds(15)
+    do {
+        Start-Sleep -Milliseconds 500
+        $sobra = [int] (Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos $contagem).Saida
+    } while ($sobra -gt 0 -and (Get-Date) -lt $limite)
+
+    $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos (ConvertTo-LinhaDeComando -Argumentos '--distribution', $Distribuicao, '--user', 'root', '--exec', 'pkill', '-f', $padraoDaMarca)
+    return [pscustomobject]@{
+        ComecouNaDistribuicao = $emExecucao -gt 0
+        ProcessosQueSobraram  = $sobra
+    }
+}
