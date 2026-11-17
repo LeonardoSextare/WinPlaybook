@@ -228,6 +228,13 @@ nos dois, use `HashKnownHosts yes` no `config` da pasta `.ssh`.
 Quando o inventário e o `config` não definem um usuário para a conexão, o ssh
 da distribuição usa o seu nome de usuário do Windows, como o ssh do Windows.
 
+O `config` pode ter caminhos do Windows, como num `IdentityFile` ou num
+`ProxyCommand` com o `ssh.exe`. O ssh da distribuição usa uma cópia traduzida
+dele, refeita a cada comando, e o arquivo do Windows fica como está: um
+caminho da pasta `.ssh` vira o `~/.ssh` da distribuição, o `IdentityAgent`
+do agente do Windows vira o agente da distribuição, e o `ssh.exe` do
+`ProxyCommand` vira o ssh da distribuição.
+
 Se a pasta `.ssh` ainda não existe, o `Install-WinPlaybook` a cria vazia,
 como o ssh do Windows faria no primeiro uso. As chaves que você criar depois
 funcionam na hora. O `Uninstall-WinPlaybook` apaga essa pasta só se ela

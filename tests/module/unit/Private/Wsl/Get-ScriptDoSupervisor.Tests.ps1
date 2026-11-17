@@ -31,6 +31,13 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)") | Should-BeTrue
     }
 
+    It 'traduz os caminhos do Windows do config do ssh numa cópia que o /usr/local/bin/ssh usa' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("destino = os.path.expanduser('~/.cache/winplaybook/ssh_config')") | Should-BeTrue
+        $script.Contains("'\n\nMatch all\nInclude /etc/ssh/ssh_config\n'") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
