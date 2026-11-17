@@ -202,8 +202,10 @@ a hash, like the Windows SSH client, so the file keeps a single format. To
 write hashed entries from both, set `HashKnownHosts yes` in the `config` file
 of the `.ssh` folder.
 
-If the `.ssh` folder didn't exist during installation, the distribution uses
-its own folder. Run `Install-WinPlaybook` again after you create it.
+If the `.ssh` folder doesn't exist yet, `Install-WinPlaybook` creates it
+empty, as the Windows SSH client would on first use. Keys that you create
+later work right away. `Uninstall-WinPlaybook` deletes this folder only if
+it's still empty.
 
 When the Windows SSH agent is on, the SSH client of the distribution uses the
 keys in the agent, and a key with a passphrase works without asking for the

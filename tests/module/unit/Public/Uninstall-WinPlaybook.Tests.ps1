@@ -23,11 +23,46 @@ Describe 'Uninstall-WinPlaybook' {
         Mock Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook { }
         Mock Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook { }
         Mock Remove-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
+        Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
     }
 
     BeforeEach {
         $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
+        $pastaDoSsh = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-ssh')
+    }
+
+    Context 'quando a instalação criou a pasta .ssh do usuário' {
+        BeforeEach {
+            $null = Install-WinPlaybook
+        }
+
+        It 'apaga a pasta .ssh que continua vazia' {
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath $pastaDoSsh | Should-BeFalse
+        }
+
+        It 'mantém a pasta .ssh que recebeu arquivos' {
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDoSsh 'id_ed25519')
+
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath (Join-Path $pastaDoSsh 'id_ed25519') | Should-BeTrue
+        }
+    }
+
+    Context 'quando a pasta .ssh do usuário já existia na instalação' {
+        BeforeEach {
+            $null = New-Item -ItemType Directory -Path $pastaDoSsh
+            $null = Install-WinPlaybook
+        }
+
+        It 'mantém a pasta .ssh vazia' {
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath $pastaDoSsh | Should-BeTrue
+        }
     }
 
     Context 'quando o WinPlaybook está instalado na pasta padrão' {

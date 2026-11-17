@@ -21,6 +21,7 @@ Describe 'Install-WinPlaybook' {
         Mock Remove-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
         Mock Get-RaizDeMontagemDoWsl -ModuleName WinPlaybook { '/mnt/' }
         Mock Get-ComandoDoAnsible -ModuleName WinPlaybook { 'ansible', 'ansible-playbook' }
+        Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
         $null = New-Item -ItemType File -Path $powerShellAtual, $powerShellDesktop -Force
@@ -49,6 +50,55 @@ Describe 'Install-WinPlaybook' {
     BeforeEach {
         $pastaDeConfiguracao = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
         $pastaPadraoDosShims = Join-Path $pastaDeConfiguracao 'bin'
+        $pastaDoSsh = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-ssh')
+    }
+
+    Context 'quando a pasta .ssh do usuário não existe' {
+        It 'cria a pasta .ssh vazia' {
+            $null = Install-WinPlaybook
+
+            Test-Path -LiteralPath $pastaDoSsh -PathType Container | Should-BeTrue
+        }
+
+        It 'prepara a distribuição com a pasta .ssh criada' {
+            $null = Install-WinPlaybook
+
+            Should-Invoke Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $PastaDoSsh -eq $pastaDoSsh }
+        }
+
+        It 'guarda na configuração que criou a pasta .ssh' {
+            $null = Install-WinPlaybook
+
+            (Get-ConfiguracaoSalva).CreatedSshFolder | Should-BeTrue
+        }
+
+        It 'apaga a pasta .ssh que criou quando a instalação falha' {
+            Mock Install-AnsibleNaDistribuicao -ModuleName WinPlaybook { throw 'sem internet' }
+
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
+
+            Test-Path -LiteralPath $pastaDoSsh | Should-BeFalse
+        }
+    }
+
+    Context 'quando a pasta .ssh do usuário já existe' {
+        BeforeEach {
+            $null = New-Item -ItemType Directory -Path $pastaDoSsh
+        }
+
+        It 'não marca a pasta .ssh como criada pela instalação' {
+            $null = Install-WinPlaybook
+
+            (Get-ConfiguracaoSalva).CreatedSshFolder | Should-BeFalse
+        }
+
+        It 'mantém a pasta .ssh quando a instalação falha' {
+            Mock Install-AnsibleNaDistribuicao -ModuleName WinPlaybook { throw 'sem internet' }
+
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
+
+            Test-Path -LiteralPath $pastaDoSsh | Should-BeTrue
+        }
     }
 
     Context 'quando instala pela primeira vez' {
@@ -64,7 +114,7 @@ Describe 'Install-WinPlaybook' {
             $null = Install-WinPlaybook
 
             Should-Invoke Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Nome -eq 'WinPlaybook' -and $PastaDoSsh -eq (Join-Path ([Environment]::GetFolderPath('UserProfile')) '.ssh')
+                $Nome -eq 'WinPlaybook' -and $PastaDoSsh -eq $pastaDoSsh
             }
         }
 
