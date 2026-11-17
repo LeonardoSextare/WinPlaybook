@@ -17,6 +17,11 @@
     As variáveis de ambiente ANSIBLE_ do Windows chegam ao comando, com os caminhos do
     Windows convertidos. As outras variáveis chegam quando estão no WSLENV, como o WSL faz.
 
+    Quando o agente SSH do Windows está rodando e o relay do agente está na pasta dos shims,
+    o comando recebe um SSH_AUTH_SOCK que leva ao agente. Assim o ssh da distribuição usa as
+    chaves do agente, e uma chave com passphrase não pede a passphrase. O socket existe só
+    enquanto o comando roda.
+
     .PARAMETER Comando
     O comando na distribuição, como ansible-playbook.
 
@@ -62,17 +67,57 @@
 
     $pastaAtual = (Get-Location -PSProvider FileSystem).ProviderPath
 
+    $usaOAgenteSshDoWindows = $false
+    $temPastaDosShims = [bool] $configuracao.ShimFolder
+    if ($temPastaDosShims) {
+        $caminhoDoRelay = Get-CaminhoDoRelayDoAgenteSsh -PastaDosShims $configuracao.ShimFolder
+        $pipeDoAgente = 'openssh-ssh-agent'
+        $pipeFoiEscolhido = [bool] $configuracao.SshAgentPipe
+        if ($pipeFoiEscolhido) {
+            $pipeDoAgente = $configuracao.SshAgentPipe
+        }
+        $usaOAgenteSshDoWindows = (Test-Path -LiteralPath $caminhoDoRelay) -and (Test-PipeDoWindows -Nome $pipeDoAgente)
+    }
+
     $temEntrada = $Entrada.Count -gt 0
     $execucaoDoComando = 'exec "$@"'
+    if ($usaOAgenteSshDoWindows) {
+        $execucaoDoComando = '"$@"'
+    }
     if ($temEntrada) {
         $execucaoDoComando = 'sed -e ''1s/^\xEF\xBB\xBF//'' -e ''s/\r$//'' | "$@"'
     }
 
     $mensagemDeComandoAusente = Get-Mensagem -Nome 'ComandoAusenteNoWsl' -Valores $Comando
 
+    $leituraDoAgente = @()
+    $preparacaoDoAgente = @()
+    $argumentosDoAgente = @()
+    if ($usaOAgenteSshDoWindows) {
+        $leituraDoAgente = 'relay_do_agente="$1"; pipe_do_agente="$2"; shift 2;'
+        $preparacaoDoAgente = @(
+            'if command -v socat > /dev/null; then'
+            'pasta_do_agente=$(mktemp -d /tmp/winplaybook-agente.XXXXXX);'
+            'ln -s "$relay_do_agente" "$pasta_do_agente/relay";'
+            'export SSH_AUTH_SOCK="$pasta_do_agente/agente.sock";'
+            'socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork,umask=177 EXEC:"$pasta_do_agente/relay $pipe_do_agente" 2> /dev/null &'
+            'pid_do_socat=$!;'
+            'trap ''kill "$pid_do_socat" 2> /dev/null; rm -rf "$pasta_do_agente"'' EXIT;'
+            'trap : INT TERM HUP;'
+            'tentativas=0; while [ ! -S "$SSH_AUTH_SOCK" ] && [ "$tentativas" -lt 100 ]; do sleep 0.01; tentativas=$((tentativas + 1)); done;'
+            'fi;'
+        )
+        $argumentosDoAgente = @(
+            ConvertTo-CaminhoDoWsl -Caminho $caminhoDoRelay -RaizDeMontagem $raizDeMontagem
+            $pipeDoAgente
+        )
+    }
+
     $script = @(
         'mensagem_de_comando_ausente="$0";'
+        $leituraDoAgente
         'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
+        $preparacaoDoAgente
         $execucaoDoComando
     ) -join ' '
 
@@ -80,6 +125,7 @@
         '--distribution', $distribuicao
         '--cd', $pastaAtual
         '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente
+        $argumentosDoAgente
         $Comando
     )
     foreach ($argumento in $Argumentos) {

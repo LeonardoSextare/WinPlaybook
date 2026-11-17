@@ -17,6 +17,7 @@
     PastaDeOutroDono           = 'The folder {0} already exists and wasn''t created by WinPlaybook. Choose another -Path, or delete the folder.'
     PowerShell7NaoInstalado    = 'PowerShell 7 (pwsh) is not installed. Install it with: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Could not find where the WSL distribution {0} mounts the Windows drives (wsl exit code: {1}).'
+    RelayNaoInstalado          = 'Could not make the SSH agent relay, in {0}, executable in the WSL distribution. Run Install-WinPlaybook again. The distribution said: {1}'
     WslNaoEncontrado           = 'WSL was not found. WinPlaybook runs Ansible in a WSL distribution: install WSL with wsl --install and try again.'
     WslNaoInstalado            = 'WSL is not installed. Install it with: wsl --install --no-distribution (it asks for administrator permission and may ask you to restart Windows), and run Install-WinPlaybook again.'
 }

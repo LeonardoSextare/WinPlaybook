@@ -1,4 +1,5 @@
 ﻿BeforeAll {
+    . (Join-Path $PSScriptRoot '../helpers/AgenteSsh.ps1')
     . (Join-Path $PSScriptRoot '../helpers/Wsl.ps1')
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
@@ -271,6 +272,93 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*hashknownhosts yes*'
+        }
+    }
+
+    Context 'quando o agente SSH do Windows está rodando' {
+        BeforeAll {
+            $agente = Start-AgenteSshFalso
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-compilado/relay-do-agente-ssh.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-com-relay'
+                Distribuicao   = $nomeDaDistribuicao
+                Pipe           = $agente.Nome
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelay -Caminho $CaminhoDoRelay
+                Install-RelayDoAgenteSsh -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims; SshAgentPipe = $Pipe }
+            }
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            Stop-AgenteSshFalso -Agente $agente
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'o ssh da distribuição usa as chaves do agente' {
+            $saida = Invoke-WinPlaybook ssh-add -l 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString "*$($agente.Comentario)*"
+        }
+
+        It 'propaga o código de saída do comando' {
+            $saida = Invoke-WinPlaybook sh -c 'exit 3' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 3 -Because $saida
+        }
+
+        It 'entrega ao comando o que chega pelo pipeline' {
+            $saida = 'oi do pipeline' | Invoke-WinPlaybook cat 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*oi do pipeline*'
+        }
+
+        It 'não deixa o socket nem o socat na distribuição depois do comando' {
+            $null = Invoke-WinPlaybook ssh-add -l 2>&1
+
+            $sobras = InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Invoke-ScriptNaDistribuicao -Distribuicao $Distribuicao -Script 'ls -d /tmp/winplaybook-agente.* 2> /dev/null; cat /proc/[0-9]*/comm 2> /dev/null | grep -x socat' -Usuario 'root'
+            }
+            $sobras.Saida | Should-Be ''
+        }
+    }
+
+    Context 'quando o agente SSH do Windows não está rodando' {
+        BeforeAll {
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-sem-agente/relay-do-agente-ssh.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-sem-agente'
+                Distribuicao   = $nomeDaDistribuicao
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelay -Caminho $CaminhoDoRelay
+                Install-RelayDoAgenteSsh -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims; SshAgentPipe = "winplaybook-inexistente-$([guid]::NewGuid().ToString('N'))" }
+            }
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'executa o comando sem o SSH_AUTH_SOCK' {
+            $saida = Invoke-WinPlaybook sh -c 'printf "[%s]" "$SSH_AUTH_SOCK"' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida.Trim() | Should-Be '[]'
         }
     }
 

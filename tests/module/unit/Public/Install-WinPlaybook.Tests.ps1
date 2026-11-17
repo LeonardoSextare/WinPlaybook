@@ -11,6 +11,8 @@ Describe 'Install-WinPlaybook' {
     BeforeAll {
         Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { $pastaDeConfiguracao }
         Mock New-ExecutavelDeShim -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'shim modelo' -Force }
+        Mock New-ExecutavelDoRelay -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'relay modelo' -Force }
+        Mock Install-RelayDoAgenteSsh -ModuleName WinPlaybook { }
         Mock Test-WslInstalado -ModuleName WinPlaybook { $true }
         Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu' }
         Mock New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
@@ -100,6 +102,23 @@ Describe 'Install-WinPlaybook' {
             Should-Invoke New-ExecutavelDeShim -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
                 -not (Test-Path -LiteralPath (Split-Path -Path $Caminho -Parent))
             }
+        }
+
+        It 'instala na pasta dos shims o relay do agente SSH' {
+            $null = Install-WinPlaybook
+
+            Should-Invoke Install-RelayDoAgenteSsh -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $PastaDosShims -eq $pastaPadraoDosShims -and $Distribuicao -eq 'WinPlaybook' -and $RaizDeMontagem -eq '/mnt/'
+            }
+        }
+
+        It 'instala o relay compilado na instalação' {
+            $relayInstalado = @{}
+            Mock Install-RelayDoAgenteSsh -ModuleName WinPlaybook { $relayInstalado.Conteudo = Get-Content -LiteralPath $CaminhoDoExecutavel }
+
+            $null = Install-WinPlaybook
+
+            $relayInstalado.Conteudo | Should-Be 'relay modelo'
         }
 
         It 'coloca a pasta dos shims no Path do usuário' {
@@ -196,6 +215,19 @@ Describe 'Install-WinPlaybook' {
 
         It 'falha antes de criar a distribuição e a pasta dos shims' {
             { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem compilador*'
+
+            Should-Invoke New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 0 -Exactly
+            Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse
+        }
+    }
+
+    Context 'quando o relay do agente SSH não compila' {
+        BeforeAll {
+            Mock New-ExecutavelDoRelay -ModuleName WinPlaybook { throw 'relay com erro' }
+        }
+
+        It 'falha antes de criar a distribuição e a pasta dos shims' {
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*relay com erro*'
 
             Should-Invoke New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 0 -Exactly
             Test-Path -LiteralPath $pastaPadraoDosShims | Should-BeFalse

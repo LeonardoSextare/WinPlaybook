@@ -55,7 +55,7 @@ discutida antes de entrar no projeto.
 
 | Caminho               | Conteúdo                                                                                   |
 | --------------------- | ------------------------------------------------------------------------------------------ |
-| `module/WinPlaybook/` | O módulo publicado: manifesto, `.psm1`, as funções em `Public/` e `Private/` e o `Shim.cs` |
+| `module/WinPlaybook/` | O módulo publicado: manifesto, `.psm1`, as funções em `Public/` e `Private/` e os `.cs`    |
 | `tests/`              | Os testes do módulo, separados por camada                                                  |
 | `scripts/`            | Scripts do CI e do release, como montar o pacote e conferir os commits                     |
 | `scripts/dev/`        | Scripts de desenvolvimento: preparação do ambiente e preview da documentação               |
