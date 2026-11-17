@@ -53,6 +53,11 @@ de fora, e o Python e o pip do Windows só funcionam com a extensão
 Python do Windows. Os argumentos que são caminhos da distribuição, como o
 `{{ playbook_dir }}`, chegam ao programa do Windows como caminhos do Windows.
 
+O `git` da distribuição usa o seu `.gitconfig` do Windows, com o mesmo
+usuário, os mesmos atalhos e o mesmo login: o `credential.helper` do Git for
+Windows passa a ser o Git Credential Manager do Windows. Assim o
+`ansible-galaxy` e o módulo `git` alcançam os repositórios privados que você
+já acessa no Windows.
 As _collections_ e as _roles_ que o `ansible-galaxy` instala ficam no seu
 perfil do Windows, em `C:\Users\<usuário>\.ansible\collections` e
 `C:\Users\<usuário>\.ansible\roles`, como num Ansible instalado no Windows. O

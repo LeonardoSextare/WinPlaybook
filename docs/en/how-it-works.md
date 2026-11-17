@@ -55,6 +55,11 @@ interpreter discovery doesn't choose the Windows Python. The arguments that are
 distribution paths, such as `{{ playbook_dir }}`, reach the Windows program as
 Windows paths.
 
+The `git` command of the distribution uses your Windows `.gitconfig` file,
+with the same user, aliases, and sign-in: the `credential.helper` of Git for
+Windows becomes the Windows Git Credential Manager. This way, `ansible-galaxy`
+and the `git` module reach the private repositories that you already use on
+Windows.
 The collections and roles that `ansible-galaxy` installs go to your Windows
 profile, in `C:\Users\<user>\.ansible\collections` and
 `C:\Users\<user>\.ansible\roles`, as with Ansible installed on Windows.

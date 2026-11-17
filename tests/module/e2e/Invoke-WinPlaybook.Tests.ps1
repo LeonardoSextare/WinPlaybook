@@ -463,6 +463,75 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o perfil do Windows tem um .gitconfig' {
+        BeforeAll {
+            $perfilDeTeste = Join-Path $TestDrive 'perfil-com-git'
+            $null = New-Item -ItemType Directory -Path $perfilDeTeste
+            $linhas = @(
+                '[user]'
+                '    name = Pessoa do Windows'
+                '[core]'
+                '    sshCommand = C:/Windows/System32/OpenSSH/ssh.exe'
+                '    excludesFile = C:\\Users\\eu\\.gitignore_global'
+                '[credential]'
+                '    helper = manager'
+            )
+            [IO.File]::WriteAllText((Join-Path $perfilDeTeste '.gitconfig'), ($linhas -join "`n") + "`n")
+            $perfilOriginal = $env:USERPROFILE
+            $env:USERPROFILE = $perfilDeTeste
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:USERPROFILE = $perfilOriginal
+        }
+
+        It 'usa <Descricao>' -ForEach @(
+            @{ Descricao = 'o usuário do .gitconfig do Windows'; Chave = 'user.name'; Esperado = 'Pessoa do Windows' }
+            @{ Descricao = 'o ssh da distribuição no lugar do ssh.exe'; Chave = 'core.sshCommand'; Esperado = 'ssh' }
+            @{ Descricao = 'o caminho do Windows convertido para a raiz de montagem'; Chave = 'core.excludesFile'; Esperado = '/mnt/c/Users/eu/.gitignore_global' }
+        ) {
+            $saida = Invoke-WinPlaybook git config --get $Chave 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida.Trim() | Should-Be $Esperado
+        }
+
+        It 'usa o Git Credential Manager do Windows como credential.helper com o git.exe de <PastaDoGit> e o gerenciador em <PastaDoGerenciador>' -ForEach @(
+            @{ PastaDoGit = 'cmd'; PastaDoGerenciador = 'mingw64\bin' }
+            @{ PastaDoGit = 'bin'; PastaDoGerenciador = 'mingw64\bin' }
+            @{ PastaDoGit = 'mingw64\bin'; PastaDoGerenciador = 'mingw64\libexec\git-core' }
+            @{ PastaDoGit = 'cmd'; PastaDoGerenciador = 'ucrt64\bin' }
+            @{ PastaDoGit = 'ucrt64\bin'; PastaDoGerenciador = 'ucrt64\bin' }
+        ) {
+            $raizDoGit = Join-Path $TestDrive "git-$([guid]::NewGuid().ToString('N'))\Git"
+            $pastaDoExeDoGit = Join-Path $raizDoGit $PastaDoGit
+            $pastaDoExeDoGerenciador = Join-Path $raizDoGit $PastaDoGerenciador
+            $null = New-Item -ItemType Directory -Path $pastaDoExeDoGit, $pastaDoExeDoGerenciador -Force
+            [IO.File]::WriteAllText((Join-Path $pastaDoExeDoGit 'git.exe'), '')
+            [IO.File]::WriteAllText((Join-Path $pastaDoExeDoGerenciador 'git-credential-manager.exe'), '')
+            $pathOriginal = $env:Path
+            $env:Path = (@($env:Path -split ';' | Where-Object { $_ -and -not (Test-Path -LiteralPath (Join-Path $_ 'git.exe')) }) + $pastaDoExeDoGit) -join ';'
+
+            try {
+                $saida = Invoke-WinPlaybook git config --get-all credential.helper 2>&1 | Out-String
+            }
+            finally {
+                $env:Path = $pathOriginal
+            }
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString "*/Git/$($PastaDoGerenciador.Replace('\', '/'))/git-credential-manager.exe*"
+        }
+
+        It 'mantém o .gitconfig do Windows como estava' {
+            $null = Invoke-WinPlaybook git config --get user.name 2>&1
+
+            Get-Content -LiteralPath (Join-Path $perfilDeTeste '.gitconfig') -Raw | Should-BeLikeString '*helper = manager*'
+        }
+    }
+
     Context 'quando o comando chama programas do Path do Windows' {
         BeforeAll {
             $pastaDeFerramentas = Join-Path $TestDrive 'ferramentas'

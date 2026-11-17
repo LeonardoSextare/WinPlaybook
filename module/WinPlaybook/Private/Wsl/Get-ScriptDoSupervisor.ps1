@@ -26,6 +26,13 @@
     SSH_AUTH_SOCK, e um ProxyCommand com o ssh.exe do Windows passa a usar o ssh da
     distribuição. Sem caminhos do Windows, a cópia não existe.
 
+    O git da distribuição usa o .gitconfig do perfil do Windows, por uma cópia traduzida em
+    ~/.cache/winplaybook/gitconfig que o GIT_CONFIG_GLOBAL aponta: o credential.helper do
+    Git for Windows (manager) vira o Git Credential Manager do Windows, pela montagem com
+    execução, o core.sshCommand com o ssh.exe vira o ssh da distribuição, e os outros
+    caminhos do Windows viram os da raiz de montagem. Sem .gitconfig, a cópia só liga o Git
+    Credential Manager, quando o Git for Windows está no Path.
+
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
 
@@ -46,6 +53,7 @@
     $script = @'
 import base64
 import ctypes
+import glob
 import hashlib
 import json
 import os
@@ -67,6 +75,9 @@ NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)
 CAMINHO_DO_WINDOWS = re.compile(r'^[A-Za-z]:[\\/]')
 LINHA_DO_SSH = re.compile(r'^(\s*)(IdentityFile|CertificateFile|UserKnownHostsFile|GlobalKnownHostsFile|IdentityAgent|ControlPath|Include|RevokedHostKeys|ProxyCommand)(\s*=\s*|\s+)(.*?)\s*$', re.IGNORECASE)
 PROGRAMA_DO_PROXY = re.compile(r'^("[^"]+"|\S+)')
+LINHA_DO_GIT = re.compile(r'^(\s*)([A-Za-z][\w-]*)(\s*=\s*)(.*?)\s*$')
+CAMINHO_DO_WINDOWS_NO_GIT = re.compile(r'^"?[A-Za-z]:(\\\\|\\|/)')
+HELPER_DO_WINDOWS = re.compile(r'^"?(manager(-core)?|.*git-credential-manager(\.exe)?)"?$', re.IGNORECASE)
 sinais_de_fim = []
 
 
@@ -255,6 +266,63 @@ def converter_linha_do_ssh(linha, pasta_do_ssh_no_windows):
     return inicio + opcao + separador + ' '.join(converter_caminho_do_ssh(caminho, pasta_do_ssh_no_windows) for caminho in caminhos)
 
 
+def achar_gerenciador_de_credenciais(pastas_do_path):
+    for pasta in pastas_do_path:
+        if os.path.isfile(pasta + '/git.exe'):
+            for raiz_do_git in (os.path.dirname(pasta), os.path.dirname(os.path.dirname(pasta))):
+                for relativo in ('/*/bin/git-credential-manager.exe', '/*/libexec/git-core/git-credential-manager.exe'):
+                    encontrados = sorted(glob.glob(glob.escape(raiz_do_git) + relativo))
+                    if encontrados:
+                        return encontrados[0]
+    return None
+
+
+def converter_valor_do_git(chave, valor, gerenciador_de_credenciais):
+    if chave == 'helper' and HELPER_DO_WINDOWS.match(valor):
+        return '"\'' + gerenciador_de_credenciais + '\'"' if gerenciador_de_credenciais else None
+    if not CAMINHO_DO_WINDOWS_NO_GIT.match(valor):
+        return valor
+    caminho = valor.strip('"').replace('\\\\', '\\').replace('\\', '/')
+    if chave == 'sshcommand' and caminho.lower().split(' ')[0].endswith('/ssh.exe'):
+        return 'ssh' + caminho[caminho.lower().index('/ssh.exe') + len('/ssh.exe'):]
+    raiz = os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/').rstrip('/')
+    return '"' + raiz + '/' + caminho[0].lower() + caminho[2:] + '"'
+
+
+def preparar_config_do_git(pastas_do_path):
+    perfil = os.environ.get('USERPROFILE', '')
+    origem = os.path.join(perfil, '.gitconfig') if perfil else None
+    gerenciador_de_credenciais = achar_gerenciador_de_credenciais(pastas_do_path)
+    try:
+        with open(origem, encoding='utf-8-sig', errors='surrogateescape') as arquivo:
+            original = arquivo.read().splitlines()
+    except (OSError, TypeError):
+        original = []
+    if not original and not gerenciador_de_credenciais:
+        return
+    traduzido = []
+    tem_helper = False
+    for linha in original:
+        ocorrencia = LINHA_DO_GIT.match(linha)
+        if not ocorrencia or linha.lstrip().startswith(('#', ';', '[')):
+            traduzido.append(linha)
+            continue
+        inicio, chave, separador, valor = ocorrencia.groups()
+        tem_helper = tem_helper or chave.lower() == 'helper'
+        convertido = converter_valor_do_git(chave.lower(), valor, gerenciador_de_credenciais)
+        if convertido is not None:
+            traduzido.append(inicio + chave + separador + convertido)
+    if gerenciador_de_credenciais and not tem_helper:
+        traduzido += ['[credential]', '\thelper = "\'' + gerenciador_de_credenciais + '\'"']
+    destino = os.path.expanduser('~/.cache/winplaybook/gitconfig')
+    os.makedirs(os.path.dirname(destino), exist_ok=True)
+    temporario = destino + '.' + str(os.getpid())
+    with open(temporario, 'w', encoding='utf-8', errors='surrogateescape') as arquivo:
+        arquivo.write('\n'.join(traduzido) + '\n')
+    os.replace(temporario, destino)
+    os.environ['GIT_CONFIG_GLOBAL'] = destino
+
+
 def preparar_config_do_ssh():
     destino = os.path.expanduser('~/.cache/winplaybook/ssh_config')
     try:
@@ -289,6 +357,7 @@ ambiente = json.loads(os.environ.pop('WINPLAYBOOK_ENVIRONMENT'))
 os.environ.update(ambiente['variaveis'])
 os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
 preparar_config_do_ssh()
+preparar_config_do_git(ambiente['pathDoWindows'])
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

@@ -38,6 +38,13 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("'\n\nMatch all\nInclude /etc/ssh/ssh_config\n'") | Should-BeTrue
     }
 
+    It 'traduz o .gitconfig do Windows numa cópia que o GIT_CONFIG_GLOBAL aponta' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("os.environ['GIT_CONFIG_GLOBAL'] = destino") | Should-BeTrue
+        $script.Contains("preparar_config_do_git(ambiente['pathDoWindows'])") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
