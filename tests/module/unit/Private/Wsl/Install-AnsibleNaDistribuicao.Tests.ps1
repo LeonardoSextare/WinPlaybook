@@ -28,7 +28,16 @@ Describe 'Install-AnsibleNaDistribuicao' {
         ) {
             InModuleScope WinPlaybook -Parameters @{ Versao = $Versao; Pacotes = $Pacotes } { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible $Versao -PacotesPython $Pacotes }
 
-            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { ($Argumentos -join ',') -eq $Esperado }
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { ($Argumentos[1..($Argumentos.Count - 1)] -join ',') -eq $Esperado }
+        }
+
+        It 'grava no ambiente do Ansible o módulo que aceita caminhos do Windows' {
+            InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
+
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Argumentos[0])) -eq (InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }) -and
+                $Script.Contains('"$site_packages/winplaybook_caminhos_do_windows.py"') -and $Script.Contains('import winplaybook_caminhos_do_windows\n'' > "$site_packages/winplaybook.pth"')
+            }
         }
 
         It 'instala o ansible-lint e o pywinrm no mesmo ambiente do Ansible' {

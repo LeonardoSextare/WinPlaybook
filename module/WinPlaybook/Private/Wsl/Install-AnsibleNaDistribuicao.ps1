@@ -13,6 +13,9 @@
     primeiro em que o ansible --version funciona. Rodar de novo troca a instalação pela
     pedida.
 
+    O ambiente recebe também o módulo de Get-ScriptDosCaminhosDoWindows, que faz o Ansible
+    aceitar caminhos do Windows nos playbooks, no inventário e no ansible.cfg.
+
     .PARAMETER Nome
     O nome da distribuição no WSL.
 
@@ -45,16 +48,22 @@
     $script = @(
         'export PATH="$HOME/.local/bin:$PATH";'
         'command -v uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh > /dev/null 2>&1;'
-        'pacote="$1"; shift;'
+        'caminhos_do_windows="$1"; pacote="$2"; shift 2;'
         'for extra in "$@"; do set -- "$@" --with "$extra"; shift; done;'
         'ultima_saida="";'
         'for versao in $(uv python list 2> /dev/null | sed -n ''s/^cpython-\(3\.[0-9]*\)\.[0-9]*-linux.*/\1/p'' | sort -t. -k2 -n -r -u); do'
-        'if ultima_saida=$(uv tool install --force --python "$versao" "$pacote" --with-executables-from ansible-core,ansible-lint --with pywinrm "$@" 2>&1) && ultima_saida=$("$HOME/.local/bin/ansible" --version 2>&1); then exit 0; fi;'
+        'if ultima_saida=$(uv tool install --force --python "$versao" "$pacote" --with-executables-from ansible-core,ansible-lint --with pywinrm "$@" 2>&1) && ultima_saida=$("$HOME/.local/bin/ansible" --version 2>&1); then'
+        'site_packages=$("$HOME/.local/share/uv/tools/ansible/bin/python" -c ''import sysconfig; print(sysconfig.get_paths()["purelib"])'');'
+        'printf ''%s'' "$caminhos_do_windows" | base64 -d > "$site_packages/winplaybook_caminhos_do_windows.py";'
+        'printf ''import winplaybook_caminhos_do_windows\n'' > "$site_packages/winplaybook.pth";'
+        'exit 0;'
+        'fi;'
         'done;'
         'printf ''%s\n'' "$ultima_saida" >&2; exit 1'
     ) -join ' '
 
-    $argumentos = @($pacoteDoAnsible) + $PacotesPython
+    $caminhosDoWindows = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-ScriptDosCaminhosDoWindows)))
+    $argumentos = @($caminhosDoWindows, $pacoteDoAnsible) + $PacotesPython
     $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'winplaybook'
     $instalou = $resultado.CodigoDeSaida -eq 0
     if (-not $instalou) {

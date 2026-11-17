@@ -167,7 +167,16 @@ apontando para o mesmo arquivo, agora visto de dentro da distribuição:
 - um caminho relativo com `\` passa a usar `/` quando começa com `.\` ou
   `..\`, ou quando a pasta dele existe, mesmo que o arquivo ainda não exista.
 
-Isso vale também para um caminho depois de uma opção com `=` ou de um `@`.
+Isso vale também para um caminho depois de uma opção com `=` ou de um `@`,
+e para o valor de um `chave=valor`, como os do `-e` e do `-a`
+(`-e pasta=C:\infra\files`).
+
+Dentro dos arquivos do Ansible, um caminho absoluto do Windows também
+funciona: numa variável do _playbook_ (`arquivo: C:\infra\files\dado.txt`),
+no `src` de um `copy` ou `template`, num _lookup_ ou `include`, e nos
+caminhos do `ansible.cfg`, como o `roles_path`, que pode separar vários
+caminhos do Windows por `;`. O Ansible da distribuição entende esses
+caminhos pela mesma conversão.
 
 Exemplos com a pasta atual em `C:\infra`, que tem as pastas `vars` e
 `saida`:

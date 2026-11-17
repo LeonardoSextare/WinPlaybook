@@ -171,7 +171,16 @@ points to the same file, now seen from inside the distribution:
 - A relative path with `\` changes to `/` when it starts with `.\` or `..\`,
   or when its folder exists, even if the file doesn't exist yet.
 
-This also applies to a path after an option with `=` or after `@`.
+This also applies to a path after an option with `=` or after `@`, and to
+the value of a `key=value` pair, such as the ones in `-e` and `-a`
+(`-e folder=C:\infra\files`).
+
+Inside the Ansible files, an absolute Windows path also works: in a playbook
+variable (`file: C:\infra\files\data.txt`), in the `src` of a `copy` or
+`template` task, in a lookup or an `include`, and in the `ansible.cfg`
+paths, such as `roles_path`, which can separate several Windows paths with
+`;`. The Ansible in the distribution understands these paths by the same
+conversion.
 
 Examples with the current folder in `C:\infra`, which has the `vars` and
 `output` folders:

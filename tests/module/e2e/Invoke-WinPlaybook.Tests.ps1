@@ -465,6 +465,50 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando os arquivos do projeto têm caminhos do Windows' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'caminhos-do-windows'
+            $null = New-Item -ItemType Directory -Path (Join-Path $projeto 'files'), (Join-Path $projeto 'roles-fora/role_de_fora/tasks') -Force
+            [IO.File]::WriteAllText((Join-Path $projeto 'files/dado.txt'), "conteudo do arquivo do Windows`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'roles-fora/role_de_fora/tasks/main.yml'), "- ansible.builtin.debug:`n    msg: role achada pelo roles_path`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'ansible.cfg'), "[defaults]`nroles_path = $projeto\roles-fora`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: localhost`n  gather_facts: false`n  vars:`n    arquivo: $projeto\files\dado.txt`n  roles: [role_de_fora]`n  tasks:`n    - ansible.builtin.debug:`n        msg: `"{{ lookup('ansible.builtin.file', arquivo) }}`"`n")
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'lê o arquivo do caminho do Windows numa variável do playbook' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*conteudo do arquivo do Windows*'
+        }
+
+        It 'acha a role pelo caminho do Windows do roles_path no ansible.cfg' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*role achada pelo roles_path*'
+        }
+
+        It 'converte o caminho do Windows de um chave=valor do -e' {
+            $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.debug -a 'var=pasta' -e "pasta=$projeto\files" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*/files"*'
+        }
+
+        It 'converte o caminho do Windows de um chave=valor do -a' {
+            $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.stat -a "path=$projeto\files\dado.txt" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"exists": true*'
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive

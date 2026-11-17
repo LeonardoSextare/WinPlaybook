@@ -11,7 +11,9 @@
     relativo com barras invertidas passa a usar barras normais quando começa com .\ ou ..\,
     ou quando a pasta dele existe, mesmo que o arquivo ainda não exista, porque outros
     argumentos podem ter barras invertidas sem ser caminhos. O caminho pode vir depois de
-    uma opção (--inventory=) e depois de @, como em -e @vars\prod.yml. Os outros argumentos
+    uma opção (--inventory=) e depois de @, como em -e @vars\prod.yml. Um caminho absoluto
+    também vira o da distribuição como valor de um chave=valor, como os do -e e do -a
+    (-e pasta=C:\infra\files, -a "path=C:\infra\site.yml mode=0644"). Os outros argumentos
     voltam sem mudança.
 
     .PARAMETER Argumento
@@ -80,6 +82,13 @@
     $ehCaminhoDeRede = ($valor -match '^\\\\(?<servidor>[^\\/]+)[\\/][^\\/]+') -and ($Matches.servidor -notin 'wsl.localhost', 'wsl$', '.', '?')
     if ($ehCaminhoDeRede) {
         return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
+    }
+
+    $padraoDeCaminhoNumValor = '(?<=(^|\s)[\w.-]+=)[A-Za-z]:[\\/]\S*'
+    $temCaminhoNumValor = $Argumento -match $padraoDeCaminhoNumValor
+    if ($temCaminhoNumValor) {
+        $parametrosDaConversao = @{ Distribuicao = $Distribuicao; RaizDeMontagem = $RaizDeMontagem; PastaAtual = $PastaAtual; DestinoDeUnidade = $DestinoDeUnidade }
+        return [regex]::Replace($Argumento, $padraoDeCaminhoNumValor, { param($ocorrencia) ConvertTo-ArgumentoDoWsl -Argumento $ocorrencia.Value @parametrosDaConversao })
     }
 
     $ehCaminhoRelativoDoWindows = Test-CaminhoRelativoDoWindows -Caminho $valor -PastaAtual $PastaAtual

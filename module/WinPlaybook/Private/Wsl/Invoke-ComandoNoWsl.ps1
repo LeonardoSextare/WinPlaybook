@@ -148,6 +148,7 @@
     $pastaAtualNaDistribuicao = ConvertTo-ArgumentoDoWsl -Argumento $pastaAtual @parametrosDaConversao
     $argumentosNaDistribuicao = @(foreach ($argumento in $Argumentos) { ConvertTo-ArgumentoDoWsl -Argumento $argumento @parametrosDaConversao })
     $variaveisDoWindows = Get-VariavelDoWindows @parametrosDaConversao
+    $variaveisDoWindows['WINPLAYBOOK_MOUNT_ROOT'] = $raizDeMontagem
     $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
     $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows }
     $ambiente = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $ambienteDoComando -Compress)))

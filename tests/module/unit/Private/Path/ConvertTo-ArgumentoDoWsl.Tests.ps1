@@ -82,6 +82,8 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'o caminho depois de @'; Argumento = '@\\wsl.localhost\Ubuntu\home\eu\vars.yml'; Esperado = '@/home/eu/vars.yml' }
             @{ Descricao = 'o caminho de outro computador da rede'; Argumento = '\\servidor\infra\site.yml'; Esperado = '/mnt/unc/servidor/infra/site.yml' }
             @{ Descricao = 'o caminho de rede depois de uma opção'; Argumento = '--inventory=\\servidor\infra\hosts.yml'; Esperado = '--inventory=/mnt/unc/servidor/infra/hosts.yml' }
+            @{ Descricao = 'o caminho no valor de um chave=valor'; Argumento = 'pasta=C:\infra\files'; Esperado = 'pasta=/mnt/c/infra/files' }
+            @{ Descricao = 'os caminhos nos valores de vários chave=valor'; Argumento = 'src=C:\infra\a.txt dest=/tmp/a.txt backup=D:\copias'; Esperado = 'src=/mnt/c/infra/a.txt dest=/tmp/a.txt backup=/mnt/d/copias' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
