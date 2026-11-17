@@ -16,9 +16,6 @@
 
     .EXAMPLE
     New-ExecutavelDeShim -Caminho 'C:\Temp\shim.exe'
-
-    .LINK
-    https://learn.microsoft.com/dotnet/csharp/language-reference/compiler-options/output
     #>
     [CmdletBinding()]
     [OutputType([void])]
@@ -26,19 +23,5 @@
         [Parameter(Mandatory)] [string] $Caminho
     )
 
-    $caminhoDoCompilador = Get-CaminhoDoCompiladorCSharp
-    $compiladorExiste = Test-Path -LiteralPath $caminhoDoCompilador
-    if (-not $compiladorExiste) {
-        throw (Get-Mensagem -Nome 'CompiladorNaoEncontrado' -Valores $caminhoDoCompilador)
-    }
-
-    $null = New-Item -ItemType Directory -Path (Split-Path -Path $Caminho -Parent) -Force
-    $caminhoDoCodigo = Join-Path -Path $ExecutionContext.SessionState.Module.ModuleBase -ChildPath 'Shim.cs'
-
-    $ErrorActionPreference = 'Continue'
-    $saida = @(& $caminhoDoCompilador /nologo /target:exe /optimize+ "/out:$Caminho" $caminhoDoCodigo 2>&1 | ForEach-Object { "$_" })
-    $compilou = $LASTEXITCODE -eq 0
-    if (-not $compilou) {
-        throw (Get-Mensagem -Nome 'ShimNaoCompilado' -Valores (($saida -join ' ').Trim()))
-    }
+    New-ExecutavelCSharp -Codigo 'Shim.cs' -Caminho $Caminho
 }
