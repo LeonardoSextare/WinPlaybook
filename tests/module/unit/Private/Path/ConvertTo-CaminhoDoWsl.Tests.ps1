@@ -35,6 +35,7 @@ Describe 'ConvertTo-CaminhoDoWsl' {
             'site.yml'
             'C:site.yml'
             '\\servidor'
+            '\\.\pipe\openssh-ssh-agent'
         ) {
             {
                 InModuleScope WinPlaybook -Parameters @{ Caminho = $_ } {

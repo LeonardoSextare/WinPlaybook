@@ -77,7 +77,7 @@
         }
     }
 
-    $ehCaminhoDeRede = ($valor -match '^\\\\(?<servidor>[^\\/]+)[\\/][^\\/]+') -and ($Matches.servidor -notin 'wsl.localhost', 'wsl$')
+    $ehCaminhoDeRede = ($valor -match '^\\\\(?<servidor>[^\\/]+)[\\/][^\\/]+') -and ($Matches.servidor -notin 'wsl.localhost', 'wsl$', '.', '?')
     if ($ehCaminhoDeRede) {
         return $prefixo + (ConvertTo-CaminhoDoWsl -Caminho $valor -RaizDeMontagem $RaizDeMontagem)
     }
