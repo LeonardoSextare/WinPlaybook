@@ -50,7 +50,8 @@ distribuição vêm primeiro, então um nome que existe nos dois lados, como o
 `git` e o `ssh`, executa o da distribuição. Os _shims_ do WinPlaybook ficam
 de fora, e o Python e o pip do Windows só funcionam com a extensão
 (`python.exe`), para a detecção de interpretador do Ansible não escolher o
-Python do Windows.
+Python do Windows. Os argumentos que são caminhos da distribuição, como o
+`{{ playbook_dir }}`, chegam ao programa do Windows como caminhos do Windows.
 
 As _collections_ e as _roles_ que o `ansible-galaxy` instala ficam no seu
 perfil do Windows, em `C:\Users\<usuário>\.ansible\collections` e

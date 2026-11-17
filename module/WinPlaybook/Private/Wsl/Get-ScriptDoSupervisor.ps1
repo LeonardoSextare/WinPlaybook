@@ -60,7 +60,7 @@ import time
 
 PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
-EXECUTAR_BAT = '/usr/local/lib/winplaybook/executar-bat'
+EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PRIORIDADE_DAS_EXTENSOES = {'.com': 0, '.exe': 1, '.bat': 2, '.cmd': 3}
 NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)
 CAMINHO_DO_WINDOWS = re.compile(r'^[A-Za-z]:[\\/]')
@@ -154,14 +154,10 @@ def calcular_impressao(pastas):
     return hashlib.sha256('\n'.join(estado).encode('utf-8')).hexdigest()
 
 
-def criar_entrada_de_programa(pasta_nova, nome_no_path, caminho_do_programa, extensao):
-    destino = os.path.join(pasta_nova, nome_no_path)
-    if extensao in ('.com', '.exe'):
-        os.symlink(caminho_do_programa, destino)
-        return
-    with open(destino, 'w') as arquivo:
-        arquivo.write('#!/bin/sh\nexec ' + EXECUTAR_BAT + ' ' + shlex.quote(caminho_do_programa) + ' "$@"\n')
-    os.chmod(destino, 0o755)
+def criar_entrada_de_programa(pasta_nova, nome_no_path, caminho_do_programa):
+    with open(os.path.join(pasta_nova, nome_no_path), 'w') as arquivo:
+        arquivo.write('#!/bin/sh\nexec ' + EXECUTAR_WINDOWS + ' ' + shlex.quote(caminho_do_programa) + ' "$@"\n')
+    os.chmod(os.path.join(pasta_nova, nome_no_path), 0o755)
 
 
 def gerar_path_do_windows(pastas, pasta_nova):
@@ -180,7 +176,7 @@ def gerar_path_do_windows(pastas, pasta_nova):
             for nome_no_path in nomes_no_path:
                 if nome_no_path not in criados:
                     criados.add(nome_no_path)
-                    criar_entrada_de_programa(pasta_nova, nome_no_path, pasta + '/' + nome, extensao.lower())
+                    criar_entrada_de_programa(pasta_nova, nome_no_path, pasta + '/' + nome)
 
 
 def preparar_path_do_windows(pastas):

@@ -30,7 +30,9 @@
       perfil. As que já estavam na distribuição vão para essas pastas;
     - cada unidade fixa do Windows é montada uma segunda vez, em /opt/winplaybook/exec, com
       permissão de execução, para os programas do Windows rodarem da distribuição. Os .bat
-      e .cmd rodam pelo cmd.exe do Windows, com o /usr/local/lib/winplaybook/executar-bat;
+      e .cmd rodam pelo cmd.exe do Windows, com o /usr/local/lib/winplaybook/executar-windows,
+      que também converte os argumentos que são caminhos da distribuição para caminhos do
+      Windows;
     - o /usr/local/bin/ssh, que vem antes do /usr/bin/ssh no PATH, usa a cópia traduzida
       do config do ssh que o supervisor de Get-ScriptDoSupervisor gera, quando ela existe.
 
@@ -95,8 +97,9 @@
         'done;'
         'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg";'
         'install -d /usr/local/lib/winplaybook;'
-        'printf ''#!/bin/sh\narquivo=$(wslpath -w "$1"); shift\nexec %s /d /c "$arquivo" "$@"\n'' "$5" > /usr/local/lib/winplaybook/executar-bat;'
-        'chmod 755 /usr/local/lib/winplaybook/executar-bat;'
+        'printf ''%s\n'' ''#!/bin/sh'' ''programa="$1"; shift'' ''for argumento do'' ''shift'' ''case "$argumento" in /mnt/*|/home/*|/tmp/*) argumento=$(wslpath -w "$argumento" 2> /dev/null || printf "%s" "$argumento");; /*) [ -e "$argumento" ] && argumento=$(wslpath -w "$argumento" 2> /dev/null || printf "%s" "$argumento");; esac'' ''set -- "$@" "$argumento"'' ''done'' ''case "$programa" in *.[bB][aA][tT]|*.[cC][mM][dD]) exec "$cmd_do_windows" /d /c "$(wslpath -w "$programa")" "$@";; esac'' ''exec "$programa" "$@"'' | sed "s|\$cmd_do_windows|$5|" > /usr/local/lib/winplaybook/executar-windows;'
+        'chmod 755 /usr/local/lib/winplaybook/executar-windows;'
+        'rm -f /usr/local/lib/winplaybook/executar-bat;'
         'printf ''#!/bin/sh\nconfiguracao="$HOME/.cache/winplaybook/ssh_config"\ncase " $* " in *" -F"*) exec /usr/bin/ssh "$@";; esac\n[ -f "$configuracao" ] && exec /usr/bin/ssh -F "$configuracao" "$@"\nexec /usr/bin/ssh "$@"\n'' > /usr/local/bin/ssh;'
         'chmod 755 /usr/local/bin/ssh;'
         'usuario="$1"; shift 5;'
