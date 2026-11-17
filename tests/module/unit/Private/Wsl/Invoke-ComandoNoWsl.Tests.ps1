@@ -21,6 +21,7 @@ Describe 'Invoke-ComandoNoWsl' {
         Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; SshAgentPipe = $null } }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
         Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{} }
+        Mock Get-CaminhoDoSupervisor -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\supervisor-teste.py' }
         Mock Mount-PastaDoWindows -ModuleName WinPlaybook { }
 
         Push-Location $pastaDoProjeto
@@ -93,28 +94,41 @@ Describe 'Invoke-ComandoNoWsl' {
         $argumentosDoWsl[8] | Should-Be 'WinPlaybook: comando ansible-playbook ausente na distribuição WSL. Rode o Install-WinPlaybook para atualizar os comandos.'
     }
 
-    It 'passa em Base64, depois da mensagem, o supervisor que encerra o comando junto com o Windows' {
+    It 'passa, depois da mensagem, o caminho na distribuição do supervisor que encerra o comando junto com o Windows' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-        [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[9])) | Should-Be (InModuleScope WinPlaybook { Get-ScriptDoSupervisor })
+        $argumentosDoWsl[9] | Should-Be '/mnt/c/Temp/WinPlaybook/supervisor-teste.py'
+    }
+
+    It 'mantém a linha de comando curta com um ambiente grande' {
+        $nomeGrande = "WINPLAYBOOK_TEST_$([guid]::NewGuid().ToString('N'))"
+        Set-Item -LiteralPath "Env:$nomeGrande" -Value ('x' * 20000)
+        try {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+        }
+        finally {
+            Remove-Item -LiteralPath "Env:$nomeGrande"
+        }
+
+        ($argumentosDoWsl -join ' ').Length | Should-BeLessThan 8000
     }
 
     It 'executa o comando pelo python3 do sistema, com o supervisor' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-        $argumentosDoWsl[7] | Should-BeLikeString '*exec /usr/bin/python3 -c*"$supervisor" "$ambiente" "$@"'
+        $argumentosDoWsl[7] | Should-BeLikeString '*exec /usr/bin/python3 "$supervisor" "$@"'
     }
 
     It 'passa o comando e os argumentos dele depois do supervisor' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos '-i', 'inventory.yml', 'site.yml' }
 
-        ($argumentosDoWsl[11..14] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
+        ($argumentosDoWsl[10..13] -join ' ') | Should-Be 'ansible-playbook -i inventory.yml site.yml'
     }
 
     It 'executa um comando sem argumentos' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
-        ($argumentosDoWsl[11..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
+        ($argumentosDoWsl[10..($argumentosDoWsl.Count - 1)] -join ' ') | Should-Be 'ansible'
     }
 
     It 'converte os caminhos do Windows dos argumentos' {
@@ -199,7 +213,7 @@ Describe 'Invoke-ComandoNoWsl' {
         It 'passa o relay e o pipe do agente antes do comando' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-            ($argumentosDoWsl[11..13] -join ' ') | Should-Be "$relayNaDistribuicao openssh-ssh-agent ansible-playbook"
+            ($argumentosDoWsl[10..12] -join ' ') | Should-Be "$relayNaDistribuicao openssh-ssh-agent ansible-playbook"
         }
 
         It 'liga o SSH_AUTH_SOCK do comando ao relay pelo socat' {
@@ -216,7 +230,7 @@ Describe 'Invoke-ComandoNoWsl' {
             It 'usa o pipe escolhido' {
                 $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-                $argumentosDoWsl[12] | Should-Be 'outro-agente'
+                $argumentosDoWsl[11] | Should-Be 'outro-agente'
             }
         }
     }
@@ -238,7 +252,7 @@ Describe 'Invoke-ComandoNoWsl' {
         It 'passa o comando logo depois da mensagem' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-            $argumentosDoWsl[11] | Should-Be 'ansible-playbook'
+            $argumentosDoWsl[10] | Should-Be 'ansible-playbook'
         }
     }
 
@@ -269,9 +283,9 @@ Describe 'Invoke-ComandoNoWsl' {
         }
 
         It 'passa ao supervisor as outras pastas, na montagem com execução' {
-            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+            Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
 
-            $ambiente = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[10])) | ConvertFrom-Json
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
             @($ambiente.pathDoWindows) | Should-BeCollection @('/opt/winplaybook/exec/c/Ferramentas', '/opt/winplaybook/exec/d/Outras')
         }
     }
@@ -289,19 +303,25 @@ Describe 'Invoke-ComandoNoWsl' {
             $env:WSLENV = $wslenvOriginal
         }
 
-        It 'passa a variável ao supervisor, em Base64, com o caminho convertido' {
-            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+        It 'passa a variável ao supervisor, pelo WINPLAYBOOK_ENVIRONMENT do WSLENV, com o caminho convertido' {
+            Mock wsl -ModuleName WinPlaybook { if ($env:WSLENV.Split(':') -contains 'WINPLAYBOOK_ENVIRONMENT') { $env:WINPLAYBOOK_ENVIRONMENT } }
 
-            $ambiente = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[10])) | ConvertFrom-Json
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
             $ambiente.variaveis.$nomeDaVariavel | Should-Be '/mnt/d/infra/ansible.cfg'
         }
 
-        It 'mantém a variável e o WSLENV do Windows como estavam' {
-            Mock wsl -ModuleName WinPlaybook { "$([Environment]::GetEnvironmentVariable($nomeDaVariavel)) $env:WSLENV" }
+        It 'mantém a variável do Windows como estava durante o comando' {
+            Mock wsl -ModuleName WinPlaybook { [Environment]::GetEnvironmentVariable($nomeDaVariavel) }
 
-            $valoresDuranteOWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+            $valorDuranteOWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
-            $valoresDuranteOWsl | Should-Be 'D:\infra\ansible.cfg AWS_PROFILE/u'
+            $valorDuranteOWsl | Should-Be 'D:\infra\ansible.cfg'
+        }
+
+        It 'restaura o WSLENV e tira o WINPLAYBOOK_ENVIRONMENT no fim' {
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            "$env:WSLENV|$env:WINPLAYBOOK_ENVIRONMENT" | Should-Be 'AWS_PROFILE/u|'
         }
     }
 

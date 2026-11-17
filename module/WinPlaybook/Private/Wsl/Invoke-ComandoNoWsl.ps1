@@ -89,8 +89,8 @@
         $usaOAgenteSshDoWindows = (Test-Path -LiteralPath $caminhoDoRelay) -and (Test-PipeDoWindows -Nome $pipeDoAgente)
     }
 
-    $supervisor = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-ScriptDoSupervisor)))
-    $comandoSupervisionado = '/usr/bin/python3 -c ''import base64, sys; exec(base64.b64decode(sys.argv[1]))'' "$supervisor" "$ambiente" "$@"'
+    $supervisor = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoSupervisor) -RaizDeMontagem $raizDeMontagem
+    $comandoSupervisionado = '/usr/bin/python3 "$supervisor" "$@"'
 
     $temEntrada = $Entrada.Count -gt 0
     $execucaoDoComando = "exec $comandoSupervisionado"
@@ -137,7 +137,7 @@
     }
 
     $script = @(
-        'mensagem_de_comando_ausente="$0"; supervisor="$1"; ambiente="$2"; shift 2;'
+        'mensagem_de_comando_ausente="$0"; supervisor="$1"; shift;'
         $leituraDoAgente
         'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
         $preparacaoDoAgente
@@ -151,7 +151,7 @@
     $variaveisDoWindows['WINPLAYBOOK_MOUNT_ROOT'] = $raizDeMontagem
     $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
     $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows }
-    $ambiente = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((ConvertTo-Json -InputObject $ambienteDoComando -Compress)))
+    $ambiente = ConvertTo-Json -InputObject $ambienteDoComando -Compress
 
     $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })
     $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + $valoresDoAnsible
@@ -164,7 +164,7 @@
     $argumentosDoWsl = @(
         '--distribution', $distribuicao
         '--cd', $pastaAtualNaDistribuicao
-        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor, $ambiente
+        '--exec', 'sh', '-lc', $script, $mensagemDeComandoAusente, $supervisor
         $argumentosDoAgente
         $Comando
     ) + $argumentosNaDistribuicao
@@ -177,9 +177,12 @@
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding
     $utf8DoWslOriginal = $env:WSL_UTF8
+    $wslenvOriginal = $env:WSLENV
     try {
         [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
         $env:WSL_UTF8 = '1'
+        $env:WINPLAYBOOK_ENVIRONMENT = $ambiente
+        $env:WSLENV = (@('WINPLAYBOOK_ENVIRONMENT') + @("$wslenvOriginal".Split(':') | Where-Object { $_ })) -join ':'
 
         if ($temEntrada) {
             $OutputEncoding = [Text.UTF8Encoding]::new($false)
@@ -191,6 +194,8 @@
     }
     finally {
         $env:WSL_UTF8 = $utf8DoWslOriginal
+        $env:WSLENV = $wslenvOriginal
+        Remove-Item -LiteralPath 'Env:WINPLAYBOOK_ENVIRONMENT' -ErrorAction SilentlyContinue
         [Console]::OutputEncoding = $codificacaoDoConsole
     }
 
