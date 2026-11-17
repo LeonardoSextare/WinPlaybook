@@ -575,6 +575,33 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando um script do projeto tem finais de linha CRLF' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'script-com-crlf'
+            $null = New-Item -ItemType Directory -Path $projeto
+            [IO.File]::WriteAllText((Join-Path $projeto 'ola.sh'), "#!/bin/sh`r`necho oi do script com CRLF`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: localhost`n  gather_facts: false`n  tasks:`n    - ansible.builtin.script: ola.sh`n      register: saida`n    - ansible.builtin.debug:`n        var: saida.stdout`n")
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'executa o script pelo ansible.builtin.script' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*oi do script com CRLF*'
+        }
+
+        It 'mantém o script do projeto como estava' {
+            $null = Invoke-WinPlaybook ansible-playbook site.yml 2>&1
+
+            [IO.File]::ReadAllText((Join-Path $projeto 'ola.sh')) | Should-Be "#!/bin/sh`r`necho oi do script com CRLF`r`n"
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive

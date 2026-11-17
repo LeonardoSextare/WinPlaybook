@@ -14,7 +14,9 @@
     mantém as barras invertidas de um caminho do Windows sem aspas. No caminho de volta, o
     que os comandos do Ansible, como o ansible-playbook e o ansible-lint, escrevem na saída
     troca os caminhos da raiz de montagem pelos do Windows, com barras normais (/mnt/c/infra vira C:/infra, e /mnt/unc/servidor/infra vira
-    //servidor/infra), que continuam válidos num JSON. A raiz de montagem vem da variável
+    //servidor/infra), que continuam válidos num JSON. Um script com shebang e finais de
+    linha CRLF, como os que o Git for Windows grava, vai sem os CR pelo ansible.builtin.script,
+    e o arquivo do projeto não muda. A raiz de montagem vem da variável
     WINPLAYBOOK_MOUNT_ROOT, e o padrão é /mnt/.
 
     .EXAMPLE
@@ -33,6 +35,7 @@ import io
 import os
 import re
 import sys
+import tempfile
 
 CAMINHO_DO_WINDOWS = re.compile(r'^[A-Za-z]:[\\/]')
 CAMINHO_DO_WINDOWS_EM_BYTES = re.compile(rb'^[A-Za-z]:[\\/]')
@@ -160,10 +163,42 @@ def mostrar_saida_com_caminhos_do_windows(saida):
     return io.TextIOWrapper(SaidaComCaminhosDoWindows(saida.buffer), encoding=saida.encoding, errors=saida.errors, line_buffering=saida.line_buffering, write_through=True)
 
 
+def converter_script_com_crlf(caminho_local):
+    try:
+        with open(caminho_local, 'rb') as arquivo:
+            conteudo = arquivo.read()
+    except OSError:
+        return caminho_local
+    if not conteudo.startswith(b'#!') or b'\r\n' not in conteudo:
+        return caminho_local
+    descritor, caminho_convertido = tempfile.mkstemp(prefix='winplaybook-script-')
+    with os.fdopen(descritor, 'wb') as arquivo:
+        arquivo.write(conteudo.replace(b'\r\n', b'\n'))
+    return caminho_convertido
+
+
+def ajustar_action_base(modulo):
+    transfer_file = modulo.ActionBase._transfer_file
+
+    def transfer_file_sem_crlf(self, local_path, remote_path):
+        acao = getattr(getattr(self, '_task', None), 'action', '')
+        if acao not in ('script', 'ansible.builtin.script', 'ansible.legacy.script'):
+            return transfer_file(self, local_path, remote_path)
+        caminho_enviado = converter_script_com_crlf(local_path)
+        try:
+            return transfer_file(self, caminho_enviado, remote_path)
+        finally:
+            if caminho_enviado != local_path:
+                os.remove(caminho_enviado)
+
+    modulo.ActionBase._transfer_file = transfer_file_sem_crlf
+
+
 AJUSTES = {
     'ansible.parsing.dataloader': lambda modulo: ajustar_data_loader(modulo.DataLoader),
     'ansible.config.manager': ajustar_gerenciador_de_configuracao,
     'ansible.utils.shlex': ajustar_shlex,
+    'ansible.plugins.action': ajustar_action_base,
 }
 
 

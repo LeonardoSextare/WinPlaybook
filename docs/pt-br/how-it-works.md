@@ -185,6 +185,10 @@ para `C:/infra/site.yml`, e não para `/mnt/c/infra/site.yml`. As barras
 normais mantêm válida a saída em JSON, e o Windows e o VS Code abrem esses
 caminhos.
 
+Um _script_ com _shebang_ (`#!/bin/sh`) e finais de linha CRLF, como os que o
+Git for Windows grava por padrão, roda pelo `ansible.builtin.script`: o
+Ansible envia uma cópia sem os CR, e o arquivo do projeto fica como está.
+
 Exemplos com a pasta atual em `C:\infra`, que tem as pastas `vars` e
 `saida`:
 
