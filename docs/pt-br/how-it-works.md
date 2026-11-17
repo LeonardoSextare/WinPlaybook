@@ -37,9 +37,20 @@ prepara para o Ansible:
 - monta as unidades do Windows com pastas `755` e arquivos `644`, como num
   disco do Linux. Assim o Ansible lê o `ansible.cfg` do projeto, que ele
   ignora numa pasta em que todos podem escrever;
-- deixa o `Path` do Windows fora do `PATH` da distribuição, para que ela não
-  execute os _shims_ do próprio WinPlaybook nem um programa do Windows com o
-  mesmo nome de um comando do Linux.
+- monta cada unidade fixa do Windows uma segunda vez, em
+  `/opt/winplaybook/exec`, com permissão de execução, para os programas do
+  Windows rodarem de dentro da distribuição.
+
+Os programas do seu `Path` do Windows, com as extensões `.com`, `.exe`,
+`.bat` e `.cmd`, também funcionam nos comandos que o Ansible executa, como
+numa tarefa `ansible.builtin.command` ou `ansible.builtin.shell`. Eles
+funcionam pelo nome completo (`gh.exe`) e pelo nome sem a extensão (`gh`),
+na ordem do `Path` e do `PATHEXT`, como no Windows. Os comandos da
+distribuição vêm primeiro, então um nome que existe nos dois lados, como o
+`git` e o `ssh`, executa o da distribuição. Os _shims_ do WinPlaybook ficam
+de fora, e o Python e o pip do Windows só funcionam com a extensão
+(`python.exe`), para a detecção de interpretador do Ansible não escolher o
+Python do Windows.
 
 As _collections_ e as _roles_ que o `ansible-galaxy` instala ficam no seu
 perfil do Windows, em `C:\Users\<usuário>\.ansible\collections` e
@@ -224,9 +235,9 @@ só enquanto o comando roda. Para ligar o agente, veja
 
 ## Limitações
 
-- Os arquivos das unidades do Windows não são executáveis na distribuição.
-  Um _script_ de inventário ou de senha do vault guardado nelas é lido como
-  texto, e os programas do Windows não rodam de dentro da distribuição.
+- Os arquivos das pastas dos seus projetos não são executáveis na
+  distribuição. Um _script_ de inventário ou de senha do vault guardado
+  nelas é lido como texto.
 - O acesso aos arquivos das unidades do Windows é mais lento que ao disco da
   distribuição, o que pesa em projetos com muitos arquivos.
 - Cada comando passa pelo WSL, e os _shims_ `.exe` abrem também um

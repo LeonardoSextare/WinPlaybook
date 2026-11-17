@@ -256,6 +256,26 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando o Path do Windows tem a pasta dos shims' {
+        BeforeAll {
+            $pastaDosShims = Join-Path $TestDrive 'bin-dos-shims'
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            $pathOriginal = $env:Path
+            $env:Path = "C:\Ferramentas;$pastaDosShims;D:\Outras\"
+        }
+
+        AfterAll {
+            $env:Path = $pathOriginal
+        }
+
+        It 'passa ao supervisor as outras pastas, na montagem com execução' {
+            $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $ambiente = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[10])) | ConvertFrom-Json
+            @($ambiente.pathDoWindows) | Should-BeCollection @('/opt/winplaybook/exec/c/Ferramentas', '/opt/winplaybook/exec/d/Outras')
+        }
+    }
+
     Context 'quando o Windows tem uma variável de ambiente' {
         BeforeAll {
             $nomeDaVariavel = "ANSIBLE_WINPLAYBOOK_TEST_$([guid]::NewGuid().ToString('N').ToUpperInvariant())"
@@ -273,7 +293,7 @@ Describe 'Invoke-ComandoNoWsl' {
             $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
 
             $ambiente = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($argumentosDoWsl[10])) | ConvertFrom-Json
-            $ambiente.$nomeDaVariavel | Should-Be '/mnt/d/infra/ansible.cfg'
+            $ambiente.variaveis.$nomeDaVariavel | Should-Be '/mnt/d/infra/ansible.cfg'
         }
 
         It 'mantém a variável e o WSLENV do Windows como estavam' {

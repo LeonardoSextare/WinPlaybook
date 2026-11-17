@@ -39,9 +39,19 @@ and prepares it for Ansible:
 - It mounts the Windows drives with `755` folders and `644` files, like a
   Linux disk. This way, Ansible reads the `ansible.cfg` file of the project,
   which it ignores in a folder that everyone can write to.
-- It keeps the Windows `Path` out of the distribution `PATH`, so the
-  distribution doesn't run the WinPlaybook shims or a Windows program with the
-  same name as a Linux command.
+- It mounts each fixed Windows drive a second time, in
+  `/opt/winplaybook/exec`, with permission to run programs, so that Windows
+  programs run from inside the distribution.
+
+The programs in your Windows `Path` with the `.com`, `.exe`, `.bat`, and
+`.cmd` extensions also work in the commands that Ansible runs, such as an
+`ansible.builtin.command` or `ansible.builtin.shell` task. They work by their
+full name (`gh.exe`) and by their name without the extension (`gh`), in the
+order of `Path` and `PATHEXT`, as on Windows. The distribution commands come
+first, so a name that exists on both sides, such as `git` and `ssh`, runs the
+distribution command. The WinPlaybook shims stay out, and the Windows Python
+and pip work only with the extension (`python.exe`), so that the Ansible
+interpreter discovery doesn't choose the Windows Python.
 
 The collections and roles that `ansible-galaxy` installs go to your Windows
 profile, in `C:\Users\<user>\.ansible\collections` and
@@ -231,9 +241,9 @@ exists only while the command runs. To turn on the agent, see
 
 ## Limitations
 
-- Files on the Windows drives can't run as programs in the distribution. An
-  inventory script or a vault password script stored on them is read as text,
-  and Windows programs don't run from inside the distribution.
+- The files in your project folders can't run as programs in the
+  distribution. An inventory script or a vault password script stored in them
+  is read as text.
 - Access to files on the Windows drives is slower than access to the
   distribution disk, which matters in projects with many files.
 - Each command goes through WSL, and the `.exe` shims also start PowerShell.

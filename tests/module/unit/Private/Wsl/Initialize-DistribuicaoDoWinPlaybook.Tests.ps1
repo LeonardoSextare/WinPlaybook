@@ -10,6 +10,7 @@ AfterAll {
 Describe 'Initialize-DistribuicaoDoWinPlaybook' {
     BeforeAll {
         Mock wsl -ModuleName WinPlaybook { }
+        Mock Get-UnidadeFixa -ModuleName WinPlaybook { 'c', 'd' }
         $pastaDoSshInexistente = Join-Path $TestDrive 'sem-perfil/.ssh'
         $pastaDoPerfil = Join-Path $TestDrive 'perfil-do-windows'
     }
@@ -28,7 +29,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
 
         It 'configura a distribuição com <Descricao>' -ForEach @(
             @{ Descricao = 'as unidades do Windows montadas com as permissões de um disco do Linux'; Trecho = 'options="metadata,umask=22,fmask=111"' }
-            @{ Descricao = 'o Path do Windows fora do PATH'; Trecho = 'appendWindowsPath=false' }
+            @{ Descricao = 'o Path do Windows fora do PATH do WSL'; Trecho = 'appendWindowsPath=false' }
             @{ Descricao = 'o systemd desligado'; Trecho = 'systemd=false' }
             @{ Descricao = 'o idioma C.UTF-8'; Trecho = 'LANG=C.UTF-8' }
             @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = '''HashKnownHosts no\n' }
@@ -36,8 +37,16 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             @{ Descricao = 'o .ansible.cfg do perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg"' }
             @{ Descricao = 'as collections e as roles no perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta"' }
             @{ Descricao = 'as collections que já estavam na distribuição levadas para o perfil'; Trecho = 'cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"' }
+            @{ Descricao = 'cada unidade fixa montada de novo com execução, sem travar o boot quando ela some'; Trecho = '/opt/winplaybook/exec/%s drvfs uid=%s,gid=%s,umask=22,nofail 0 0' }
+            @{ Descricao = 'os .bat e .cmd executados pelo cmd.exe'; Trecho = 'exec %s /d /c "$arquivo" "$@"' }
         ) {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script.Contains($Trecho) }
+        }
+
+        It 'passa ao script o cmd.exe do Windows e as unidades fixas' {
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter {
+                $Argumentos[4] -like '/opt/winplaybook/exec/?/*/cmd.exe' -and ($Argumentos[5..($Argumentos.Count - 1)] -join ',') -eq 'c,d'
+            }
         }
 
         It 'passa o usuário e a pasta do perfil do Windows ao script' {
