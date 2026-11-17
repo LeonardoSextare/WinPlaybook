@@ -473,6 +473,7 @@ Describe 'Invoke-WinPlaybook' {
             [IO.File]::WriteAllText((Join-Path $projeto 'roles-fora/role_de_fora/tasks/main.yml'), "- ansible.builtin.debug:`n    msg: role achada pelo roles_path`n")
             [IO.File]::WriteAllText((Join-Path $projeto 'ansible.cfg'), "[defaults]`nroles_path = $projeto\roles-fora`n")
             [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: localhost`n  gather_facts: false`n  vars:`n    arquivo: $projeto\files\dado.txt`n  roles: [role_de_fora]`n  tasks:`n    - ansible.builtin.debug:`n        msg: `"{{ lookup('ansible.builtin.file', arquivo) }}`"`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'hosts.ini'), "meu-pc ansible_connection=local arquivo=$projeto\files\dado.txt`n")
             Push-Location $projeto
         }
 
@@ -506,6 +507,13 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*"exists": true*'
+        }
+
+        It 'mantém o caminho do Windows de uma variável do inventário INI' {
+            $saida = Invoke-WinPlaybook ansible -i hosts.ini meu-pc -m ansible.builtin.debug -a "msg={{ lookup('ansible.builtin.file', arquivo) }}" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*conteudo do arquivo do Windows*'
         }
     }
 

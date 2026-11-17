@@ -177,7 +177,7 @@ the value of a `key=value` pair, such as the ones in `-e` and `-a`
 
 Inside the Ansible files, an absolute Windows path also works: in a playbook
 variable (`file: C:\infra\files\data.txt`), in the `src` of a `copy` or
-`template` task, in a lookup or an `include`, and in the `ansible.cfg`
+`template` task, in a lookup or an `include`, in the inventory, and in the `ansible.cfg`
 paths, such as `roles_path`, which can separate several Windows paths with
 `;`. The Ansible in the distribution understands these paths by the same
 conversion.

@@ -173,7 +173,7 @@ e para o valor de um `chave=valor`, como os do `-e` e do `-a`
 
 Dentro dos arquivos do Ansible, um caminho absoluto do Windows também
 funciona: numa variável do _playbook_ (`arquivo: C:\infra\files\dado.txt`),
-no `src` de um `copy` ou `template`, num _lookup_ ou `include`, e nos
+no `src` de um `copy` ou `template`, num _lookup_ ou `include`, no inventário e nos
 caminhos do `ansible.cfg`, como o `roles_path`, que pode separar vários
 caminhos do Windows por `;`. O Ansible da distribuição entende esses
 caminhos pela mesma conversão.

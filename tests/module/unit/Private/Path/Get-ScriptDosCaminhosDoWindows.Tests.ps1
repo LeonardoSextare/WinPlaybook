@@ -19,6 +19,12 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
         $script.Contains("data_loader.$_ = $($_)_com_windows") | Should-BeTrue
     }
 
+    It 'protege as barras dos caminhos do Windows sem aspas no inventário INI' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains("'ansible.utils.shlex': ajustar_shlex") | Should-BeTrue
+    }
+
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {
         $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
 

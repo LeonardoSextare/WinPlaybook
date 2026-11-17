@@ -10,7 +10,8 @@
     caminhos: no os.path.expanduser, que o Ansible usa nos caminhos do ansible.cfg, das
     chaves SSH e de outros arquivos, e nos path_dwim do DataLoader, que resolvem os arquivos
     de lookups, includes, templates e do copy. Uma lista de caminhos do ansible.cfg, como o
-    roles_path, pode separar caminhos do Windows por ponto e vírgula. A raiz de montagem vem da variável
+    roles_path, pode separar caminhos do Windows por ponto e vírgula, e um inventário INI
+    mantém as barras invertidas de um caminho do Windows sem aspas. A raiz de montagem vem da variável
     WINPLAYBOOK_MOUNT_ROOT, e o padrão é /mnt/.
 
     .EXAMPLE
@@ -32,6 +33,7 @@ import sys
 CAMINHO_DO_WINDOWS = re.compile(r'^[A-Za-z]:[\\/]')
 CAMINHO_DO_WINDOWS_EM_BYTES = re.compile(rb'^[A-Za-z]:[\\/]')
 LISTA_COM_CAMINHO_DO_WINDOWS = re.compile(r'(^|;)\s*[A-Za-z]:[\\/]')
+CAMINHO_DO_WINDOWS_SEM_ASPAS = re.compile(r'((?:^|(?<=[\s=]))[A-Za-z]:)(\\[^\s\'"]*)')
 expanduser_original = os.path.expanduser
 
 
@@ -78,9 +80,23 @@ def ajustar_gerenciador_de_configuracao(modulo):
     modulo.ensure_type = ensure_type_com_windows
 
 
+def proteger_barras(ocorrencia):
+    return ocorrencia.group(1) + ocorrencia.group(2).replace('\\', '\\\\')
+
+
+def ajustar_shlex(modulo):
+    shlex_split = modulo.shlex_split
+
+    def shlex_split_com_windows(texto, *args, **kwargs):
+        return shlex_split(CAMINHO_DO_WINDOWS_SEM_ASPAS.sub(proteger_barras, texto), *args, **kwargs)
+
+    modulo.shlex_split = shlex_split_com_windows
+
+
 AJUSTES = {
     'ansible.parsing.dataloader': lambda modulo: ajustar_data_loader(modulo.DataLoader),
     'ansible.config.manager': ajustar_gerenciador_de_configuracao,
+    'ansible.utils.shlex': ajustar_shlex,
 }
 
 
