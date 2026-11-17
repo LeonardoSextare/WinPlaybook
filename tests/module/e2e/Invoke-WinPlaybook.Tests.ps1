@@ -237,6 +237,43 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o ssh grava um host novo no known_hosts' {
+        BeforeAll {
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'grava o nome do host sem hash, como o ssh do Windows' {
+            $saida = Invoke-WinPlaybook ssh -G exemplo.winplaybook.teste 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*hashknownhosts no*'
+        }
+    }
+
+    Context 'quando o config da pasta .ssh do Windows liga o hash do known_hosts' {
+        BeforeAll {
+            Push-Location $TestDrive
+            $caminhoDoConfig = Join-Path (Get-PastaDoSshDeTeste) 'config'
+            [IO.File]::WriteAllText($caminhoDoConfig, "HashKnownHosts yes`n")
+        }
+
+        AfterAll {
+            Remove-Item -LiteralPath $caminhoDoConfig -Force
+            Pop-Location
+        }
+
+        It 'segue o config do usuário' {
+            $saida = Invoke-WinPlaybook ssh -G exemplo.winplaybook.teste 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*hashknownhosts yes*'
+        }
+    }
+
     Context 'quando o comando não está na distribuição' {
         BeforeAll {
             Push-Location $TestDrive
