@@ -84,10 +84,18 @@ jobs:
         shell: powershell
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
 
-  testes-e2e:
-    name: Testes e2e
+  testes-e2e-por-edicao:
+    name: Testes e2e (${{ matrix.edicao.nome }})
     runs-on: windows-2025
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        edicao:
+          - nome: PowerShell 7
+            shell: pwsh
+          - nome: Windows PowerShell 5.1
+            shell: powershell
     steps:
       - name: Baixa o repositório
         uses: actions/checkout@v7
@@ -102,13 +110,23 @@ jobs:
           Copy-Item -LiteralPath $pacote -Destination module/WinPlaybook -Recurse
 
       - name: Roda os testes (PowerShell 7)
-        id: testes-powershell-7
+        if: matrix.edicao.shell == 'pwsh'
         run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
 
       - name: Roda os testes (Windows PowerShell 5.1)
-        if: success() || steps.testes-powershell-7.conclusion == 'failure'
+        if: matrix.edicao.shell == 'powershell'
         shell: powershell
         run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
+
+  testes-e2e:
+    name: Testes e2e
+    needs: testes-e2e-por-edicao
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confere as duas edições
+        shell: bash
+        run: test "${{ needs.testes-e2e-por-edicao.result }}" = success
 
   versao:
     name: Versão
