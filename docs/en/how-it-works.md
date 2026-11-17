@@ -196,6 +196,11 @@ of the distribution. The SSH client that Ansible uses has the same keys,
 distribution, the folder has the permissions that SSH requires, and the
 permissions of the files on Windows don't change.
 
+The SSH client of the distribution writes new hosts to `known_hosts` without
+a hash, like the Windows SSH client, so the file keeps a single format. To
+write hashed entries from both, set `HashKnownHosts yes` in the `config` file
+of the `.ssh` folder.
+
 If the `.ssh` folder didn't exist during installation, the distribution uses
 its own folder. Run `Install-WinPlaybook` again after you create it.
 

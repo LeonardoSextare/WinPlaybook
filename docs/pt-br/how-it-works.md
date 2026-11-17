@@ -192,6 +192,10 @@ o mesmo `config` do Windows, sem cópias. Dentro da distribuição, a pasta
 aparece com as permissões que o ssh exige, sem mudar as permissões dos
 arquivos no Windows.
 
+O ssh da distribuição grava os hosts novos no `known_hosts` sem _hash_, como
+o ssh do Windows, então o arquivo fica num formato só. Para gravar com _hash_
+nos dois, use `HashKnownHosts yes` no `config` da pasta `.ssh`.
+
 Se a pasta `.ssh` ainda não existia na instalação, a distribuição usa uma
 pasta própria. Execute o `Install-WinPlaybook` de novo depois de criá-la.
 
