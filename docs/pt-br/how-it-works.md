@@ -178,6 +178,12 @@ caminhos do `ansible.cfg`, como o `roles_path`, que pode separar vários
 caminhos do Windows por `;`. O Ansible da distribuição entende esses
 caminhos pela mesma conversão.
 
+No caminho de volta, o que os comandos do Ansible escrevem mostra os caminhos
+das unidades do Windows como no Windows, com barras normais: um erro aponta
+para `C:/infra/site.yml`, e não para `/mnt/c/infra/site.yml`. As barras
+normais mantêm válida a saída em JSON, e o Windows e o VS Code abrem esses
+caminhos.
+
 Exemplos com a pasta atual em `C:\infra`, que tem as pastas `vars` e
 `saida`:
 

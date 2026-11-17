@@ -514,6 +514,7 @@ Describe 'Invoke-WinPlaybook' {
             [IO.File]::WriteAllText((Join-Path $projeto 'ansible.cfg'), "[defaults]`nroles_path = $projeto\roles-fora`n")
             [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: localhost`n  gather_facts: false`n  vars:`n    arquivo: $projeto\files\dado.txt`n  roles: [role_de_fora]`n  tasks:`n    - ansible.builtin.debug:`n        msg: `"{{ lookup('ansible.builtin.file', arquivo) }}`"`n")
             [IO.File]::WriteAllText((Join-Path $projeto 'hosts.ini'), "meu-pc ansible_connection=local arquivo=$projeto\files\dado.txt`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'quebrado.yml'), "- hosts: localhost`n  tasks:`n    - debug: { msg: oi`n")
             Push-Location $projeto
         }
 
@@ -547,6 +548,20 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString '*"exists": true*'
+        }
+
+        It 'mostra o caminho do Windows do arquivo num erro' {
+            $saida = Invoke-WinPlaybook ansible-playbook quebrado.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-NotBe 0 -Because $saida
+            $saida | Should-BeLikeString "*Origin: $($projeto.Replace('\', '/'))/quebrado.yml*"
+        }
+
+        It 'mostra o caminho do Windows da configuração no ansible --version' {
+            $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString "*config file = $($projeto.Replace('\', '/'))/ansible.cfg*"
         }
 
         It 'mantém o caminho do Windows de uma variável do inventário INI' {
