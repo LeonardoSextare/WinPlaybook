@@ -17,20 +17,6 @@ distribuições que o usuário já tem não são usadas.
 O projeto está na versão 0: já tem releases iniciais, mas ainda não é
 estável, e qualquer release pode trazer breaking changes.
 
-### Um repositório em transição
-
-O projeto está mudando as regras do próprio repositório, como o código que
-está sendo traduzido para o português. Este arquivo descreve o projeto como
-ele deve ser, então partes dele ainda não estão aplicadas, e os arquivos do
-repositório podem divergir do que está escrito aqui. Quando houver
-divergência, este arquivo mostra para onde o projeto está indo, e o código
-mostra onde ele está hoje.
-
-Enquanto a transição não termina, a publicação de releases está pausada.
-
-Esta seção é um aviso temporário: quando a transição terminar, ela é removida
-por inteiro.
-
 ## Objetivo: o Ansible nativo no Windows
 
 O usuário gerencia tudo pelo Windows: as pastas, os programas, o `Path`, as
