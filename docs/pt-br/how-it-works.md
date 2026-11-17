@@ -174,21 +174,23 @@ Exemplos com a pasta atual em `C:\infra`, que tem as pastas `vars` e
 
 ## Variáveis de ambiente
 
-As variáveis do Windows que começam com `ANSIBLE_`, como o `ANSIBLE_CONFIG`,
-chegam ao comando com os caminhos convertidos pelas mesmas regras dos
-argumentos. Uma lista separada por `;`, como as do Windows, vira uma lista
-separada por `:`, como as do Linux:
+As variáveis de ambiente do terminal chegam ao comando, como o
+`ANSIBLE_CONFIG`, o `HTTPS_PROXY` e as credenciais que as _collections_ leem,
+com os caminhos convertidos pelas mesmas regras dos argumentos. Uma lista
+separada por `;`, como as do Windows, vira uma lista separada por `:`, como
+as do Linux:
 
 | Variável              | No Windows             | Na distribuição             |
 | --------------------- | ---------------------- | --------------------------- |
 | `ANSIBLE_CONFIG`      | `C:\infra\ansible.cfg` | `/mnt/c/infra/ansible.cfg`  |
 | `ANSIBLE_ROLES_PATH`  | `C:\roles;D:\roles`    | `/mnt/c/roles:/mnt/d/roles` |
+| `HTTPS_PROXY`         | `http://proxy:8080`    | `http://proxy:8080`         |
 
-As outras variáveis chegam só quando estão no
-[`WSLENV`](https://learn.microsoft.com/windows/wsl/filesystems#share-environment-variables-between-windows-and-wsl-with-wslenv),
-como em qualquer distribuição WSL. Uma variável `ANSIBLE_` que já está no
-`WSLENV` chega do jeito que o `WSLENV` define, sem a conversão do
-WinPlaybook.
+Ficam de fora as variáveis que a distribuição define do próprio jeito, como
+o `PATH`, o `HOME`, o `TEMP` e o `LANG`, as do Python, como o `PYTHONPATH`, e
+o `SSH_AUTH_SOCK`. Uma variável que já está no
+[`WSLENV`](https://learn.microsoft.com/windows/wsl/filesystems#share-environment-variables-between-windows-and-wsl-with-wslenv)
+chega do jeito que o `WSLENV` define, sem a conversão do WinPlaybook.
 
 ## SSH
 

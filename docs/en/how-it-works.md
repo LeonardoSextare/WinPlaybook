@@ -180,19 +180,22 @@ Examples with the current folder in `C:\infra`, which has the `vars` and
 
 ## Environment variables
 
-The Windows variables that start with `ANSIBLE_`, such as `ANSIBLE_CONFIG`,
-reach the command with their paths converted by the same rules as the
-arguments. A list separated by `;`, like the Windows lists, becomes a list
-separated by `:`, like the Linux lists:
+The environment variables of your terminal reach the command, such as
+`ANSIBLE_CONFIG`, `HTTPS_PROXY`, and the credentials that collections read,
+with their paths converted by the same rules as the arguments. A list
+separated by `;`, like the Windows lists, becomes a list separated by `:`,
+like the Linux lists:
 
 | Variable             | On Windows             | In the distribution         |
 | -------------------- | ---------------------- | --------------------------- |
 | `ANSIBLE_CONFIG`     | `C:\infra\ansible.cfg` | `/mnt/c/infra/ansible.cfg`  |
 | `ANSIBLE_ROLES_PATH` | `C:\roles;D:\roles`    | `/mnt/c/roles:/mnt/d/roles` |
+| `HTTPS_PROXY`        | `http://proxy:8080`    | `http://proxy:8080`         |
 
-Other variables reach the command only when they're in
-[`WSLENV`](https://learn.microsoft.com/windows/wsl/filesystems#share-environment-variables-between-windows-and-wsl-with-wslenv),
-as in any WSL distribution. An `ANSIBLE_` variable that's already in `WSLENV`
+The variables that the distribution sets its own way stay out, such as
+`PATH`, `HOME`, `TEMP`, and `LANG`, the Python variables, such as
+`PYTHONPATH`, and `SSH_AUTH_SOCK`. A variable that's already in
+[`WSLENV`](https://learn.microsoft.com/windows/wsl/filesystems#share-environment-variables-between-windows-and-wsl-with-wslenv)
 arrives the way `WSLENV` defines, without the WinPlaybook conversion.
 
 ## SSH

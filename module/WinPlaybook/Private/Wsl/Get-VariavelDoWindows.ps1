@@ -1,12 +1,15 @@
-﻿function Get-VariavelDoAnsible {
+﻿function Get-VariavelDoWindows {
     <#
     .SYNOPSIS
-    Devolve as variáveis de ambiente ANSIBLE_ do Windows que vão para a distribuição WSL, com os caminhos convertidos.
+    Devolve as variáveis de ambiente do Windows que vão para a distribuição WSL, com os caminhos convertidos.
 
     .DESCRIPTION
-    Pega as variáveis do processo cujo nome começa com ANSIBLE_, como o ANSIBLE_CONFIG e o
-    ANSIBLE_STDOUT_CALLBACK, e converte os caminhos do Windows do valor com o
-    ConvertTo-ValorDoWsl. Uma variável que já está no WSLENV fica de fora, porque o WSL a
+    Pega as variáveis do processo, como o ANSIBLE_CONFIG, o HTTPS_PROXY e as credenciais que
+    as collections leem, e converte os caminhos do Windows do valor com o
+    ConvertTo-ValorDoWsl. Ficam de fora as variáveis que o Linux da distribuição define do
+    próprio jeito, como o PATH, o HOME, o TEMP e o LANG, as do Python e do agente SSH do
+    Windows, as do próprio WSL e as que têm um nome que o Linux não aceita, como
+    ProgramFiles(x86). Uma variável que já está no WSLENV também fica de fora, porque o WSL a
     passa do jeito que o usuário escolheu. Devolve uma hashtable com o nome e o valor
     convertido de cada variável.
 
@@ -24,9 +27,10 @@
     caminho numa dessas unidades vira o caminho da pasta real.
 
     .EXAMPLE
-    Get-VariavelDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual 'C:\repo'
+    Get-VariavelDoWindows -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual 'C:\repo'
 
-    Devolve @{ ANSIBLE_CONFIG = '/mnt/c/repo/ansible.cfg' } quando o ANSIBLE_CONFIG é C:\repo\ansible.cfg.
+    Devolve, entre outras, @{ ANSIBLE_CONFIG = '/mnt/c/repo/ansible.cfg' } quando o
+    ANSIBLE_CONFIG é C:\repo\ansible.cfg.
 
     .LINK
     https://learn.microsoft.com/windows/wsl/filesystems#share-environment-variables-between-windows-and-wsl-with-wslenv
@@ -40,12 +44,20 @@
         [hashtable] $DestinoDeUnidade = @{}
     )
 
+    $nomesDoLinux = @(
+        'PATH', 'PATHEXT', 'HOME', 'USER', 'LOGNAME', 'SHELL', 'TERM', 'PWD', 'OLDPWD', 'SHLVL', 'PS1'
+        'TEMP', 'TMP', 'TMPDIR', 'LANG', 'LANGUAGE', 'DISPLAY', 'WAYLAND_DISPLAY'
+        'PYTHONHOME', 'PYTHONPATH', 'VIRTUAL_ENV', 'SSH_AUTH_SOCK', 'SSH_AGENT_PID', 'WSLENV'
+    )
+    $prefixosDoLinux = @('LC_', 'XDG_', 'WSL_')
     $nomesNoWslenv = @("$env:WSLENV".Split(':') | ForEach-Object { $_.Split('/')[0] } | Where-Object { $_ })
     $variaveisDoProcesso = [Environment]::GetEnvironmentVariables('Process')
 
     $variaveis = @{}
     foreach ($nome in $variaveisDoProcesso.Keys) {
-        $vaiParaOWsl = $nome.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) -and ($nome -notin $nomesNoWslenv)
+        $temNomeValidoNoLinux = $nome -match '^[A-Za-z_][A-Za-z0-9_]*$'
+        $ehDoLinux = ($nome -in $nomesDoLinux) -or @($prefixosDoLinux | Where-Object { $nome.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
+        $vaiParaOWsl = $temNomeValidoNoLinux -and -not $ehDoLinux -and ($nome -notin $nomesNoWslenv)
         if ($vaiParaOWsl) {
             $variaveis[$nome] = ConvertTo-ValorDoWsl -Valor $variaveisDoProcesso[$nome] -Distribuicao $Distribuicao -RaizDeMontagem $RaizDeMontagem -PastaAtual $PastaAtual -DestinoDeUnidade $DestinoDeUnidade
         }

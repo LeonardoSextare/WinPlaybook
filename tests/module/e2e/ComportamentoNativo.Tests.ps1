@@ -215,6 +215,15 @@
             Variaveis        = @{ WINPLAYBOOK_TEST_MENSAGEM = 'oi do ambiente'; WSLENV = 'WINPLAYBOOK_TEST_MENSAGEM' }
         }
         @{
+            Descricao        = 'o playbook lê uma variável do Windows que não está no WSLENV'
+            Projeto          = 'variavel-de-ambiente'
+            Comando          = 'ansible-playbook'
+            NoLinux          = @('site.yml')
+            NoWindows        = @('site.yml')
+            VariaveisNoLinux = @{ WINPLAYBOOK_TEST_MENSAGEM = 'oi do Windows, com ação' }
+            Variaveis        = @{ WINPLAYBOOK_TEST_MENSAGEM = 'oi do Windows, com ação' }
+        }
+        @{
             Descricao = 'o ansible-doc mostra a documentação de um módulo'
             Projeto   = 'ola'
             Comando   = 'ansible-doc'
@@ -239,6 +248,11 @@ BeforeAll {
     Import-Module (Join-Path $PSScriptRoot '../../../module/WinPlaybook/WinPlaybook.psd1') -Force
 
     $nomeDaDistribuicao = Initialize-DistribuicaoWslDeTeste
+
+    $variaveisQueMudamOAnsible = @(Get-ChildItem -LiteralPath 'Env:' | Where-Object { $_.Name -match '^(ANSIBLE_|NO_COLOR$|FORCE_COLOR$|PY_COLORS$|CLICOLOR)' })
+    foreach ($variavel in $variaveisQueMudamOAnsible) {
+        Remove-Item -LiteralPath "Env:$($variavel.Name)"
+    }
 
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
@@ -407,6 +421,9 @@ BeforeAll {
 AfterAll {
     Remove-Module WinPlaybook
     $env:LOCALAPPDATA = $localAppDataOriginal
+    foreach ($variavel in $variaveisQueMudamOAnsible) {
+        Set-Item -LiteralPath "Env:$($variavel.Name)" -Value $variavel.Value
+    }
 }
 
 Describe 'Comportamento nativo do Ansible' {
