@@ -518,6 +518,35 @@ Describe 'Invoke-WinPlaybook' {
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString "*$($env:USERNAME)*"
         }
+
+        Context 'quando roda o playbook do tutorial da documentação' {
+            BeforeAll {
+                $projeto = Join-Path $TestDrive 'primeiro-playbook'
+                Copy-Item (Join-Path $PSScriptRoot '../data/projects/primeiro-playbook') $projeto -Recurse
+                $pastaCriada = Join-Path $HOME 'ola-ansible'
+                Push-Location $projeto
+                $primeiraSaida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+                $primeiroCodigo = $LASTEXITCODE
+                $segundaSaida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+                $segundoCodigo = $LASTEXITCODE
+            }
+
+            AfterAll {
+                Pop-Location
+                Remove-Item -LiteralPath $pastaCriada -Recurse -Force -ErrorAction SilentlyContinue
+            }
+
+            It 'cria a pasta e o arquivo no perfil do Windows' {
+                $primeiroCodigo | Should-Be 0 -Because $primeiraSaida
+                $primeiraSaida | Should-BeLikeString '*localhost_windows*ok=4*changed=2*'
+                Get-Content -LiteralPath (Join-Path $pastaCriada 'leia-me.txt') -Raw | Should-Be 'Este arquivo foi criado pelo Ansible.'
+            }
+
+            It 'não muda nada na segunda vez' {
+                $segundoCodigo | Should-Be 0 -Because $segundaSaida
+                $segundaSaida | Should-BeLikeString '*localhost_windows*ok=4*changed=0*'
+            }
+        }
     }
 
     Context 'quando a pasta do projeto está numa <Descricao>' -ForEach @(
