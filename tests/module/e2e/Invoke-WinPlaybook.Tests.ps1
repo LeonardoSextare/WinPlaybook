@@ -922,6 +922,79 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando um serviço escuta no localhost do Windows' {
+        BeforeAll {
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-de-rede-compilado/relay-de-rede.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-com-relay-de-rede'
+                Distribuicao   = $nomeDaDistribuicao
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelayDeRede -Caminho $CaminhoDoRelay
+                Install-RelayDeRede -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims }
+            }
+            $escutaTemporaria = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, 0)
+            $escutaTemporaria.Start()
+            $portaDoWindows = $escutaTemporaria.LocalEndpoint.Port
+            $escutaTemporaria.Stop()
+            $portaFechada = $portaDoWindows + 1
+            $servidor = Join-Path $TestDrive 'servidor-do-windows.ps1'
+            [IO.File]::WriteAllText($servidor, "`$escuta = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, $portaDoWindows)`r`n`$escuta.Start()`r`nwhile (`$true) { `$cliente = `$escuta.AcceptTcpClient(); `$dados = [Text.Encoding]::ASCII.GetBytes(`"oi do windows`n`"); `$cliente.GetStream().Write(`$dados, 0, `$dados.Length); `$cliente.Close() }`r`n")
+            $processoDoServidor = Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$servidor`"" -WindowStyle Hidden -PassThru
+            $linhasDoCliente = @(
+                'import socket, sys'
+                'conexao = socket.create_connection((sys.argv[1], int(sys.argv[2])), 5)'
+                'print(conexao.recv(100).decode().strip())'
+            )
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'cliente.py'), ($linhasDoCliente -join "`n") + "`n")
+            $linhasDoServidorDaDistribuicao = @(
+                'import socket, sys'
+                'escuta = socket.create_server(("127.0.0.1", int(sys.argv[1])))'
+                'conexao, _ = escuta.accept()'
+                'conexao.sendall(b"oi da distribuicao\n")'
+            )
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'servidor_da_distribuicao.py'), ($linhasDoServidorDaDistribuicao -join "`n") + "`n")
+            Start-Sleep -Seconds 2
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            Stop-Process -Id $processoDoServidor.Id -Force -ErrorAction SilentlyContinue
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'alcança o serviço do Windows pelo <_> da distribuição' -ForEach @('127.0.0.1', 'localhost', '::1') {
+            $saida = Invoke-WinPlaybook sh -c "sleep 2; python3 cliente.py $_ $portaDoWindows" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida.Trim() | Should-Be 'oi do windows'
+        }
+
+        It 'encontra o serviço do Windows pelo wait_for do Ansible' {
+            $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.wait_for -a "host=localhost port=$portaDoWindows timeout=10" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+        }
+
+        It 'recusa a conexão numa porta em que o Windows não escuta' {
+            $saida = Invoke-WinPlaybook sh -c "sleep 2; python3 cliente.py 127.0.0.1 $portaFechada" 2>&1 | Out-String
+
+            $saida | Should-BeLikeString '*ConnectionRefusedError*'
+        }
+
+        It 'mantém na distribuição a porta em que ela também escuta' {
+            $saida = Invoke-WinPlaybook sh -c "python3 servidor_da_distribuicao.py $portaDoWindows & sleep 3; python3 cliente.py 127.0.0.1 $portaDoWindows" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida.Trim() | Should-Be 'oi da distribuicao'
+        }
+    }
+
     Context 'quando o agente SSH do Windows não está rodando' {
         BeforeAll {
             $parametrosDoRelay = @{

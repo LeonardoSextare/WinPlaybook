@@ -13,6 +13,8 @@ Describe 'Install-WinPlaybook' {
         Mock New-ExecutavelDeShim -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'shim modelo' -Force }
         Mock New-ExecutavelDoRelay -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'relay modelo' -Force }
         Mock Install-RelayDoAgenteSsh -ModuleName WinPlaybook { }
+        Mock New-ExecutavelDoRelayDeRede -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'relay de rede modelo' -Force }
+        Mock Install-RelayDeRede -ModuleName WinPlaybook { }
         Mock Test-WslInstalado -ModuleName WinPlaybook { $true }
         Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'Ubuntu' }
         Mock New-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
@@ -172,6 +174,16 @@ Describe 'Install-WinPlaybook' {
             $null = Install-WinPlaybook
 
             $relayInstalado.Conteudo | Should-Be 'relay modelo'
+        }
+
+        It 'instala na pasta dos shims o relay de rede compilado na instalação' {
+            $relayInstalado = @{}
+            Mock Install-RelayDeRede -ModuleName WinPlaybook { $relayInstalado.Conteudo = Get-Content -LiteralPath $CaminhoDoExecutavel; $relayInstalado.Pasta = $PastaDosShims }
+
+            $null = Install-WinPlaybook
+
+            $relayInstalado.Conteudo | Should-Be 'relay de rede modelo'
+            $relayInstalado.Pasta | Should-Be $pastaPadraoDosShims
         }
 
         It 'coloca a pasta dos shims no Path do usuário' {

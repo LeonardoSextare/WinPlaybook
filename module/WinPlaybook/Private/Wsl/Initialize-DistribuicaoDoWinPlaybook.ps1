@@ -33,6 +33,9 @@
       e .cmd rodam pelo cmd.exe do Windows, com o /usr/local/lib/winplaybook/executar-windows,
       que também converte os argumentos que são caminhos da distribuição para caminhos do
       Windows;
+    - o /usr/local/lib/winplaybook/nft é uma cópia do nft do nftables que o usuário
+      winplaybook executa com a capability CAP_NET_ADMIN, para o supervisor de
+      Get-ScriptDoSupervisor levar ao Windows as conexões do localhost;
     - o /usr/local/bin/ssh, que vem antes do /usr/bin/ssh no PATH, usa a cópia traduzida
       do config do ssh que o supervisor de Get-ScriptDoSupervisor gera, quando ela existe.
 
@@ -82,7 +85,7 @@
         'printf ''export LANG=C.UTF-8\n'' > /etc/profile.d/winplaybook.sh;'
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
-        'apt-get install -y -qq --no-install-recommends ca-certificates curl git openssh-client python3 rsync socat sshpass > /dev/null;'
+        'apt-get install -y -qq --no-install-recommends ca-certificates curl git libcap2-bin nftables openssh-client python3 rsync socat sshpass > /dev/null;'
         'printf ''HashKnownHosts no\nUser "%s"\n'' "$3" > /etc/ssh/ssh_config.d/winplaybook.conf;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
@@ -99,6 +102,8 @@
         'install -d /usr/local/lib/winplaybook;'
         'printf ''%s\n'' ''#!/bin/sh'' ''programa="$1"; shift'' ''for argumento do'' ''shift'' ''case "$argumento" in /mnt/*|/home/*|/tmp/*) argumento=$(wslpath -w "$argumento" 2> /dev/null || printf "%s" "$argumento");; /*) [ -e "$argumento" ] && argumento=$(wslpath -w "$argumento" 2> /dev/null || printf "%s" "$argumento");; esac'' ''set -- "$@" "$argumento"'' ''done'' ''case "$programa" in *.[bB][aA][tT]|*.[cC][mM][dD]) exec "$cmd_do_windows" /d /c "$(wslpath -w "$programa")" "$@";; esac'' ''exec "$programa" "$@"'' | sed "s|\$cmd_do_windows|$5|" > /usr/local/lib/winplaybook/executar-windows;'
         'chmod 755 /usr/local/lib/winplaybook/executar-windows;'
+        'install -m 750 -g "$1" /usr/sbin/nft /usr/local/lib/winplaybook/nft;'
+        'setcap cap_net_admin+ep /usr/local/lib/winplaybook/nft;'
         'rm -f /usr/local/lib/winplaybook/executar-bat;'
         'printf ''#!/bin/sh\nconfiguracao="$HOME/.cache/winplaybook/ssh_config"\ncase " $* " in *" -F"*) exec /usr/bin/ssh "$@";; esac\n[ -f "$configuracao" ] && exec /usr/bin/ssh -F "$configuracao" "$@"\nexec /usr/bin/ssh "$@"\n'' > /usr/local/bin/ssh;'
         'chmod 755 /usr/local/bin/ssh;'

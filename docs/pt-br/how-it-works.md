@@ -84,6 +84,14 @@ certificadora interna instalada no Windows, o `ansible-galaxy`, os módulos
 define o `SSL_CERT_FILE`, o `REQUESTS_CA_BUNDLE`, o `CURL_CA_BUNDLE` ou o
 `GIT_SSL_CAINFO` no Windows, a distribuição usa o seu arquivo.
 
+Um serviço que escuta no `localhost` do Windows, como uma API em
+desenvolvimento ou um container do Docker Desktop, também responde no
+`localhost` da distribuição. Assim, um `wait_for` ou um `uri` para
+`localhost:8080` chega ao Windows, como num Ansible instalado nele. Uma porta
+em que a distribuição também escuta continua na distribuição, e uma porta
+fechada no Windows continua recusando a conexão. Isso vale enquanto um comando
+do WinPlaybook está rodando.
+
 Executar o `Install-WinPlaybook` de novo mantém a distribuição e reinstala o
 Ansible e os _shims_.
 

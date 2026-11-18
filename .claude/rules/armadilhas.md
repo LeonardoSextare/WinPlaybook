@@ -117,6 +117,15 @@ bugs, e como o código lida com cada um.
   `ComportamentoNativo.Tests.ps1` confere, e o lado nativo do teste lê a
   entrada com `cat arquivo |`, porque o mesmo pipe do root quebraria o
   `/dev/stdin` dele também.
+- Um programa do Windows que um processo da distribuição abre pelo interop só
+  troca dados com a distribuição enquanto a sessão do `wsl.exe` que o abriu
+  existe. Um daemon que sobrevive à sessão continua rodando, mas a saída do
+  programa do Windows para de chegar a ele. Por isso a ponte para o
+  `localhost` do Windows roda dentro do supervisor de cada comando, e não num
+  serviço da distribuição, e a regra do nftables é aplicada pelo
+  `/usr/local/lib/winplaybook/nft`, que o usuário `winplaybook` executa com a
+  CAP_NET_ADMIN. Os testes "quando um serviço escuta no localhost do Windows"
+  do `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` conferem.
 
 ## Ansible
 

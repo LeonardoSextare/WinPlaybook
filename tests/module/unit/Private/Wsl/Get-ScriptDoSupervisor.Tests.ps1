@@ -66,6 +66,14 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains('preparar_ambiente_do_projeto()') | Should-BeTrue
     }
 
+    It 'leva ao localhost do Windows as conexões ao localhost da distribuição, pelo relay de rede' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("NFT_DA_PONTE = '/usr/local/lib/winplaybook/nft'") | Should-BeTrue
+        $script.Contains('ip daddr 127.0.0.1 tcp dport @portas_do_windows redirect to :47999') | Should-BeTrue
+        $script.Contains("iniciar_ponte_de_rede(ambiente.get('relayDeRede'))") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

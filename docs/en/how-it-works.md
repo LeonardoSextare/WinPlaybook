@@ -87,6 +87,13 @@ certificate authority installed on Windows, `ansible-galaxy`, the `uri` and
 `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, or `GIT_SSL_CAINFO`
 on Windows, the distribution uses your file.
 
+A service that listens on the Windows `localhost`, such as an API in
+development or a Docker Desktop container, also answers on the distribution
+`localhost`. This way, a `wait_for` or a `uri` call to `localhost:8080` reaches
+Windows, as with Ansible installed on it. A port that the distribution also
+listens on stays in the distribution, and a port that is closed on Windows
+still refuses the connection. This works while a WinPlaybook command is running.
+
 If you run `Install-WinPlaybook` again, it keeps the distribution and
 reinstalls Ansible and the shims.
 

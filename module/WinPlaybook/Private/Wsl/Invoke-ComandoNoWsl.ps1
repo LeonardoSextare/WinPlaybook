@@ -152,6 +152,10 @@
     $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
     $certificadosDoWindows = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDosCertificadosDoWindows) -RaizDeMontagem $raizDeMontagem
     $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows; certificadosDoWindows = $certificadosDoWindows }
+    $temRelayDeRede = $temPastaDosShims -and (Test-Path -LiteralPath (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -PathType Leaf)
+    if ($temRelayDeRede) {
+        $ambienteDoComando['relayDeRede'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -RaizDeMontagem $raizDeMontagem
+    }
     $ambiente = ConvertTo-Json -InputObject $ambienteDoComando -Compress
 
     $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })

@@ -19,6 +19,7 @@
     PowerShell7NaoInstalado    = 'O PowerShell 7 (pwsh) não está instalado. Instale com: winget install Microsoft.PowerShell'
     RaizDeMontagemDesconhecida = 'Não foi possível descobrir onde a distribuição WSL {0} monta as unidades do Windows (código de saída do wsl: {1}).'
     RelayNaoInstalado          = 'Não foi possível deixar executável na distribuição WSL o relay do agente SSH, em {0}. Rode o Install-WinPlaybook de novo. A distribuição respondeu: {1}'
+    RelayDeRedeNaoInstalado    = 'Não foi possível deixar executável na distribuição WSL o relay de rede, em {0}. Rode o Install-WinPlaybook de novo. A distribuição respondeu: {1}'
     WslNaoEncontrado           = 'O WSL não foi encontrado. O WinPlaybook roda o Ansible numa distribuição WSL: instale o WSL com wsl --install e tente de novo.'
     WslNaoInstalado            = 'O WSL não está instalado. Instale com: wsl --install --no-distribution (pede permissão de administrador e pode pedir para reiniciar o Windows) e rode o Install-WinPlaybook de novo.'
 }

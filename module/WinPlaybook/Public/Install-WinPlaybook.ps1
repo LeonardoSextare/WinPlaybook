@@ -119,9 +119,11 @@
     $pastaDoExecutavel = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-$([guid]::NewGuid().ToString('N'))"
     $caminhoDoExecutavel = Join-Path -Path $pastaDoExecutavel -ChildPath 'shim.exe'
     $caminhoDoRelay = Join-Path -Path $pastaDoExecutavel -ChildPath 'relay-do-agente-ssh.exe'
+    $caminhoDoRelayDeRede = Join-Path -Path $pastaDoExecutavel -ChildPath 'relay-de-rede.exe'
     try {
         New-ExecutavelDeShim -Caminho $caminhoDoExecutavel
         New-ExecutavelDoRelay -Caminho $caminhoDoRelay
+        New-ExecutavelDoRelayDeRede -Caminho $caminhoDoRelayDeRede
 
         $pastaDaDistribuicao = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro'
         $distribuicaoJaExistia = $distribuicao -in @(Get-DistribuicaoDoWsl)
@@ -186,6 +188,7 @@
             New-ShimDeComando -Nome $comando -Pasta $pastaDosShims -CaminhoDoPowerShell $caminhoDoPowerShell -PastaDoModulo $pastaDoModulo -CaminhoDoExecutavel $caminhoDoExecutavel
         }
         Install-RelayDoAgenteSsh -CaminhoDoExecutavel $caminhoDoRelay -PastaDosShims $pastaDosShims -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
+        Install-RelayDeRede -CaminhoDoExecutavel $caminhoDoRelayDeRede -PastaDosShims $pastaDosShims -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
         Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
     }
     finally {
