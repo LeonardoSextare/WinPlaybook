@@ -45,6 +45,12 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("preparar_config_do_git(ambiente['pathDoWindows'])") | Should-BeTrue
     }
 
+    It 'usa o notepad.exe como editor do ansible-vault quando o Windows não define um' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

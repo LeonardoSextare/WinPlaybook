@@ -33,6 +33,10 @@
     caminhos do Windows viram os da raiz de montagem. Sem .gitconfig, a cópia só liga o Git
     Credential Manager, quando o Git for Windows está no Path.
 
+    Sem o EDITOR e o VISUAL no Windows, o EDITOR do ansible-vault é o notepad.exe, que o
+    ansible-vault create e edit abrem pelo Path do Windows. O notepad.exe espera a janela
+    fechar, como o ansible-vault precisa.
+
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
 
@@ -358,6 +362,8 @@ os.environ.update(ambiente['variaveis'])
 os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
 preparar_config_do_ssh()
 preparar_config_do_git(ambiente['pathDoWindows'])
+if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):
+    os.environ['EDITOR'] = 'notepad.exe'
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

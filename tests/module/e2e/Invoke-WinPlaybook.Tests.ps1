@@ -671,6 +671,48 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o ansible-vault abre um editor' {
+        BeforeAll {
+            $pastaDoEditor = Join-Path $TestDrive 'editor'
+            $null = New-Item -ItemType Directory -Path $pastaDoEditor
+            [IO.File]::WriteAllText((Join-Path $pastaDoEditor 'editor-de-teste.bat'), "@echo segredo: escrito pelo editor do Windows> %1`r`n")
+            $projeto = Join-Path $TestDrive 'vault-com-editor'
+            $null = New-Item -ItemType Directory -Path $projeto
+            [IO.File]::WriteAllText((Join-Path $projeto 'senha.txt'), "senha-do-teste`n")
+            $pathOriginal = $env:Path
+            $editorOriginal = $env:EDITOR
+            $env:Path = "$env:Path;$pastaDoEditor"
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+            $env:Path = $pathOriginal
+            Remove-Item -LiteralPath 'Env:EDITOR' -ErrorAction SilentlyContinue
+            if ($null -ne $editorOriginal) {
+                $env:EDITOR = $editorOriginal
+            }
+        }
+
+        It 'cria o arquivo cifrado com o editor do EDITOR do Windows' {
+            $env:EDITOR = 'editor-de-teste'
+            $saidaDoCreate = Invoke-WinPlaybook script -qec 'ansible-vault create --vault-password-file senha.txt novo.yml' /dev/null 2>&1 | Out-String
+
+            $saida = Invoke-WinPlaybook ansible-vault view --vault-password-file senha.txt novo.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because "$saidaDoCreate $saida"
+            $saida | Should-BeLikeString '*segredo: escrito pelo editor do Windows*'
+        }
+
+        It 'não muda o editor dos outros comandos quando o Windows não define um' {
+            Remove-Item -LiteralPath 'Env:EDITOR' -ErrorAction SilentlyContinue
+
+            $saida = Invoke-WinPlaybook sh -c 'printf "[%s]" "$EDITOR"' 2>&1 | Out-String
+
+            $saida.Trim() | Should-Be '[]'
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive
