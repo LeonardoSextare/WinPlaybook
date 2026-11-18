@@ -26,6 +26,10 @@
         PythonPackages     = $null
         SshAgentPipe       = $null
         CreatedSshFolder   = $null
+        LocalhostWindowsPort = $null
+        LocalhostWindowsUser = $null
+        LocalhostWindowsDeclined = $null
+        OpenSshServerInstalledByWinPlaybook = $null
     }
 
     $caminhoDoArquivo = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'settings.json'

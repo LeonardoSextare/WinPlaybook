@@ -32,6 +32,7 @@
         return
     }
 
+    Disable-WinPlaybookLocalhost -Confirm:$false
     $criouAPastaDoSsh = [bool] (Get-Configuracao).CreatedSshFolder
     Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro')
     Remove-PastaDosShims -Pasta $pastaDosShims

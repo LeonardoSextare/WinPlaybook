@@ -80,7 +80,8 @@
         [string] $Path,
         [ValidateSet('Desktop', 'Core')] [string] $PowerShell,
         [AllowEmptyString()] [string] $AnsibleVersion,
-        [AllowEmptyCollection()] [string[]] $PythonPackage
+        [AllowEmptyCollection()] [string[]] $PythonPackage,
+        [switch] $EnableLocalhost
     )
 
     $distribuicao = 'WinPlaybook'
@@ -190,6 +191,10 @@
             AnsibleVersion     = $versaoDoAnsible
             PythonPackages     = $pacotesPython
             CreatedSshFolder   = $vaiCriarAPastaDoSsh -or [bool] $configuracao.CreatedSshFolder
+            LocalhostWindowsPort = $configuracao['LocalhostWindowsPort']
+            LocalhostWindowsUser = $configuracao['LocalhostWindowsUser']
+            LocalhostWindowsDeclined = $configuracao['LocalhostWindowsDeclined']
+            OpenSshServerInstalledByWinPlaybook = $configuracao['OpenSshServerInstalledByWinPlaybook']
         }
 
         foreach ($comando in $comandos) {
@@ -205,6 +210,8 @@
     finally {
         Remove-Item -LiteralPath $pastaDoExecutavel -Recurse -Force -ErrorAction SilentlyContinue
     }
+
+    Initialize-LocalhostWindows -Configuracao $configuracao -Ligar:$EnableLocalhost
 
     Write-Log -Nivel 'info' -Mensagem "Install-WinPlaybook terminou em $($relogio.ElapsedMilliseconds) ms, com $(@($comandos).Count) comandos"
     return [pscustomobject]@{

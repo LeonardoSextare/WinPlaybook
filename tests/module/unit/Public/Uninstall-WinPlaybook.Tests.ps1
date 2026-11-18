@@ -28,6 +28,7 @@ Describe 'Uninstall-WinPlaybook' {
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
+        Mock Test-SessaoInterativa -ModuleName WinPlaybook { $false }
         Mock Get-PerfilDoPowerShell -ModuleName WinPlaybook { Join-Path $TestDrive 'perfis/PowerShell/profile.ps1'; Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1' }
         Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-extensoes' }
     }
@@ -213,6 +214,17 @@ Describe 'Uninstall-WinPlaybook' {
             Uninstall-WinPlaybook -Confirm:$false
 
             @(Get-Content -LiteralPath (Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1')) | Should-BeCollection @('Set-Alias ll Get-ChildItem')
+        }
+    }
+
+    Context 'quando o localhost_windows está ligado' {
+        It 'desliga o localhost_windows antes de apagar o resto' {
+            Mock Disable-WinPlaybookLocalhost -ModuleName WinPlaybook { }
+            $null = Install-WinPlaybook
+
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Should-Invoke Disable-WinPlaybookLocalhost -ModuleName WinPlaybook -Times 1 -Exactly
         }
     }
 }
