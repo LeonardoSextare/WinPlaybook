@@ -790,6 +790,70 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o projeto tem um pyproject.toml com o Ansible' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'projeto-com-uv'
+            $null = New-Item -ItemType Directory -Path (Join-Path $projeto 'playbooks')
+            $linhas = @(
+                '[project]'
+                'name = "projeto-com-uv"'
+                'version = "0.1.0"'
+                'requires-python = ">=3.11,<3.14"'
+                'dependencies = ["ansible-core==2.19.*"]'
+            )
+            [IO.File]::WriteAllText((Join-Path $projeto 'pyproject.toml'), ($linhas -join "`n") + "`n")
+            $projetoSemAnsible = Join-Path $TestDrive 'projeto-sem-ansible'
+            $null = New-Item -ItemType Directory -Path $projetoSemAnsible
+            [IO.File]::WriteAllText((Join-Path $projetoSemAnsible 'pyproject.toml'), "[project]`nname = `"outro`"`nversion = `"0.1.0`"`ndependencies = []`n")
+            Push-Location (Join-Path $projeto 'playbooks')
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'usa o Ansible do projeto, achado a partir de uma subpasta' {
+            $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*core 2.19.*'
+        }
+
+        It 'não usa os comandos do ambiente global que o projeto não tem' {
+            $saida = Invoke-WinPlaybook ansible-lint --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-NotBe 0 -Because $saida
+        }
+
+        It 'aceita caminhos do Windows no ambiente do projeto' {
+            $caminhoNoWindows = Join-Path $projeto 'pyproject.toml'
+
+            $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.stat -a "path=$caminhoNoWindows" 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"exists": true*'
+        }
+
+        It 'deixa o ambiente fora da pasta do projeto' {
+            $null = Invoke-WinPlaybook ansible --version 2>&1
+
+            Test-Path -LiteralPath (Join-Path $projeto '.venv') | Should-BeFalse
+        }
+
+        It 'usa o ambiente global num projeto sem o Ansible no pyproject.toml' {
+            Push-Location $projetoSemAnsible
+
+            try {
+                $saida = Invoke-WinPlaybook ansible-lint --version 2>&1 | Out-String
+            }
+            finally {
+                Pop-Location
+            }
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+        }
+    }
+
     Context 'quando o ansible-vault abre um editor' {
         BeforeAll {
             $pastaDoEditor = Join-Path $TestDrive 'editor'
