@@ -223,3 +223,53 @@ function Format-SaidaDoAnsible {
 
     return $textoFormatado
 }
+
+function ConvertTo-SaidaVistaDoWindows {
+    <#
+    .SYNOPSIS
+    Troca, na saída de um comando do nó de controle no Linux, os caminhos da distribuição pelos que o WinPlaybook mostra.
+
+    .DESCRIPTION
+    Um caminho da distribuição vira //wsl.localhost/<distribuição>/..., e as pastas
+    .ansible\collections e .ansible\roles e o .ansible.cfg, que a distribuição liga ao perfil
+    do Windows, viram os caminhos delas no perfil, com barras normais. É o que o WinPlaybook
+    mostra no ansible-config, no ansible-doc, no ansible-galaxy e no ansible --version.
+
+    .PARAMETER Texto
+    A saída ou os erros do comando no Linux.
+
+    .PARAMETER Distribuicao
+    A distribuição WSL em que o comando rodou.
+
+    .PARAMETER PastaDoPerfil
+    A pasta do perfil do Windows que a distribuição usa.
+
+    .EXAMPLE
+    ConvertTo-SaidaVistaDoWindows -Texto $saida -Distribuicao 'WinPlaybookE2E' -PastaDoPerfil $pastaDoPerfil
+    #>
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)] [AllowEmptyString()] [string] $Texto,
+        [Parameter(Mandatory)] [string] $Distribuicao,
+        [Parameter(Mandatory)] [string] $PastaDoPerfil
+    )
+
+    $perfil = $PastaDoPerfil.Replace('\', '/')
+    $ligacoesParaOPerfil = [ordered]@{
+        '/home/winplaybook/.ansible/collections' = "$perfil/.ansible/collections"
+        '/home/winplaybook/.ansible/roles'       = "$perfil/.ansible/roles"
+        '/home/winplaybook/.ansible.cfg'         = "$perfil/.ansible.cfg"
+    }
+    $padrao = '(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/[^\s''"\],:;=()]*)?'
+    return [regex]::Replace($Texto, $padrao, {
+            param($ocorrencia)
+            foreach ($ligacao in $ligacoesParaOPerfil.Keys) {
+                $estaNoPerfil = $ocorrencia.Value -eq $ligacao -or $ocorrencia.Value.StartsWith("$ligacao/")
+                if ($estaNoPerfil) {
+                    return $ligacoesParaOPerfil[$ligacao] + $ocorrencia.Value.Substring($ligacao.Length)
+                }
+            }
+            return "//wsl.localhost/$Distribuicao" + $ocorrencia.Value
+        })
+}

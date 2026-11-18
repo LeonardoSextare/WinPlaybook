@@ -309,11 +309,22 @@ BeforeAll {
                 }
             }
             $resultado = Invoke-AnsibleNativo -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux -Comando $Cenario.Comando -Argumentos $argumentos -CaminhoDaEntrada $caminhoDaEntrada -Variaveis $variaveis
+            $saida = $resultado.Saida
+            $erro = $resultado.Erro
+            $mostraCaminhosDaDistribuicao = $Cenario.Comando -in @('ansible-config', 'ansible-doc', 'ansible-galaxy') -or ($Cenario.Comando -eq 'ansible' -and $Cenario.NoLinux -contains '--version')
+            if ($mostraCaminhosDaDistribuicao) {
+                $pastaDoPerfil = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
+                $saida = ConvertTo-SaidaVistaDoWindows -Texto $saida -Distribuicao $nomeDaDistribuicao -PastaDoPerfil $pastaDoPerfil
+                $erro = ConvertTo-SaidaVistaDoWindows -Texto $erro -Distribuicao $nomeDaDistribuicao -PastaDoPerfil $pastaDoPerfil
+            }
+            $pastasDoProjeto = "//wsl.localhost/$nomeDaDistribuicao$projetoNoLinux", $projetoNoLinux
+            $saida = Format-SaidaDoAnsible -Texto $saida -PastasDoProjeto $pastasDoProjeto
+            $erro = Format-SaidaDoAnsible -Texto $erro -PastasDoProjeto $pastasDoProjeto
 
             return [pscustomobject]@{
                 CodigoDeSaida = $resultado.CodigoDeSaida
-                Saida         = Format-SaidaDoAnsible -Texto $resultado.Saida -PastasDoProjeto $projetoNoLinux
-                Erro          = Format-SaidaDoAnsible -Texto $resultado.Erro -PastasDoProjeto $projetoNoLinux
+                Saida         = $saida
+                Erro          = $erro
                 Arquivos      = @(Get-ArquivoDoProjeto -Distribuicao $nomeDaDistribuicao -Pasta $projetoNoLinux)
             }
         }

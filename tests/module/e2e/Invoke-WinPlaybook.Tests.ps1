@@ -634,6 +634,37 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando um comando do nó de controle mostra caminhos da distribuição' {
+        BeforeAll {
+            Push-Location $TestDrive
+            $perfilDosTestes = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil').Replace('\', '/')
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'mostra o disco da distribuição pelo caminho que o Windows abre' {
+            $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString "*ansible python module location = //wsl.localhost/$nomeDaDistribuicao/home/winplaybook/*"
+        }
+
+        It 'mostra as collections pela pasta delas no perfil do Windows' {
+            $saida = Invoke-WinPlaybook ansible-config dump 2>&1 | Out-String
+
+            $saida | Should-BeLikeString ("*" + [WildcardPattern]::Escape("COLLECTIONS_PATHS(default) = ['$perfilDosTestes/.ansible/collections'") + "*")
+        }
+
+        It 'mantém os caminhos dos hosts na saída de um playbook' {
+            $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.stat -a 'path=/etc/hostname' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"path": "/etc/hostname"*'
+        }
+    }
+
     Context 'quando os arquivos do projeto têm caminhos do Windows' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'caminhos-do-windows'

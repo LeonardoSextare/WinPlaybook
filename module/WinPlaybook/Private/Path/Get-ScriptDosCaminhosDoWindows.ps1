@@ -14,7 +14,12 @@
     mantém as barras invertidas de um caminho do Windows sem aspas. No caminho de volta, o
     que os comandos do Ansible, como o ansible-playbook e o ansible-lint, escrevem na saída
     troca os caminhos da raiz de montagem pelos do Windows, com barras normais (/mnt/c/infra vira C:/infra, e /mnt/unc/servidor/infra vira
-    //servidor/infra), que continuam válidos num JSON. Um script com shebang e finais de
+    //servidor/infra), que continuam válidos num JSON. Nos comandos que falam do nó de
+    controle (ansible-config, ansible-doc, ansible-galaxy e ansible --version), os caminhos
+    do disco da distribuição também mudam: o que leva a uma pasta do Windows, como as
+    collections do perfil, vira o caminho dela no Windows, e o resto vira
+    //wsl.localhost/<distribuição>/.... Nos outros comandos, esses caminhos podem ser dos
+    hosts e ficam como estão. Um script com shebang e finais de
     linha CRLF, como os que o Git for Windows grava, vai sem os CR pelo ansible.builtin.script,
     e o arquivo do projeto não muda. Um arquivo .bat, .cmd, .exe, .com, .ps1, .py ou .sh da
     raiz de montagem, que não tem a permissão de execução, conta como executável para o
@@ -124,6 +129,33 @@ def traduzir_saida(dados):
     return re.sub(padrao, mostrar_caminho_do_windows, dados)
 
 
+CAMINHO_DA_DISTRIBUICAO = re.compile(rb'(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/[^\s\'"\],:;=()]*)?')
+PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES = b'/opt/winplaybook/exec/'
+PROGRAMAS_DO_NO_DE_CONTROLE = ('ansible-config', 'ansible-doc', 'ansible-galaxy')
+programa_mostra_caminhos_da_distribuicao = []
+
+
+def mostra_caminhos_da_distribuicao():
+    if not programa_mostra_caminhos_da_distribuicao:
+        argumentos = getattr(sys, 'argv', ['']) or ['']
+        programa = os.path.basename(argumentos[0] or '')
+        mostra = programa in PROGRAMAS_DO_NO_DE_CONTROLE or (programa == 'ansible' and '--version' in argumentos[1:])
+        programa_mostra_caminhos_da_distribuicao.append(mostra)
+    return programa_mostra_caminhos_da_distribuicao[0]
+
+
+def mostrar_caminho_da_distribuicao(ocorrencia):
+    caminho = ocorrencia.group(0)
+    real = os.path.realpath(caminho)
+    raiz = os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/').rstrip('/').encode() + b'/'
+    if real.startswith(PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES):
+        real = raiz + real[len(PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES):]
+    if real.startswith(raiz):
+        return traduzir_saida(real)
+    distribuicao = os.environ.get('WSL_DISTRO_NAME')
+    return b'//wsl.localhost/' + distribuicao.encode() + caminho if distribuicao else caminho
+
+
 def eh_programa_do_ansible():
     if not programa_eh_do_ansible:
         programa = os.path.basename(getattr(sys, 'argv', [''])[0] or '')
@@ -139,6 +171,8 @@ class SaidaComCaminhosDoWindows(io.BufferedIOBase):
         tamanho = len(dados)
         if eh_programa_do_ansible():
             dados = traduzir_saida(bytes(dados))
+        if mostra_caminhos_da_distribuicao():
+            dados = CAMINHO_DA_DISTRIBUICAO.sub(mostrar_caminho_da_distribuicao, bytes(dados))
         self._original.write(dados)
         return tamanho
 
