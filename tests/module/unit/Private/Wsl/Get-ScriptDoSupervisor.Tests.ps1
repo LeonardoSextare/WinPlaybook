@@ -51,6 +51,13 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):") | Should-BeTrue
     }
 
+    It 'aponta as variáveis de certificados para o pacote que junta os do Debian e os do Windows' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("VARIAVEIS_DE_CERTIFICADOS = ('SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'GIT_SSL_CAINFO')") | Should-BeTrue
+        $script.Contains("preparar_certificados(ambiente['certificadosDoWindows'])") | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

@@ -150,7 +150,8 @@
     $variaveisDoWindows = Get-VariavelDoWindows @parametrosDaConversao
     $variaveisDoWindows['WINPLAYBOOK_MOUNT_ROOT'] = $raizDeMontagem
     $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
-    $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows }
+    $certificadosDoWindows = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDosCertificadosDoWindows) -RaizDeMontagem $raizDeMontagem
+    $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows; certificadosDoWindows = $certificadosDoWindows }
     $ambiente = ConvertTo-Json -InputObject $ambienteDoComando -Compress
 
     $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })

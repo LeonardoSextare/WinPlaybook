@@ -6,8 +6,9 @@
     .DESCRIPTION
     O script recebe nos argumentos o comando e os argumentos dele, e na variável
     WINPLAYBOOK_ENVIRONMENT um JSON com as variáveis de ambiente do
-    comando (variaveis) e as pastas do Path do Windows na montagem com execução
-    (pathDoWindows). Ele executa o comando
+    comando (variaveis), as pastas do Path do Windows na montagem com execução
+    (pathDoWindows) e o arquivo PEM com os certificados raiz do Windows
+    (certificadosDoWindows). Ele executa o comando
     com essas variáveis somadas às da distribuição e sai com o código de
     saída dele, ou com 128 mais o número do sinal que o encerrou. Os processos que o comando
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
@@ -36,6 +37,11 @@
     Sem o EDITOR e o VISUAL no Windows, o EDITOR do ansible-vault é o notepad.exe, que o
     ansible-vault create e edit abrem pelo Path do Windows. O notepad.exe espera a janela
     fechar, como o ansible-vault precisa.
+
+    Os programas da distribuição confiam nos certificados raiz do Windows, além dos do
+    Debian, por ~/.cache/winplaybook/certificados.pem, que junta os dois e é gerado de novo
+    só quando um deles muda. O SSL_CERT_FILE, o REQUESTS_CA_BUNDLE, o CURL_CA_BUNDLE e o
+    GIT_SSL_CAINFO apontam para ele, a não ser que o Windows já defina a variável.
 
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
@@ -82,6 +88,8 @@ PROGRAMA_DO_PROXY = re.compile(r'^("[^"]+"|\S+)')
 LINHA_DO_GIT = re.compile(r'^(\s*)([A-Za-z][\w-]*)(\s*=\s*)(.*?)\s*$')
 CAMINHO_DO_WINDOWS_NO_GIT = re.compile(r'^"?[A-Za-z]:(\\\\|\\|/)')
 HELPER_DO_WINDOWS = re.compile(r'^"?(manager(-core)?|.*git-credential-manager(\.exe)?)"?$', re.IGNORECASE)
+PACOTE_DE_CERTIFICADOS_DO_SISTEMA = '/etc/ssl/certs/ca-certificates.crt'
+VARIAVEIS_DE_CERTIFICADOS = ('SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'GIT_SSL_CAINFO')
 sinais_de_fim = []
 
 
@@ -327,6 +335,35 @@ def preparar_config_do_git(pastas_do_path):
     os.environ['GIT_CONFIG_GLOBAL'] = destino
 
 
+def preparar_certificados(certificados_do_windows):
+    destino = os.path.expanduser('~/.cache/winplaybook/certificados.pem')
+    marca = destino + '.origem'
+    try:
+        impressao = os.path.basename(certificados_do_windows) + ' ' + str(os.stat(PACOTE_DE_CERTIFICADOS_DO_SISTEMA).st_mtime_ns)
+        with open(marca, encoding='utf-8') as arquivo:
+            esta_atualizado = arquivo.read() == impressao and os.path.isfile(destino)
+    except FileNotFoundError:
+        esta_atualizado = False
+    except OSError:
+        return
+    if not esta_atualizado:
+        try:
+            with open(PACOTE_DE_CERTIFICADOS_DO_SISTEMA, 'rb') as arquivo:
+                do_sistema = arquivo.read()
+            with open(certificados_do_windows, 'rb') as arquivo:
+                do_windows = arquivo.read()
+        except OSError:
+            return
+        os.makedirs(os.path.dirname(destino), exist_ok=True)
+        for caminho, conteudo in ((destino, do_sistema.rstrip(b'\n') + b'\n' + do_windows), (marca, impressao.encode('utf-8'))):
+            temporario = caminho + '.' + str(os.getpid())
+            with open(temporario, 'wb') as arquivo:
+                arquivo.write(conteudo)
+            os.replace(temporario, caminho)
+    for nome in VARIAVEIS_DE_CERTIFICADOS:
+        os.environ.setdefault(nome, destino)
+
+
 def preparar_config_do_ssh():
     destino = os.path.expanduser('~/.cache/winplaybook/ssh_config')
     try:
@@ -364,6 +401,7 @@ preparar_config_do_ssh()
 preparar_config_do_git(ambiente['pathDoWindows'])
 if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):
     os.environ['EDITOR'] = 'notepad.exe'
+preparar_certificados(ambiente['certificadosDoWindows'])
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

@@ -22,6 +22,7 @@ Describe 'Invoke-ComandoNoWsl' {
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
         Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{} }
         Mock Get-CaminhoDoSupervisor -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\supervisor-teste.py' }
+        Mock Get-CaminhoDosCertificadosDoWindows -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\certificados-teste.pem' }
         Mock Mount-PastaDoWindows -ModuleName WinPlaybook { }
 
         Push-Location $pastaDoProjeto
@@ -288,6 +289,14 @@ Describe 'Invoke-ComandoNoWsl' {
             $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
             @($ambiente.pathDoWindows) | Should-BeCollection @('/opt/winplaybook/exec/c/Ferramentas', '/opt/winplaybook/exec/d/Outras')
         }
+    }
+
+    It 'passa ao supervisor o arquivo dos certificados raiz do Windows, pela unidade montada' {
+        Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+        $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+        $ambiente.certificadosDoWindows | Should-Be '/mnt/c/Temp/WinPlaybook/certificados-teste.pem'
     }
 
     Context 'quando o Windows tem uma variável de ambiente' {
