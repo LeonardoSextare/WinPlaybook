@@ -55,7 +55,7 @@ function Build-Site {
     }
 
     foreach ($arquivoDeConfiguracao in $arquivosDeConfiguracao) {
-        uvx zensical build --config-file (Join-Path $pastaDaDocumentacao $arquivoDeConfiguracao) | Out-Host
+        uvx --python 3.14 zensical build --config-file (Join-Path $pastaDaDocumentacao $arquivoDeConfiguracao) | Out-Host
         $gerouOSite = $LASTEXITCODE -eq 0
         if (-not $gerouOSite) {
             throw "A geração do $arquivoDeConfiguracao falhou."

@@ -239,8 +239,10 @@ Uma mudança de documentação está pronta quando:
 
 ### Preview
 
-- Um idioma, com hot reload: `uvx zensical serve -f docs/zensical.pt-br.toml`
+- Um idioma, com hot reload: `uvx --python 3.14 zensical serve -f docs/zensical.pt-br.toml`
   (para os dois ao mesmo tempo, o segundo com `-a localhost:8001`).
+- O `--python 3.14` fica em todos os comandos do Zensical: o `pyyaml`, que
+  ele usa, ainda não tem pacote para o Python 3.15 no Windows.
 - Site completo, com o seletor de idioma e o redirect da raiz: task
   "Documentação: site completo" (`scripts/dev/docs.ps1`), em
   `localhost:8080/WinPlaybook/`, sem hot reload.
