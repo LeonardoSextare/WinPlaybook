@@ -463,6 +463,56 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o Windows confia em certificados raiz' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'certificados'
+            $null = New-Item -ItemType Directory -Path $projeto
+            $linhas = @(
+                'import hashlib, os, re, ssl, sys'
+                "caminho = ssl.get_default_verify_paths().cafile if sys.argv[1] == 'padrao' else os.environ[sys.argv[1]]"
+                'ssl.create_default_context(cafile=caminho)'
+                'with open(caminho) as arquivo:'
+                "    blocos = re.findall(r'-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----', arquivo.read(), re.DOTALL)"
+                'for bloco in blocos:'
+                '    print(hashlib.sha1(ssl.PEM_cert_to_DER_cert(bloco)).hexdigest().upper())'
+            )
+            [IO.File]::WriteAllText((Join-Path $projeto 'listar_certificados.py'), ($linhas -join "`n") + "`n")
+            $impressoesDoWindows = @(InModuleScope WinPlaybook { Get-CertificadoRaizDoWindows } | ForEach-Object { $_.Thumbprint })
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'confia em todos os certificados raiz do Windows pelo <_>' -ForEach @('padrao', 'SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'GIT_SSL_CAINFO') {
+            $saida = @(Invoke-WinPlaybook python3 listar_certificados.py $_ 2>&1)
+
+            $LASTEXITCODE | Should-Be 0 -Because ($saida -join "`n")
+            @($impressoesDoWindows | Where-Object { $saida -notcontains $_ }) | Should-BeCollection @()
+        }
+
+        It 'mantém os certificados do Debian' {
+            $saida = @(Invoke-WinPlaybook python3 listar_certificados.py padrao 2>&1)
+
+            $saida.Count | Should-BeGreaterThan ($impressoesDoWindows.Count + 100)
+        }
+
+        It 'usa a variável de certificados que o Windows define' {
+            $caminhoNoWindows = Join-Path $TestDrive 'minha-ca.pem'
+            $env:CURL_CA_BUNDLE = $caminhoNoWindows
+
+            try {
+                $saida = Invoke-WinPlaybook printenv CURL_CA_BUNDLE 2>&1 | Out-String
+            }
+            finally {
+                Remove-Item -LiteralPath 'Env:CURL_CA_BUNDLE'
+            }
+
+            $saida.Trim() | Should-Be ('/mnt/' + $caminhoNoWindows.Substring(0, 1).ToLowerInvariant() + $caminhoNoWindows.Substring(2).Replace('\', '/'))
+        }
+    }
+
     Context 'quando o perfil do Windows tem um .gitconfig' {
         BeforeAll {
             $perfilDeTeste = Join-Path $TestDrive 'perfil-com-git'

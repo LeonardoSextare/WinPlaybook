@@ -71,6 +71,13 @@ profile, in `C:\Users\<user>\.ansible\collections` and
 Ansible also reads `C:\Users\<user>\.ansible.cfg` when the project doesn't
 have an `ansible.cfg` file.
 
+Programs in the distribution trust the Windows root certificates, as well as
+the Debian ones. This way, on a network that inspects TLS or with an internal
+certificate authority installed on Windows, `ansible-galaxy`, the `uri` and
+`get_url` modules, `git`, and `pip` work as they do on Windows. If you set
+`SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, or `GIT_SSL_CAINFO`
+on Windows, the distribution uses your file.
+
 If you run `Install-WinPlaybook` again, it keeps the distribution and
 reinstalls Ansible and the shims.
 
