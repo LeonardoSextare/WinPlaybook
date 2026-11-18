@@ -60,6 +60,11 @@ with the same user, aliases, and sign-in: the `credential.helper` of Git for
 Windows becomes the Windows Git Credential Manager. This way, `ansible-galaxy`
 and the `git` module reach the private repositories that you already use on
 Windows.
+
+The `ansible-vault create` and `ansible-vault edit` commands open the editor
+in the Windows `EDITOR` variable, such as `code --wait`. Without an `EDITOR`
+variable, they open Notepad and wait for you to close the window.
+
 The collections and roles that `ansible-galaxy` installs go to your Windows
 profile, in `C:\Users\<user>\.ansible\collections` and
 `C:\Users\<user>\.ansible\roles`, as with Ansible installed on Windows.
