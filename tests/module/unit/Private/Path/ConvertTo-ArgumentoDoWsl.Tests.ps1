@@ -64,6 +64,8 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'o caminho depois de uma opção'; Argumento = '--inventory=C:\repo\hosts.yml'; Esperado = '--inventory=/mnt/c/repo/hosts.yml' }
             @{ Descricao = 'o caminho depois de @'; Argumento = '@C:\repo\vars\prod.yml'; Esperado = '@/mnt/c/repo/vars/prod.yml' }
             @{ Descricao = 'o caminho depois de uma opção e de @'; Argumento = '--extra-vars=@D:\vars\prod.yml'; Esperado = '--extra-vars=@/mnt/d/vars/prod.yml' }
+            @{ Descricao = 'o caminho no formato de uma URI, com uma barra antes da unidade'; Argumento = '/C:/repo/playbooks/site.yml'; Esperado = '/mnt/c/repo/playbooks/site.yml' }
+            @{ Descricao = 'o caminho no formato de uma URI depois de uma opção'; Argumento = '--config-file=/c:/repo/.ansible-lint'; Esperado = '--config-file=/mnt/c/repo/.ansible-lint' }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
