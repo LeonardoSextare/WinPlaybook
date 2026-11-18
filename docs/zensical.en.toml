@@ -37,6 +37,7 @@ nav = [
     { "Run Windows programs and scripts" = "windows-programs.md" },
     { "Configure Windows itself" = "localhost-windows.md" },
     { "Use autocomplete" = "autocomplete.md" },
+    { "Use with AI assistants" = "ai-assistants.md" },
     { "Update WinPlaybook" = "update.md" },
     { "Uninstall WinPlaybook" = "uninstall.md" },
   ] },
