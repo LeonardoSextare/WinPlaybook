@@ -16,7 +16,12 @@
     troca os caminhos da raiz de montagem pelos do Windows, com barras normais (/mnt/c/infra vira C:/infra, e /mnt/unc/servidor/infra vira
     //servidor/infra), que continuam válidos num JSON. Um script com shebang e finais de
     linha CRLF, como os que o Git for Windows grava, vai sem os CR pelo ansible.builtin.script,
-    e o arquivo do projeto não muda. A raiz de montagem vem da variável
+    e o arquivo do projeto não muda. Um arquivo .bat, .cmd, .exe, .com, .ps1, .py ou .sh da
+    raiz de montagem, que não tem a permissão de execução, conta como executável para o
+    Ansible, como um script de senha do vault ou de inventário, e roda pela extensão: o .bat
+    e o .cmd pelo cmd.exe, o .exe e o .com pela montagem com execução, o .ps1 pelo
+    powershell.exe, e o .py e o .sh pelo shebang, ou pelo Python do Ansible e pelo /bin/sh,
+    com os finais de linha CRLF do .sh convertidos. A raiz de montagem vem da variável
     WINPLAYBOOK_MOUNT_ROOT, e o padrão é /mnt/.
 
     .EXAMPLE
@@ -34,6 +39,9 @@ import importlib.util
 import io
 import os
 import re
+import shutil
+import stat
+import subprocess
 import sys
 import tempfile
 
@@ -101,7 +109,7 @@ def ajustar_shlex(modulo):
 
 
 PROGRAMA_DO_ANSIBLE = re.compile(r'^ansible(-[a-z]+)?$')
-programa_mostra_caminhos_do_windows = []
+programa_eh_do_ansible = []
 
 
 def mostrar_caminho_do_windows(ocorrencia):
@@ -116,11 +124,11 @@ def traduzir_saida(dados):
     return re.sub(padrao, mostrar_caminho_do_windows, dados)
 
 
-def mostra_caminhos_do_windows():
-    if not programa_mostra_caminhos_do_windows:
+def eh_programa_do_ansible():
+    if not programa_eh_do_ansible:
         programa = os.path.basename(getattr(sys, 'argv', [''])[0] or '')
-        programa_mostra_caminhos_do_windows.append(bool(PROGRAMA_DO_ANSIBLE.match(programa)))
-    return programa_mostra_caminhos_do_windows[0]
+        programa_eh_do_ansible.append(bool(PROGRAMA_DO_ANSIBLE.match(programa)))
+    return programa_eh_do_ansible[0]
 
 
 class SaidaComCaminhosDoWindows(io.BufferedIOBase):
@@ -129,7 +137,7 @@ class SaidaComCaminhosDoWindows(io.BufferedIOBase):
 
     def write(self, dados):
         tamanho = len(dados)
-        if mostra_caminhos_do_windows():
+        if eh_programa_do_ansible():
             dados = traduzir_saida(bytes(dados))
         self._original.write(dados)
         return tamanho
@@ -194,12 +202,112 @@ def ajustar_action_base(modulo):
     modulo.ActionBase._transfer_file = transfer_file_sem_crlf
 
 
+EXTENSOES_DE_SCRIPT = ('.bat', '.cmd', '.exe', '.com', '.ps1', '.py', '.sh')
+EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
+PASTA_DA_MONTAGEM_COM_EXECUCAO = '/opt/winplaybook/exec/'
+access_original = os.access
+popen_original = subprocess.Popen
+
+
+def ler_shebang(caminho):
+    try:
+        with open(caminho, 'rb') as arquivo:
+            primeira_linha = arquivo.readline(4096)
+    except OSError:
+        return None
+    if not primeira_linha.startswith(b'#!'):
+        return None
+    return os.fsdecode(primeira_linha[2:]).strip().split(None, 1) or None
+
+
+def caminho_do_script_do_windows(caminho):
+    if not isinstance(caminho, (str, bytes)):
+        return None
+    caminho = os.path.abspath(os.fsdecode(caminho))
+    raiz = os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/').rstrip('/') + '/'
+    if not caminho.startswith(raiz) or os.path.splitext(caminho)[1].lower() not in EXTENSOES_DE_SCRIPT:
+        return None
+    try:
+        modo = os.stat(caminho).st_mode
+    except (OSError, ValueError):
+        return None
+    if not stat.S_ISREG(modo) or modo & 0o111:
+        return None
+    return caminho
+
+
+def comando_do_script_do_windows(caminho):
+    caminho = caminho_do_script_do_windows(caminho)
+    if caminho is None:
+        return None
+    extensao = os.path.splitext(caminho)[1].lower()
+    if extensao in ('.bat', '.cmd'):
+        return [EXECUTAR_WINDOWS, caminho]
+    if extensao in ('.exe', '.com'):
+        relativo = caminho[len(os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/').rstrip('/') + '/'):]
+        caminho_com_execucao = PASTA_DA_MONTAGEM_COM_EXECUCAO + relativo
+        tem_montagem_com_execucao = re.match(r'^[a-z]/', relativo) and os.path.isfile(caminho_com_execucao)
+        return [EXECUTAR_WINDOWS, caminho_com_execucao] if tem_montagem_com_execucao else None
+    if extensao == '.ps1':
+        powershell = shutil.which('powershell.exe')
+        return [powershell, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', caminho] if powershell else None
+    if extensao == '.py':
+        return (ler_shebang(caminho) or [sys.executable]) + [caminho]
+    try:
+        with open(caminho, 'rb') as arquivo:
+            conteudo = os.fsdecode(arquivo.read().replace(b'\r\n', b'\n'))
+    except OSError:
+        return None
+    return (ler_shebang(caminho) or ['/bin/sh']) + ['-c', conteudo, caminho]
+
+
+def access_com_scripts_do_windows(caminho, modo, *args, **kwargs):
+    if modo & os.X_OK and eh_programa_do_ansible() and caminho_do_script_do_windows(caminho):
+        return access_original(caminho, modo & ~os.X_OK, *args, **kwargs)
+    return access_original(caminho, modo, *args, **kwargs)
+
+
+class PopenComScriptsDoWindows(popen_original):
+    def __init__(self, args, *outros, **opcoes):
+        if isinstance(args, (list, tuple)) and args and not opcoes.get('shell') and eh_programa_do_ansible():
+            comando = comando_do_script_do_windows(args[0])
+            if comando:
+                args = comando + list(args[1:])
+        super().__init__(args, *outros, **opcoes)
+
+
+def ajustar_arquivo(modulo):
+    is_executable = modulo.is_executable
+
+    def is_executable_com_scripts_do_windows(caminho):
+        return is_executable(caminho) or (eh_programa_do_ansible() and caminho_do_script_do_windows(caminho) is not None)
+
+    modulo.is_executable = is_executable_com_scripts_do_windows
+
+
 AJUSTES = {
     'ansible.parsing.dataloader': lambda modulo: ajustar_data_loader(modulo.DataLoader),
     'ansible.config.manager': ajustar_gerenciador_de_configuracao,
     'ansible.utils.shlex': ajustar_shlex,
     'ansible.plugins.action': ajustar_action_base,
+    'ansible.module_utils.common.file': ajustar_arquivo,
 }
+
+
+class CarregadorAjustado(importlib.abc.Loader):
+    def __init__(self, original, nome):
+        self._original = original
+        self._nome = nome
+
+    def create_module(self, especificacao):
+        return self._original.create_module(especificacao)
+
+    def exec_module(self, modulo):
+        self._original.exec_module(modulo)
+        AJUSTES[self._nome](modulo)
+
+    def __getattr__(self, nome):
+        return getattr(self._original, nome)
 
 
 class AjusteDoAnsible(importlib.abc.MetaPathFinder):
@@ -211,17 +319,13 @@ class AjusteDoAnsible(importlib.abc.MetaPathFinder):
             especificacao = importlib.util.find_spec(nome)
         finally:
             self.carregando = None
-        executar_modulo = especificacao.loader.exec_module
-
-        def executar_e_ajustar(modulo):
-            executar_modulo(modulo)
-            AJUSTES[nome](modulo)
-
-        especificacao.loader.exec_module = executar_e_ajustar
+        especificacao.loader = CarregadorAjustado(especificacao.loader, nome)
         return especificacao
 
 
 os.path.expanduser = expanduser
+os.access = access_com_scripts_do_windows
+subprocess.Popen = PopenComScriptsDoWindows
 sys.meta_path.insert(0, AjusteDoAnsible())
 sys.stdout = mostrar_saida_com_caminhos_do_windows(sys.stdout)
 sys.stderr = mostrar_saida_com_caminhos_do_windows(sys.stderr)

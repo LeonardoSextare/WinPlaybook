@@ -721,6 +721,68 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando um script de senha do vault ou de inventário está numa pasta do Windows' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'scripts-do-windows'
+            $null = New-Item -ItemType Directory -Path $projeto
+            $json = '{"todos": {"hosts": ["maquina-do-script"]}}'
+            $arquivos = @{
+                'senha.txt'      = "senha-do-teste`n"
+                'senha.bat'      = "@echo senha-do-teste`r`n"
+                'senha.cmd'      = "@echo senha-do-teste`r`n"
+                'senha.ps1'      = "Write-Output 'senha-do-teste'`r`n"
+                'senha.py'       = "print('senha-do-teste')`r`n"
+                'senha.sh'       = "#!/bin/sh`r`necho senha-do-teste`r`n"
+                'inventario.bat' = "@echo $json`r`n"
+                'inventario.ps1' = "Write-Output '$json'`r`n"
+                'inventario.py'  = "print('$json')`r`n"
+                'inventario.sh'  = "echo '$json'`r`n"
+                'segredo.yml'    = "valor: segredo-do-vault`n"
+            }
+            foreach ($nome in $arquivos.Keys) {
+                [IO.File]::WriteAllText((Join-Path $projeto $nome), $arquivos[$nome])
+            }
+            Copy-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('System')) 'hostname.exe') -Destination (Join-Path $projeto 'senha.exe')
+            [IO.File]::WriteAllText((Join-Path $projeto 'senha-do-exe.txt'), (hostname.exe | Out-String).Trim() + "`n")
+            Copy-Item -LiteralPath (Join-Path $projeto 'segredo.yml') -Destination (Join-Path $projeto 'segredo-do-exe.yml')
+            Push-Location $projeto
+            $null = Invoke-WinPlaybook ansible-vault encrypt --vault-password-file senha.txt segredo.yml 2>&1
+            $null = Invoke-WinPlaybook ansible-vault encrypt --vault-password-file senha-do-exe.txt segredo-do-exe.yml 2>&1
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'lê a senha do vault executando o <_>' -ForEach @('senha.bat', 'senha.cmd', 'senha.ps1', 'senha.py', 'senha.sh') {
+            $saida = Invoke-WinPlaybook ansible-vault view --vault-password-file $_ segredo.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*segredo-do-vault*'
+        }
+
+        It 'lê a senha do vault executando o senha.exe' {
+            $saida = Invoke-WinPlaybook ansible-vault view --vault-password-file senha.exe segredo-do-exe.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*segredo-do-vault*'
+        }
+
+        It 'lê a senha do vault do senha.txt como texto' {
+            $saida = Invoke-WinPlaybook ansible-vault view --vault-password-file senha.txt segredo.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*segredo-do-vault*'
+        }
+
+        It 'lê o inventário dinâmico executando o <_>' -ForEach @('inventario.bat', 'inventario.ps1', 'inventario.py', 'inventario.sh') {
+            $saida = Invoke-WinPlaybook ansible-inventory -i $_ --graph todos 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*@todos:*--maquina-do-script*'
+        }
+    }
+
     Context 'quando o ansible-vault abre um editor' {
         BeforeAll {
             $pastaDoEditor = Join-Path $TestDrive 'editor'
