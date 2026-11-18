@@ -13,6 +13,7 @@
         'Enable-WinPlaybookVSCodeExtension'
         'Install-WinPlaybook'
         'Invoke-WinPlaybook'
+        'Register-WinPlaybookArgumentCompleter'
         'Uninstall-WinPlaybook'
     )
     CmdletsToExport      = @()

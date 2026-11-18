@@ -28,6 +28,7 @@ Describe 'Uninstall-WinPlaybook' {
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
+        Mock Get-PerfilDoPowerShell -ModuleName WinPlaybook { Join-Path $TestDrive 'perfis/PowerShell/profile.ps1'; Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1' }
         Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-extensoes' }
     }
 
@@ -192,6 +193,26 @@ Describe 'Uninstall-WinPlaybook' {
             $impacto = (Get-Command Uninstall-WinPlaybook).ScriptBlock.Attributes | Where-Object { $_ -is [System.Management.Automation.CmdletBindingAttribute] } | ForEach-Object { $_.ConfirmImpact }
 
             "$impacto" | Should-Be 'High'
+        }
+    }
+
+    Context 'quando o autocomplete está ligado no perfil' {
+        BeforeEach {
+            Remove-Item -LiteralPath (Join-Path $TestDrive 'perfis') -Recurse -Force -ErrorAction SilentlyContinue
+            $null = Install-WinPlaybook
+            Add-Content -LiteralPath (Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1') -Value 'Set-Alias ll Get-ChildItem'
+        }
+
+        It 'apaga o perfil que só tinha a linha do autocomplete' {
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Test-Path -LiteralPath (Join-Path $TestDrive 'perfis/PowerShell/profile.ps1') | Should-BeFalse
+        }
+
+        It 'mantém as outras linhas do perfil' {
+            Uninstall-WinPlaybook -Confirm:$false
+
+            @(Get-Content -LiteralPath (Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1')) | Should-BeCollection @('Set-Alias ll Get-ChildItem')
         }
     }
 }

@@ -10,7 +10,8 @@
     WinPlaybook. A pasta escolhida com o -Path do Install-WinPlaybook fica, e só a pasta
     WinPlaybook criada dentro dela é apagada. A pasta .ssh do usuário que a instalação
     criou é apagada só se continuar vazia. As correções do Enable-WinPlaybookVSCodeExtension
-    na extensão Ansible do VS Code são desfeitas.
+    na extensão Ansible do VS Code são desfeitas. A linha do autocomplete sai dos perfis do
+    PowerShell, e um perfil que fica vazio é apagado.
 
     .EXAMPLE
     Uninstall-WinPlaybook
@@ -38,6 +39,9 @@
         Remove-PastaVazia -Pasta (Get-PastaDoSshDoUsuario)
     }
     Remove-PastaDoAnsibleVazia -PastaDoPerfil (Get-PastaDoPerfilDoUsuario)
+    foreach ($perfil in Get-PerfilDoPowerShell) {
+        Remove-AutocompleteDoPerfil -Perfil $perfil
+    }
     foreach ($extensao in Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode)) {
         Remove-PatchDaExtensaoAnsible -Caminho $extensao.Caminho
     }

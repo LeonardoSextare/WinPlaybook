@@ -1,11 +1,12 @@
 ﻿function Install-AnsibleNaDistribuicao {
     <#
     .SYNOPSIS
-    Instala o Ansible, o ansible-lint e o pywinrm na distribuição WSL do WinPlaybook, com o uv.
+    Instala o Ansible, o ansible-lint, o pywinrm e o argcomplete na distribuição WSL do WinPlaybook, com o uv.
 
     .DESCRIPTION
     Instala o uv no usuário winplaybook quando ele ainda não está lá e, num ambiente só, o
-    pacote ansible, com as collections dele, o ansible-lint, o pywinrm e os pacotes Python
+    pacote ansible, com as collections dele, o ansible-lint, o pywinrm, o argcomplete, que gera o
+    autocomplete dos comandos, e os pacotes Python
     pedidos. Os comandos do ansible-core, do ansible-lint e dos pacotes pedidos, como o
     molecule, ficam em ~/.local/bin. Um pacote pedido por URL ou caminho não expõe comandos.
 
@@ -53,7 +54,7 @@
         'for extra in "$@"; do set -- "$@" --with "$extra"; shift; done;'
         'ultima_saida="";'
         'for versao in $(uv python list 2> /dev/null | sed -n ''s/^cpython-\(3\.[0-9]*\)\.[0-9]*-linux.*/\1/p'' | sort -t. -k2 -n -r -u); do'
-        'if ultima_saida=$(uv tool install --force --python "$versao" "$pacote" --with-executables-from "$executaveis" --with pywinrm "$@" 2>&1) && ultima_saida=$("$HOME/.local/bin/ansible" --version 2>&1); then'
+        'if ultima_saida=$(uv tool install --force --python "$versao" "$pacote" --with-executables-from "$executaveis" --with pywinrm --with argcomplete "$@" 2>&1) && ultima_saida=$("$HOME/.local/bin/ansible" --version 2>&1); then'
         'site_packages=$("$HOME/.local/share/uv/tools/ansible/bin/python" -c ''import sysconfig; print(sysconfig.get_paths()["purelib"])'');'
         'printf ''%s'' "$caminhos_do_windows" | base64 -d > "$site_packages/winplaybook_caminhos_do_windows.py";'
         'printf ''import winplaybook_caminhos_do_windows\n'' > "$site_packages/winplaybook.pth";'

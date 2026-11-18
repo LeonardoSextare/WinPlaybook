@@ -29,6 +29,11 @@
     módulo pela pasta onde ele está instalado, então funcionam nas duas edições do
     PowerShell e acompanham as atualizações do módulo nessa pasta.
 
+    O perfil do PowerShell 7 e o do Windows PowerShell 5.1 (profile.ps1, em Documentos)
+    recebem uma linha que liga o autocomplete dos comandos do Ansible, pelo
+    Register-WinPlaybookArgumentCompleter. Um perfil que não existe é criado, e a
+    desinstalação tira a linha.
+
     Rode de novo para atualizar o Ansible, para trocar a versão ou os pacotes Python, ou
     depois de mudar o módulo de pasta. A instalação precisa do WSL e da internet.
 
@@ -190,6 +195,9 @@
         Install-RelayDoAgenteSsh -CaminhoDoExecutavel $caminhoDoRelay -PastaDosShims $pastaDosShims -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
         Install-RelayDeRede -CaminhoDoExecutavel $caminhoDoRelayDeRede -PastaDosShims $pastaDosShims -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
         Add-EntradaNoPathDoUsuario -Pasta $pastaDosShims
+        foreach ($perfil in Get-PerfilDoPowerShell) {
+            Add-AutocompleteNoPerfil -Perfil $perfil
+        }
     }
     finally {
         Remove-Item -LiteralPath $pastaDoExecutavel -Recurse -Force -ErrorAction SilentlyContinue

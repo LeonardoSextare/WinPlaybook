@@ -70,6 +70,30 @@ Describe 'Shim' {
         }
     }
 
+    Context 'quando o autocomplete está ligado' {
+        BeforeAll {
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao; Pasta = $pastaDosShims } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao); ShimFolder = $Pasta }
+            }
+            Register-WinPlaybookArgumentCompleter
+        }
+
+        AfterAll {
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'completa <Linha> com <Esperado>' -ForEach @(
+            @{ Linha = 'ansible-playbook --che'; Esperado = '--check' }
+            @{ Linha = 'ansible-galaxy.exe co'; Esperado = 'collection' }
+        ) {
+            $resultado = TabExpansion2 -inputScript $Linha -cursorColumn $Linha.Length
+
+            @($resultado.CompletionMatches | ForEach-Object { $_.CompletionText }) | Should-ContainCollection $Esperado
+        }
+    }
+
     Context 'quando é chamado pelo PowerShell' {
         It 'executa o playbook' {
             $saida = & (Join-Path $pastaDosShims 'ansible-playbook.ps1') site.yml 2>&1 | Out-String
