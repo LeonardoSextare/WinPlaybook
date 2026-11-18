@@ -104,6 +104,8 @@ PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
 UV = os.path.expanduser('~/.local/bin/uv')
 PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
+CHAVE_DO_LOCALHOST_WINDOWS = os.path.expanduser('~/.config/winplaybook/localhost_windows')
+KNOWN_HOSTS_DO_LOCALHOST_WINDOWS = os.path.expanduser('~/.config/winplaybook/known_hosts_localhost_windows')
 COMANDO_DO_AMBIENTE_PYTHON = re.compile(r'^(python[0-9.]*|pip[0-9.]*|pydoc[0-9.]*|activate.*|deactivate)$')
 NFT_DA_PONTE = '/usr/local/lib/winplaybook/nft'
 PORTA_DA_PONTE = 47999
@@ -683,6 +685,8 @@ preparar_certificados(ambiente['certificadosDoWindows'])
 marcar_etapa('certificados')
 preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))
 marcar_etapa('ambiente do projeto')
+if ambiente.get('localhostWindows'):
+    os.environ['WINPLAYBOOK_LOCALHOST_WINDOWS'] = json.dumps(dict(ambiente['localhostWindows'], chave=CHAVE_DO_LOCALHOST_WINDOWS, knownHosts=KNOWN_HOSTS_DO_LOCALHOST_WINDOWS))
 iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
 marcar_etapa('ponte de rede')
 mensagem_de_comando_ausente = os.environ.pop('WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE', '')

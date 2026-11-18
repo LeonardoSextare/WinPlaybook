@@ -28,6 +28,7 @@ nav = [
   { "Guias" = [
     { "Usar o VS Code" = "vscode.md" },
     { "Consultar os logs" = "logs.md" },
+    { "Configurar o próprio Windows" = "localhost-windows.md" },
   ] },
   { "Conceitos" = [
     { "Por que o WinPlaybook" = "why-winplaybook.md" },

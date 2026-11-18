@@ -63,4 +63,12 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
 
         $script.Contains("os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/')") | Should-BeTrue
     }
+
+    It 'cria o host localhost_windows implícito, ligado ao Windows pelo SSH' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains("HOST_DA_MAQUINA_WINDOWS = 'localhost_windows'") | Should-BeTrue
+        $script.Contains("'ansible.inventory.manager': ajustar_gerenciador_de_inventario") | Should-BeTrue
+        $script.Contains("'ansible_shell_type': 'cmd'") | Should-BeTrue
+    }
 }

@@ -88,6 +88,8 @@ jobs:
     name: Testes e2e (${{ matrix.edicao.nome }})
     runs-on: windows-2025
     timeout-minutes: 30
+    env:
+      WINPLAYBOOK_TEST_MAQUINA_DESCARTAVEL: 'sim'
     strategy:
       fail-fast: false
       matrix:

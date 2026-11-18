@@ -26,6 +26,7 @@ Describe 'Install-WinPlaybook' {
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
+        Mock Test-SessaoInterativa -ModuleName WinPlaybook { $false }
         Mock Get-PerfilDoPowerShell -ModuleName WinPlaybook { Join-Path $TestDrive 'perfis/PowerShell/profile.ps1'; Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1' }
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
@@ -488,6 +489,30 @@ Describe 'Install-WinPlaybook' {
 
             $linhas = @(Get-Content -LiteralPath (Join-Path $TestDrive "perfis/$_/profile.ps1"))
             $linhas | Should-ContainCollection (InModuleScope WinPlaybook { Get-LinhaDoAutocomplete })
+        }
+    }
+
+    Context 'quando o localhost_windows entra na instalação' {
+        BeforeEach {
+            Mock Initialize-LocalhostWindows -ModuleName WinPlaybook { }
+        }
+
+        It 'liga o localhost_windows sem perguntar com -EnableLocalhost' {
+            $null = Install-WinPlaybook -EnableLocalhost
+
+            Should-Invoke Initialize-LocalhostWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Ligar }
+        }
+
+        It 'mantém a configuração do localhost_windows numa nova instalação' {
+            $null = Install-WinPlaybook
+            $configuracao = InModuleScope WinPlaybook { Get-Configuracao }
+            $configuracao['LocalhostWindowsPort'] = 47022
+            $configuracao['LocalhostWindowsUser'] = 'eu'
+            InModuleScope WinPlaybook -Parameters @{ Configuracao = $configuracao } { Save-Configuracao -Configuracao $Configuracao }
+
+            $null = Install-WinPlaybook
+
+            (InModuleScope WinPlaybook { Get-Configuracao })['LocalhostWindowsPort'] | Should-Be 47022
         }
     }
 }

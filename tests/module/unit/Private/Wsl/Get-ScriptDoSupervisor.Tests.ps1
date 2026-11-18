@@ -98,4 +98,11 @@ Describe 'Get-ScriptDoSupervisor' {
 
         $script | Should-BeLikeString "*signal.signal(signal.$_, guardar_sinal_de_fim)*"
     }
+
+    It 'passa ao Ansible o localhost_windows, com a chave da distribuição' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("CHAVE_DO_LOCALHOST_WINDOWS = os.path.expanduser('~/.config/winplaybook/localhost_windows')") | Should-BeTrue
+        $script.Contains("os.environ['WINPLAYBOOK_LOCALHOST_WINDOWS'] = json.dumps(") | Should-BeTrue
+    }
 }

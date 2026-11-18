@@ -423,6 +423,103 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o localhost_windows está desligado' {
+        BeforeAll {
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'não tem o host localhost_windows' {
+            $saida = Invoke-WinPlaybook ansible localhost_windows --list-hosts 2>&1 | Out-String
+
+            $saida | Should-BeLikeString '*hosts (0)*'
+        }
+    }
+
+    Context 'quando o localhost_windows está ligado' {
+        BeforeAll {
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao); LocalhostWindowsPort = 47022; LocalhostWindowsUser = 'eu' }
+            }
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'tem o host localhost_windows sem que ele esteja no inventário' {
+            $saida = Invoke-WinPlaybook ansible localhost_windows --list-hosts 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*hosts (1)*localhost_windows*'
+        }
+
+        It 'conecta no Windows pelo SSH do 127.0.0.1, com o shell do cmd' {
+            $saida = Invoke-WinPlaybook ansible-inventory --host localhost_windows 2> $null | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $variaveis = $saida | ConvertFrom-Json
+            $variaveis.ansible_host | Should-Be '127.0.0.1'
+            $variaveis.ansible_port | Should-Be 47022
+            $variaveis.ansible_user | Should-Be 'eu'
+            $variaveis.ansible_connection | Should-Be 'ssh'
+            $variaveis.ansible_shell_type | Should-Be 'cmd'
+        }
+
+        It 'deixa o localhost_windows fora do grupo all, como o localhost' {
+            $saida = Invoke-WinPlaybook ansible all --list-hosts 2>&1 | Out-String
+
+            $saida | Should-BeLikeString '*hosts (0)*'
+        }
+    }
+
+    Context 'quando o localhost_windows é ligado numa máquina descartável' -Skip:(-not $env:WINPLAYBOOK_TEST_MAQUINA_DESCARTAVEL) {
+        BeforeAll {
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-do-localhost-windows/relay-de-rede.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-do-localhost-windows'
+                Distribuicao   = $nomeDaDistribuicao
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelayDeRede -Caminho $CaminhoDoRelay
+                Install-RelayDeRede -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims }
+            }
+            Enable-WinPlaybookLocalhost -Confirm:$false
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            Disable-WinPlaybookLocalhost -Confirm:$false
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'executa um módulo do ansible.windows no próprio Windows' {
+            $saida = Invoke-WinPlaybook ansible localhost_windows -m ansible.windows.win_ping 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*"ping": "pong"*'
+        }
+
+        It 'executa os comandos com o usuário atual do Windows' {
+            $saida = Invoke-WinPlaybook ansible localhost_windows -m ansible.windows.win_command -a 'whoami' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString "*$($env:USERNAME)*"
+        }
+    }
+
     Context 'quando a pasta do projeto está numa <Descricao>' -ForEach @(
         @{ Descricao = 'unidade criada com o subst'; Tipo = 'subst' }
         @{ Descricao = 'unidade de rede mapeada'; Tipo = 'rede' }

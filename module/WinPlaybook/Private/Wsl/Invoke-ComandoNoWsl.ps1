@@ -169,6 +169,10 @@
     if ($registraAsEtapasNoLog) {
         $ambienteDoComando['log'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoLog) -RaizDeMontagem $raizDeMontagem
     }
+    $temLocalhostWindows = [bool] $configuracao['LocalhostWindowsPort']
+    if ($temLocalhostWindows) {
+        $ambienteDoComando['localhostWindows'] = @{ porta = [int] $configuracao['LocalhostWindowsPort']; usuario = $configuracao['LocalhostWindowsUser'] }
+    }
     $criaShimsDoProjeto = $temPastaDosShims -and [bool] $configuracao.ShimPowerShellPath
     if ($criaShimsDoProjeto) {
         $caminhoDosComandosDoProjeto = Join-Path -Path (Split-Path -Path (Get-CaminhoDoSupervisor) -Parent) -ChildPath "comandos-do-projeto-$([guid]::NewGuid().ToString('N')).txt"

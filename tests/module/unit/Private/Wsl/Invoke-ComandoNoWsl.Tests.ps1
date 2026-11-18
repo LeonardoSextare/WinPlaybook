@@ -552,4 +552,14 @@ Describe 'Invoke-ComandoNoWsl' {
             Test-Path -LiteralPath (Join-Path $TestDrive 'configuracao\logs') | Should-BeFalse
         }
     }
+
+    It 'passa ao supervisor a porta e o usuário do localhost_windows, quando ele está ligado' {
+        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; ShimPowerShellPath = $null; SshAgentPipe = $null; LocalhostWindowsPort = 47022; LocalhostWindowsUser = 'eu' } }
+        Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+        $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+        $ambiente.localhostWindows.porta | Should-Be 47022
+        $ambiente.localhostWindows.usuario | Should-Be 'eu'
+    }
 }
