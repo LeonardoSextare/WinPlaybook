@@ -15,6 +15,7 @@
         'Invoke-WinPlaybook'
         'Register-WinPlaybookArgumentCompleter'
         'Uninstall-WinPlaybook'
+        'Update-WinPlaybook'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

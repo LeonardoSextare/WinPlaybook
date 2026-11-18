@@ -184,20 +184,19 @@ ele. O WinPlaybook encontra o agente sozinho.
 
 ## Atualizar
 
-Atualize o módulo com o comando da sua versão do PowerShell:
-
-- PowerShell 7.4 em diante: `Update-PSResource WinPlaybook`
-- Windows PowerShell 5.1: `Update-Module WinPlaybook`
-
-Se você instalou pelo código-fonte, apague a pasta
-`C:\Users\<usuário>\Documents\PowerShell\Modules\WinPlaybook` e repita os
-passos 1 e 2 com o código novo.
-
-Depois, atualize o Ansible e os comandos:
+Atualize o módulo, o Ansible e os comandos de uma vez:
 
 ```powershell
-Install-WinPlaybook
+Update-WinPlaybook
 ```
+
+O WinPlaybook avisa quando existe uma versão nova, na primeira vez que você
+roda um comando dele no terminal. Para desligar o aviso, defina a variável de
+ambiente `WINPLAYBOOK_UPDATE_CHECK` como `off`.
+
+Se você instalou pelo código-fonte, apague a pasta
+`C:\Users\<usuário>\Documents\PowerShell\Modules\WinPlaybook`, repita os
+passos 1 e 2 com o código novo e rode o `Install-WinPlaybook`.
 
 ## Desinstalar
 

@@ -19,6 +19,8 @@
     Cifra o texto que chega pelo pipeline.
     #>
 
+    Show-AvisoDeVersaoNova -VersaoAtual $MyInvocation.MyCommand.Module.Version
+
     $temComando = $args.Count -gt 0
     if (-not $temComando) {
         throw (Get-Mensagem -Nome 'InformeOComando')
