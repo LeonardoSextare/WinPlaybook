@@ -44,15 +44,22 @@
     $projeto = Join-Path $TestDrive 'projeto'
     Copy-Item (Join-Path $PSScriptRoot '../data/projects/ola') $projeto -Recurse
     Push-Location $projeto
+
+    $vigia = Start-VigiaDeTesteTravado -Segundos 300
 }
 
 AfterAll {
+    Stop-VigiaDeTesteTravado -Vigia $vigia
     Pop-Location
     Remove-Module WinPlaybook
     $env:LOCALAPPDATA = $localAppDataOriginal
 }
 
 Describe 'Shim' {
+    BeforeEach {
+        Update-VigiaDeTesteTravado -Vigia $vigia
+    }
+
     Context 'quando os shims vêm dos comandos do ambiente do Ansible' {
         It 'cria o shim do <_>' -ForEach @('ansible-playbook', 'ansible-lint', 'ansible-galaxy') {
             Test-Path -LiteralPath (Join-Path $pastaDosShims "$_.ps1") | Should-BeTrue

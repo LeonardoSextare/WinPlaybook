@@ -416,9 +416,12 @@ BeforeAll {
             }
         }
     }
+
+    $vigia = Start-VigiaDeTesteTravado -Segundos 300
 }
 
 AfterAll {
+    Stop-VigiaDeTesteTravado -Vigia $vigia
     Remove-Module WinPlaybook
     $env:LOCALAPPDATA = $localAppDataOriginal
     foreach ($variavel in $variaveisQueMudamOAnsible) {
@@ -427,6 +430,10 @@ AfterAll {
 }
 
 Describe 'Comportamento nativo do Ansible' {
+    BeforeEach {
+        Update-VigiaDeTesteTravado -Vigia $vigia
+    }
+
     Context 'quando <Descricao>' -ForEach $cenarios {
         BeforeAll {
             $cenario = $_
