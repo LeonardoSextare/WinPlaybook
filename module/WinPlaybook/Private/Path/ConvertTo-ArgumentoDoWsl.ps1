@@ -60,7 +60,7 @@
         [hashtable] $DestinoDeUnidade = @{}
     )
 
-    $null = $Argumento -match '^(?<prefixo>(--[\w-]+=)?@?)(?<valor>.*)$'
+    $null = $Argumento -match '(?s)^(?<prefixo>(--[\w-]+=)?@?)(?<valor>.*)$'
     $prefixo = $Matches.prefixo
     $valor = $Matches.valor
     $valor = $valor -replace '^/(?=[A-Za-z]:[\\/])', ''
