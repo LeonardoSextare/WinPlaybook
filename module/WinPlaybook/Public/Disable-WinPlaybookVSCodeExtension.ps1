@@ -12,7 +12,7 @@
     Disable-WinPlaybookVSCodeExtension
 
     .LINK
-    https://leonardosextare.github.io/WinPlaybook/pt-br/vscode/
+    https://leonardosextare.github.io/WinPlaybook/pt-br/disable-winplaybookvscodeextension/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

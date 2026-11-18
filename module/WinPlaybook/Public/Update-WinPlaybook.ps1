@@ -17,7 +17,7 @@
     Update-WinPlaybook
 
     .LINK
-    https://leonardosextare.github.io/WinPlaybook/pt-br/install/
+    https://leonardosextare.github.io/WinPlaybook/pt-br/update-winplaybook/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

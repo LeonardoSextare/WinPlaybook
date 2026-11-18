@@ -77,6 +77,9 @@
 
     .LINK
     https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/install-winplaybook/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([pscustomobject])]

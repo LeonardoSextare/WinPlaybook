@@ -22,6 +22,9 @@
     Uninstall-WinPlaybook -Confirm:$false
 
     Desinstala sem pedir confirmação.
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/uninstall-winplaybook/
     #>
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
     [OutputType([void])]
