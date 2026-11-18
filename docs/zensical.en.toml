@@ -24,6 +24,9 @@ site_dir = "site/en"
 nav = [
   { "Home" = "index.md" },
   { "Installation" = "install.md" },
+  { "Guides" = [
+    { "Use VS Code" = "vscode.md" },
+  ] },
   { "Concepts" = [
     { "Why WinPlaybook" = "why-winplaybook.md" },
     { "How it works" = "how-it-works.md" },

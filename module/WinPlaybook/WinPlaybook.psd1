@@ -9,6 +9,8 @@
     CompatiblePSEditions = @('Desktop', 'Core')
 
     FunctionsToExport    = @(
+        'Disable-WinPlaybookVSCodeExtension'
+        'Enable-WinPlaybookVSCodeExtension'
         'Install-WinPlaybook'
         'Invoke-WinPlaybook'
         'Uninstall-WinPlaybook'

@@ -28,6 +28,7 @@ Describe 'Uninstall-WinPlaybook' {
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
+        Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-extensoes' }
     }
 
     BeforeEach {
@@ -125,6 +126,19 @@ Describe 'Uninstall-WinPlaybook' {
             Uninstall-WinPlaybook -Confirm:$false
 
             Test-Path -LiteralPath $pastaDeConfiguracao | Should-BeFalse
+        }
+
+        It 'desfaz as correções da extensão Ansible do VS Code' {
+            $pastaDasExtensoes = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-extensoes')
+            $null = New-Item -ItemType Directory -Path (Join-Path $pastaDasExtensoes 'redhat.ansible-26.11.0')
+            Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { $pastaDasExtensoes }
+            Mock Remove-PatchDaExtensaoAnsible -ModuleName WinPlaybook { }
+
+            Uninstall-WinPlaybook -Confirm:$false
+
+            Should-Invoke Remove-PatchDaExtensaoAnsible -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Caminho -eq (Join-Path $pastaDasExtensoes 'redhat.ansible-26.11.0')
+            }
         }
     }
 
