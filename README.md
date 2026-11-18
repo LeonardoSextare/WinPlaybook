@@ -1,52 +1,50 @@
-# WinPlaybook
+**Português** | [English](README.en.md)
 
-[![Módulo](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/module.yml/badge.svg?branch=main)](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/module.yml)
-[![Documentação](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/docs.yml)
-[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/WinPlaybook?label=PowerShell%20Gallery)](https://www.powershellgallery.com/packages/WinPlaybook)
+[![Build](https://img.shields.io/github/actions/workflow/status/LeonardoSextare/WinPlaybook/module.yml?branch=main&label=build)](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/module.yml)
+[![Testes](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FLeonardoSextare%2FWinPlaybook%2Fbadges%2Ftestes.json)](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/module.yml)
+[![Cobertura](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2FLeonardoSextare%2FWinPlaybook%2Fbadges%2Fcobertura.json)](https://github.com/LeonardoSextare/WinPlaybook/actions/workflows/module.yml)
+[![Versão](https://img.shields.io/powershellgallery/v/WinPlaybook?label=vers%C3%A3o)](https://www.powershellgallery.com/packages/WinPlaybook)
 [![Downloads](https://img.shields.io/powershellgallery/dt/WinPlaybook?label=downloads)](https://www.powershellgallery.com/packages/WinPlaybook)
 [![Licença](https://img.shields.io/github/license/LeonardoSextare/WinPlaybook?label=licen%C3%A7a)](LICENSE)
 
-Use o Ansible no Windows como se ele estivesse instalado localmente.
+# WinPlaybook
 
-O WinPlaybook executa o Ansible numa distribuição WSL própria e coloca o
-`ansible-playbook`, o `ansible-lint` e os outros comandos do Ansible no `PATH`
-do Windows. O terminal, os scripts e ferramentas como a extensão Ansible do
-VS Code chamam esses comandos sem saber que eles rodam no Linux.
+**Ansible no Windows, como se fosse nativo.**
 
-> **Status:** o projeto está na versão 0, então qualquer release pode trazer
-> breaking changes. A versão da PowerShell Gallery ainda usa o Docker Desktop;
-> a versão com o WSL, descrita aqui, sai no próximo release.
+Instale e rode seus playbooks direto do Windows. O Ansible enxerga suas pastas,
+seus programas e suas configurações, e você não precisa mudar nada no seu jeito
+de trabalhar.
 
-## Instalação
+> [!WARNING]
+> O projeto ainda está em desenvolvimento e em fase de testes. Encontrou algum
+> problema? Abra uma [issue](https://github.com/LeonardoSextare/WinPlaybook/issues).
 
-Você precisa do Windows 10 ou 11, do WSL 2 e do Windows PowerShell 5.1 ou do
-PowerShell 7.4 em diante. No PowerShell, execute:
+## Início rápido
 
-```powershell
-Install-Module WinPlaybook -Scope CurrentUser
-Install-WinPlaybook
-```
+- [Instalação](https://leonardosextare.github.io/WinPlaybook/pt-br/install/)
+- [Seu primeiro playbook](https://leonardosextare.github.io/WinPlaybook/pt-br/first-playbook/)
+- [Recursos do WinPlaybook](https://leonardosextare.github.io/WinPlaybook/pt-br/features/)
+- [Usar o VS Code](https://leonardosextare.github.io/WinPlaybook/pt-br/vscode/)
+- [Documentação completa](https://leonardosextare.github.io/WinPlaybook/)
 
-Na primeira vez, o `Install-WinPlaybook` cria a distribuição WSL
-`WinPlaybook`, com o Debian, e instala o Ansible nela. Depois, teste com
-`ansible --version`.
+## Pilares
 
-As outras formas de instalação, como pelo código-fonte, estão na
-[documentação](https://leonardosextare.github.io/WinPlaybook/pt-br/install/).
-
-## Uso
-
-Use os comandos do Ansible como no Linux, com caminhos do Windows:
-
-```powershell
-ansible-playbook -i .\inventory\prod.yml .\playbooks\site.yml
-```
-
-## Documentação
-
-A [documentação](https://leonardosextare.github.io/WinPlaybook/), em
-português e inglês, explica a instalação e o funcionamento do WinPlaybook.
+- **Ansible nativo no Windows:** você usa o Ansible como qualquer programa do
+  Windows, sem precisar entender de Linux.
+- **Ansible de verdade:** é o Ansible oficial. Os playbooks são escritos do
+  mesmo jeito, e a documentação oficial continua valendo.
+- **Menos invasivo:** o WinPlaybook só mexe no que precisa. Suas distribuições
+  WSL, as configurações do VS Code e as suas chaves SSH ficam como estão.
+- **Sai sem deixar rastro:** um `Uninstall-WinPlaybook` e tudo volta a ser
+  como era. Se um comando falhar no meio, nada fica pela metade.
 
 ## Licença
 
-[MIT](LICENSE)
+Software livre, sob a licença [MIT](LICENSE). Use, modifique e distribua à
+vontade.
+
+## Aviso legal
+
+O WinPlaybook é um projeto independente e não tem vínculo com a Red Hat, com o
+projeto Ansible nem com a Microsoft. Ansible é marca registrada da Red Hat,
+Inc., e Windows é marca registrada da Microsoft Corporation.
