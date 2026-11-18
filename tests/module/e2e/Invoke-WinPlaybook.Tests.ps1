@@ -9,9 +9,7 @@
 
     $localAppDataOriginal = $env:LOCALAPPDATA
     $env:LOCALAPPDATA = Join-Path $TestDrive 'local'
-    InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-        Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-    }
+    Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
 
     $projetoOla = Join-Path $PSScriptRoot '../data/projects/ola'
     $projetoComViolacoesDeLint = Join-Path $PSScriptRoot '../data/projects/violacao-de-lint'
@@ -381,9 +379,7 @@ Describe 'Invoke-WinPlaybook' {
         AfterAll {
             Pop-Location
             Stop-AgenteSshFalso -Agente $agente
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'o ssh da distribuição usa as chaves do agente' {
@@ -449,9 +445,7 @@ Describe 'Invoke-WinPlaybook' {
 
         AfterAll {
             Pop-Location
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'tem o host localhost_windows sem que ele esteja no inventário' {
@@ -500,9 +494,7 @@ Describe 'Invoke-WinPlaybook' {
         AfterAll {
             Pop-Location
             Disable-WinPlaybookLocalhost -Confirm:$false
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'executa um módulo do ansible.windows no próprio Windows' {
@@ -1035,9 +1027,7 @@ Describe 'Invoke-WinPlaybook' {
 
         AfterAll {
             Pop-Location
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'cria o shim da ferramenta do projeto' {
@@ -1191,9 +1181,7 @@ Describe 'Invoke-WinPlaybook' {
         AfterAll {
             Pop-Location
             Stop-Process -Id $processoDoServidor.Id -Force -ErrorAction SilentlyContinue
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'alcança o serviço do Windows pelo <_> da distribuição' -ForEach @('127.0.0.1', 'localhost', '::1') {
@@ -1241,9 +1229,7 @@ Describe 'Invoke-WinPlaybook' {
 
         AfterAll {
             Pop-Location
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'executa o comando sem o SSH_AUTH_SOCK' {
@@ -1292,9 +1278,7 @@ Describe 'Invoke-WinPlaybook' {
 
         AfterAll {
             Pop-Location
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'explica como instalar de novo' {
