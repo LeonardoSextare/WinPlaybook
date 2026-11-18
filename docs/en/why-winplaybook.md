@@ -23,6 +23,8 @@ this: the editor window stays on Windows, but the terminal, the files, and some
 of the extensions run on Linux, and you have to install those extensions
 again.
 
+---
+
 ## Why its own WSL distribution
 
 WinPlaybook adds the Ansible commands to your Windows `PATH` and runs each one
@@ -42,4 +44,4 @@ needs, and `Uninstall-WinPlaybook` deletes all of it.
 
 In exchange, the first installation downloads Debian and Ansible and takes a
 few minutes, and each command takes a little longer to start. These and other
-limitations are in [How it works](how-it-works.md#limitations).
+limitations are in [Known limitations](limitations.md).

@@ -15,6 +15,8 @@ The logs are in `%LOCALAPPDATA%\WinPlaybook\logs`, one file per day, such as
 Get-Content "$env:LOCALAPPDATA\WinPlaybook\logs\winplaybook-$(Get-Date -Format yyyy-MM-dd).log" -Tail 20
 ```
 
+---
+
 ## Choose the detail
 
 The `WINPLAYBOOK_LOG` environment variable chooses the level:
@@ -32,9 +34,13 @@ For the current PowerShell session:
 $env:WINPLAYBOOK_LOG = 'debug'
 ```
 
-At the `debug` level, the command arguments go to the log. If you pass
-passwords in the arguments, such as in `-e password=...`, go back to `info`
-afterwards.
+!!! warning "Passwords in the log"
+
+    At the `debug` level, the command arguments go to the log. If you pass
+    passwords in the arguments, such as in `-e password=...`, go back to `info`
+    afterwards.
+
+---
 
 ## Attach to an issue
 
