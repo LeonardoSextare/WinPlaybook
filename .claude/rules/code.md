@@ -156,6 +156,11 @@ Funções privadas:
   faria no Windows (o `known_hosts`, por exemplo).
 - A configuração fica em `%LOCALAPPDATA%\WinPlaybook\settings.json`, em lugar
   fixo, e só as funções de `Settings/` leem e gravam esse arquivo.
+- A extensão Ansible do VS Code só muda pelo
+  `Enable-WinPlaybookVSCodeExtension`, que guarda cada arquivo original ao
+  lado dele, com `.winplaybook-original`. O WinPlaybook não altera as
+  configurações do VS Code: a documentação diz o que o usuário põe no
+  `settings.json`, porque ele pode ter perfis e configurações por projeto.
 - A desinstalação desfaz toda alteração que o WinPlaybook fez no sistema,
   seja na instalação ou em qualquer outro comando, como a distribuição
   `WinPlaybook`, a pasta dos shims, a entrada no `PATH` do usuário e a

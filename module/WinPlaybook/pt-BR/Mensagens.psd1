@@ -1,4 +1,9 @@
 ﻿@{
+    AtivarExtensaoAnsible             = 'Aplicar à extensão Ansible do VS Code, em {0}, as correções do WinPlaybook para ela funcionar no Windows'
+    DesativarExtensaoAnsible          = 'Desfazer as correções do WinPlaybook na extensão Ansible do VS Code, em {0}'
+    ExtensaoAnsibleNaoEncontrada      = 'A extensão Ansible do VS Code (redhat.ansible) não foi encontrada em {0}. Instale a versão que o WinPlaybook testou com: code --install-extension redhat.ansible@{1}'
+    PatchDaExtensaoAnsibleNaoAplicado = 'Não foi possível corrigir a extensão Ansible do VS Code em {0}: o arquivo {1} não tem o trecho esperado da versão {2}. Reinstale a extensão com: code --install-extension redhat.ansible@{2} --force'
+    VersaoDaExtensaoAnsibleNaoTestada = 'A extensão Ansible do VS Code está na versão {0}, que o WinPlaybook ainda não testou. Instale a versão testada com: code --install-extension redhat.ansible@{1} e desligue a atualização automática dela. Veja: https://leonardosextare.github.io/WinPlaybook/pt-br/vscode/'
     AnsibleNaoInstalado        = 'Não foi possível instalar o Ansible na distribuição WSL {0}. Confira a versão do Ansible, os pacotes Python e a conexão com a internet, e rode o Install-WinPlaybook de novo. O uv respondeu: {1}'
     CaminhoNaoAbsoluto         = 'O caminho ''{0}'' não é um caminho absoluto do Windows.'
     ComandoAusenteNoWsl        = 'WinPlaybook: comando {0} ausente na distribuição WSL. Rode o Install-WinPlaybook para atualizar os comandos.'
