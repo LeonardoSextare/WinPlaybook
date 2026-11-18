@@ -4,10 +4,12 @@
     Apaga a distribuição WSL do WinPlaybook e os shims de comando, e tira a pasta deles do Path do usuário.
 
     .DESCRIPTION
-    A distribuição WinPlaybook é apagada com tudo o que há nela, como as collections e as
-    roles que o ansible-galaxy instalou e as chaves SSH guardadas no Linux. Por isso o
-    comando pede confirmação; use -Confirm:$false para pular. Também apaga a configuração e os logs do
-    WinPlaybook. A pasta escolhida com o -Path do Install-WinPlaybook fica, e só a pasta
+    A distribuição WinPlaybook é apagada com tudo o que há nela, como os ambientes dos
+    projetos e a chave do localhost_windows. Por isso o comando pede confirmação; use
+    -Confirm:$false para pular. As collections e as roles que o ansible-galaxy instalou
+    ficam no perfil do Windows, em .ansible\collections e .ansible\roles, e essas pastas só
+    são apagadas se estiverem vazias. Também desliga o localhost_windows e apaga a
+    configuração e os logs do WinPlaybook. A pasta escolhida com o -Path do Install-WinPlaybook fica, e só a pasta
     WinPlaybook criada dentro dela é apagada. A pasta .ssh do usuário que a instalação
     criou é apagada só se continuar vazia. As correções do Enable-WinPlaybookVSCodeExtension
     na extensão Ansible do VS Code são desfeitas. A linha do autocomplete sai dos perfis do
