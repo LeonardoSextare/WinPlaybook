@@ -139,6 +139,18 @@ no disco da distribuição, e a pasta do projeto não ganha uma `.venv`.
 Uma ferramenta que o projeto declara, como o `yamllint`, ganha um comando no
 Windows depois do primeiro comando do WinPlaybook na pasta do projeto.
 
+## Usar o autocomplete no PowerShell
+
+Depois da instalação, num terminal novo do PowerShell, a tecla Tab completa as
+opções dos comandos do Ansible, como `ansible-playbook --che` para `--check`, e
+os subcomandos, como `ansible-galaxy co` para `collection`. Os caminhos
+continuam sendo completados como em qualquer comando. Para isso, o
+`Install-WinPlaybook` acrescenta uma linha ao perfil do PowerShell 7 e ao do
+Windows PowerShell, e o `Uninstall-WinPlaybook` a tira.
+
+Num projeto com ambiente próprio, o autocomplete precisa do pacote
+`argcomplete` nas dependências do `pyproject.toml`.
+
 ## Usar chaves SSH com passphrase
 
 O Ansible não responde ao pedido de passphrase de uma chave SSH. Para usar

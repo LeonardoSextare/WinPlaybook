@@ -139,6 +139,18 @@ environment is on the distribution disk, and the project folder doesn't get a
 A tool that the project declares, such as `yamllint`, gets a command on
 Windows after the first WinPlaybook command in the project folder.
 
+## Use autocomplete in PowerShell
+
+After the installation, in a new PowerShell terminal, the Tab key completes the
+options of the Ansible commands, such as `ansible-playbook --che` to
+`--check`, and the subcommands, such as `ansible-galaxy co` to `collection`.
+Paths are still completed as in any command. For this, `Install-WinPlaybook`
+adds a line to the PowerShell 7 profile and to the Windows PowerShell profile,
+and `Uninstall-WinPlaybook` removes it.
+
+In a project with its own environment, autocomplete needs the `argcomplete`
+package in the `pyproject.toml` dependencies.
+
 ## Use SSH keys with a passphrase
 
 Ansible doesn't answer the passphrase prompt of an SSH key. To use a key with

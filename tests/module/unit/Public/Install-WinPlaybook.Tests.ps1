@@ -26,6 +26,7 @@ Describe 'Install-WinPlaybook' {
         Mock Get-PastaDoSshDoUsuario -ModuleName WinPlaybook { $pastaDoSsh }
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
+        Mock Get-PerfilDoPowerShell -ModuleName WinPlaybook { Join-Path $TestDrive 'perfis/PowerShell/profile.ps1'; Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1' }
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
         $null = New-Item -ItemType File -Path $powerShellAtual, $powerShellDesktop -Force
@@ -461,6 +462,19 @@ Describe 'Install-WinPlaybook' {
             $null = Install-WinPlaybook
 
             (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
+        }
+    }
+
+    Context 'quando liga o autocomplete' {
+        BeforeEach {
+            Remove-Item -LiteralPath (Join-Path $TestDrive 'perfis') -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        It 'acrescenta ao perfil do <_> a linha do autocomplete' -ForEach @('PowerShell', 'WindowsPowerShell') {
+            $null = Install-WinPlaybook
+
+            $linhas = @(Get-Content -LiteralPath (Join-Path $TestDrive "perfis/$_/profile.ps1"))
+            $linhas | Should-ContainCollection (InModuleScope WinPlaybook { Get-LinhaDoAutocomplete })
         }
     }
 }

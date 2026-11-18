@@ -156,6 +156,9 @@ Funções privadas:
   faria no Windows (o `known_hosts`, por exemplo).
 - A configuração fica em `%LOCALAPPDATA%\WinPlaybook\settings.json`, em lugar
   fixo, e só as funções de `Settings/` leem e gravam esse arquivo.
+- Nos perfis do PowerShell (o `profile.ps1` do PowerShell 7 e o do Windows
+  PowerShell, em Documentos), o WinPlaybook acrescenta só a linha do
+  autocomplete, e a desinstalação a tira. Um perfil que fica vazio é apagado.
 - A extensão Ansible do VS Code só muda pelo
   `Enable-WinPlaybookVSCodeExtension`, que guarda cada arquivo original ao
   lado dele, com `.winplaybook-original`. O WinPlaybook não altera as

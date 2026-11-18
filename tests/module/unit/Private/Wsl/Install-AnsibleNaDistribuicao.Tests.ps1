@@ -40,11 +40,11 @@ Describe 'Install-AnsibleNaDistribuicao' {
             }
         }
 
-        It 'instala o ansible-lint e o pywinrm no mesmo ambiente do Ansible' {
+        It 'instala o ansible-lint, o pywinrm e o argcomplete no mesmo ambiente do Ansible' {
             InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
 
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Script.Contains('--with-executables-from "$executaveis" --with pywinrm') -and $Argumentos[1] -eq 'ansible-core,ansible-lint'
+                $Script.Contains('--with-executables-from "$executaveis" --with pywinrm --with argcomplete') -and $Argumentos[1] -eq 'ansible-core,ansible-lint'
             }
         }
 
