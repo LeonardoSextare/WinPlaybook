@@ -130,6 +130,29 @@ usuário revisa o texto em português, e o estilo é o desta seção.
 - Termo com sentido técnico não é usado em outro sentido: "caminho" é
   caminho de arquivo; para alternativas, use "forma" ou "opção".
 
+### Naturalidade
+
+O texto é escrito em português desde o início, e não traduzido do inglês na
+cabeça. Ele soa como um texto técnico brasileiro bem escrito: sem gíria e sem
+tom amigável demais, mas com as palavras e a ordem que um nativo usa. Uma
+frase que só faz sentido se você imagina o original em inglês está errada.
+
+- Diga o substantivo em vez de deixar um pronome solto: "Variáveis do
+  Windows", não "As do Windows"; "separada da rede do Windows", não "separada
+  da do Windows".
+- Prefira o verbo que se usa no português técnico ao decalque do inglês:
+  "os caminhos são convertidos", não "os caminhos viram"; "o Ansible se
+  conecta ao Windows", não "o Ansible conecta no Windows"; "quando ele não
+  está instalado", não "quando ele falta".
+- Explique o que acontece com sujeito e verbo claros, em vez de comprimir a
+  ideia: "quando nenhum serviço da distribuição atende uma conexão ao
+  localhost, ela é encaminhada para o Windows", não "uma conexão que ninguém
+  atende lá chega ao Windows".
+- Títulos descrevem o assunto: "Do Windows para o Linux", não "Na ida: o que
+  você passa"; "Escolher o nível de detalhe", não "Escolher o detalhe".
+- Trate o leitor por "você" sem intimidade: "Se uma limitação atrapalhar o
+  seu trabalho", não "Quando uma limitação te atrapalhar".
+
 ### Verbos
 
 - Presente simples, evitando o futuro: "o ícone aparece", não "o ícone será
