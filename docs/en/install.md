@@ -136,6 +136,9 @@ installation is left out: a command that the project doesn't declare, such as
 environment is on the distribution disk, and the project folder doesn't get a
 `.venv`.
 
+A tool that the project declares, such as `yamllint`, gets a command on
+Windows after the first WinPlaybook command in the project folder.
+
 ## Use SSH keys with a passphrase
 
 Ansible doesn't answer the passphrase prompt of an SSH key. To use a key with

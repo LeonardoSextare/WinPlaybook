@@ -63,7 +63,14 @@ Describe 'Get-ScriptDoSupervisor' {
 
         $script.Contains("PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')") | Should-BeTrue
         $script.Contains("subprocess.run([UV, 'sync', '--quiet', '--project', projeto]") | Should-BeTrue
-        $script.Contains('preparar_ambiente_do_projeto()') | Should-BeTrue
+        $script.Contains("preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))") | Should-BeTrue
+    }
+
+    It 'grava a lista dos comandos do ambiente do projeto, sem os do próprio Python' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("COMANDO_DO_AMBIENTE_PYTHON = re.compile(r'^(python[0-9.]*|pip[0-9.]*|pydoc[0-9.]*|activate.*|deactivate)$')") | Should-BeTrue
+        $script.Contains('listar_comandos_do_projeto(ambiente_do_projeto, caminho_da_lista_de_comandos)') | Should-BeTrue
     }
 
     It 'leva ao localhost do Windows as conexões ao localhost da distribuição, pelo relay de rede' {

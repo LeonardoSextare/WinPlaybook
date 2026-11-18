@@ -885,6 +885,51 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o pyproject.toml do projeto declara uma ferramenta' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'projeto-com-ferramenta'
+            $null = New-Item -ItemType Directory -Path $projeto
+            $linhas = @(
+                '[project]'
+                'name = "projeto-com-ferramenta"'
+                'version = "0.1.0"'
+                'requires-python = ">=3.11,<3.14"'
+                'dependencies = ["ansible-core==2.19.*", "yamllint"]'
+            )
+            [IO.File]::WriteAllText((Join-Path $projeto 'pyproject.toml'), ($linhas -join "`n") + "`n")
+            $pastaDosShims = Join-Path $TestDrive 'shims-do-projeto'
+            $null = New-Item -ItemType Directory -Path $pastaDosShims
+            [IO.File]::WriteAllText((Join-Path $pastaDosShims 'ansible.exe'), 'executavel do shim')
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao; Pasta = $pastaDosShims } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao); ShimFolder = $Pasta; ShimPowerShellPath = (Get-Process -Id $PID).Path }
+            }
+            Push-Location $projeto
+            $saidaDoPrimeiroComando = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+        }
+
+        AfterAll {
+            Pop-Location
+            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+            }
+        }
+
+        It 'cria o shim da ferramenta do projeto' {
+            Test-Path -LiteralPath (Join-Path $pastaDosShims 'yamllint.exe') | Should-BeTrue -Because $saidaDoPrimeiroComando
+        }
+
+        It 'executa a ferramenta do projeto pelo shim novo' {
+            $saida = & (Join-Path $pastaDosShims 'yamllint.ps1') --version 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*yamllint*'
+        }
+
+        It 'não cria shims para os comandos do próprio Python' {
+            @(Get-ChildItem -LiteralPath $pastaDosShims -Filter 'python*') | Should-BeCollection @()
+        }
+    }
+
     Context 'quando o ansible-vault abre um editor' {
         BeforeAll {
             $pastaDoEditor = Join-Path $TestDrive 'editor'
