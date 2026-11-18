@@ -43,6 +43,12 @@
     só quando um deles muda. O SSL_CERT_FILE, o REQUESTS_CA_BUNDLE, o CURL_CA_BUNDLE e o
     GIT_SSL_CAINFO apontam para ele, a não ser que o Windows já defina a variável.
 
+    Quando a pasta atual, ou uma acima dela, tem um pyproject.toml com o ansible ou o
+    ansible-core nas dependências, o comando roda no ambiente desse projeto, como o uv run.
+    O uv sync prepara o ambiente em ~/.cache/winplaybook/projetos, no disco da distribuição,
+    um por projeto, e ele recebe o módulo de Get-ScriptDosCaminhosDoWindows. O PATH começa
+    pelo ambiente do projeto e perde os comandos do ambiente global, menos o uv e o uvx.
+
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
 
@@ -74,11 +80,14 @@ import signal
 import subprocess
 import sys
 import tempfile
+import tomllib
 import threading
 import time
 
 PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
+UV = os.path.expanduser('~/.local/bin/uv')
+PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
 EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PRIORIDADE_DAS_EXTENSOES = {'.com': 0, '.exe': 1, '.bat': 2, '.cmd': 3}
 NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)
@@ -364,6 +373,74 @@ def preparar_certificados(certificados_do_windows):
         os.environ.setdefault(nome, destino)
 
 
+def depende_do_ansible(dependencias):
+    for dependencia in dependencias:
+        nome = re.match(r'\s*([A-Za-z0-9._-]+)', dependencia) if isinstance(dependencia, str) else None
+        if nome and nome.group(1).lower().replace('_', '-') in PACOTES_DO_ANSIBLE:
+            return True
+    return False
+
+
+def achar_projeto_do_ansible(pasta):
+    while True:
+        caminho = os.path.join(pasta, 'pyproject.toml')
+        if os.path.isfile(caminho):
+            try:
+                with open(caminho, 'rb') as arquivo:
+                    configuracao = tomllib.load(arquivo)
+            except (OSError, tomllib.TOMLDecodeError):
+                return None
+            projeto = configuracao.get('project', {})
+            grupos = list(projeto.get('optional-dependencies', {}).values()) + list(configuracao.get('dependency-groups', {}).values())
+            dependencias = list(projeto.get('dependencies', [])) + [item for grupo in grupos for item in grupo]
+            return pasta if 'project' in configuracao and depende_do_ansible(dependencias) else None
+        pai = os.path.dirname(pasta)
+        if pai == pasta:
+            return None
+        pasta = pai
+
+
+def instalar_modulo_do_winplaybook(ambiente_do_projeto):
+    origens = glob.glob(os.path.expanduser('~/.local/share/uv/tools/ansible/lib/python*/site-packages/winplaybook_caminhos_do_windows.py'))
+    destinos = glob.glob(ambiente_do_projeto + '/lib/python*/site-packages')
+    if not origens or not destinos:
+        return
+    with open(origens[0], 'rb') as arquivo:
+        modulo = arquivo.read()
+    for nome, conteudo in (('winplaybook_caminhos_do_windows.py', modulo), ('winplaybook.pth', b'import winplaybook_caminhos_do_windows\n')):
+        caminho = os.path.join(destinos[0], nome)
+        try:
+            with open(caminho, 'rb') as arquivo:
+                if arquivo.read() == conteudo:
+                    continue
+        except OSError:
+            pass
+        with open(caminho, 'wb') as arquivo:
+            arquivo.write(conteudo)
+
+
+def preparar_ambiente_do_projeto():
+    projeto = achar_projeto_do_ansible(os.getcwd())
+    if projeto is None:
+        return
+    ambiente_do_projeto = os.path.expanduser('~/.cache/winplaybook/projetos/') + hashlib.sha256(projeto.encode()).hexdigest()[:16]
+    os.environ['UV_PROJECT_ENVIRONMENT'] = ambiente_do_projeto
+    sincronizacao = subprocess.run([UV, 'sync', '--quiet', '--project', projeto], stdin=subprocess.DEVNULL)
+    if sincronizacao.returncode != 0:
+        sys.exit(sincronizacao.returncode)
+    instalar_modulo_do_winplaybook(ambiente_do_projeto)
+    pasta_do_uv = os.path.expanduser('~/.cache/winplaybook/uv')
+    os.makedirs(pasta_do_uv, exist_ok=True)
+    for programa in ('uv', 'uvx'):
+        try:
+            os.symlink(os.path.join(os.path.dirname(UV), programa), os.path.join(pasta_do_uv, programa))
+        except FileExistsError:
+            pass
+    pastas = [pasta_do_uv if pasta == os.path.dirname(UV) else pasta for pasta in os.environ.get('PATH', '').split(':')]
+    os.environ['PATH'] = ':'.join([ambiente_do_projeto + '/bin'] + pastas)
+    os.environ['VIRTUAL_ENV'] = ambiente_do_projeto
+
+
 def preparar_config_do_ssh():
     destino = os.path.expanduser('~/.cache/winplaybook/ssh_config')
     try:
@@ -402,6 +479,7 @@ preparar_config_do_git(ambiente['pathDoWindows'])
 if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):
     os.environ['EDITOR'] = 'notepad.exe'
 preparar_certificados(ambiente['certificadosDoWindows'])
+preparar_ambiente_do_projeto()
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

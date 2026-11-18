@@ -114,6 +114,28 @@ The next runs of `Install-WinPlaybook` keep these choices. To go back to the
 latest version, pass `-AnsibleVersion ''`. To remove the packages, pass
 `-PythonPackage @()`.
 
+## Use one environment per project
+
+A project can pin its own version of Ansible and of its Python packages with a
+[uv](https://docs.astral.sh/uv/) `pyproject.toml` that has `ansible` or
+`ansible-core` in its dependencies:
+
+```toml
+[project]
+name = "infra"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["ansible-core==2.19.*", "ansible-lint", "boto3"]
+```
+
+In the project folder, or in a subfolder, the Ansible commands use this
+environment, as `uv run` would. The first time, WinPlaybook installs the
+packages, and uv writes `uv.lock` to the project. The `Install-WinPlaybook`
+installation is left out: a command that the project doesn't declare, such as
+`molecule` in this example, doesn't work in this project. The
+environment is on the distribution disk, and the project folder doesn't get a
+`.venv`.
+
 ## Use SSH keys with a passphrase
 
 Ansible doesn't answer the passphrase prompt of an SSH key. To use a key with

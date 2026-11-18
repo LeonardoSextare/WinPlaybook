@@ -58,6 +58,14 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("preparar_certificados(ambiente['certificadosDoWindows'])") | Should-BeTrue
     }
 
+    It 'executa o comando no ambiente do projeto que declara o Ansible num pyproject.toml' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')") | Should-BeTrue
+        $script.Contains("subprocess.run([UV, 'sync', '--quiet', '--project', projeto]") | Should-BeTrue
+        $script.Contains('preparar_ambiente_do_projeto()') | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
