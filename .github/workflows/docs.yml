@@ -38,7 +38,7 @@ jobs:
       - name: Gera os dois idiomas
         run: |
           foreach ($arquivoDeConfiguracao in 'docs/zensical.en.toml', 'docs/zensical.pt-br.toml') {
-              uvx zensical build --config-file $arquivoDeConfiguracao
+              uvx --python 3.14 zensical build --config-file $arquivoDeConfiguracao
               $gerouOSite = $LASTEXITCODE -eq 0
               if (-not $gerouOSite) {
                   throw "A geração do $arquivoDeConfiguracao falhou."
