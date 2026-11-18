@@ -119,7 +119,9 @@ mantenedor antes de virar padrão.
   fica em `%LOCALAPPDATA%\WinPlaybookTestes`. O `~/.ssh` dela é a pasta de
   `Get-PastaDoSshDeTeste`, nunca a `.ssh` do desenvolvedor. Na primeira vez, a preparação
   baixa o Debian, os pacotes do sistema e o Ansible; os testes em si não usam
-  internet. No CI, o job começa sem a distro e a cria assim.
+  internet. No CI, o job restaura do cache a distro já preparada, exportada com
+  `wsl --export --vhd`. A chave do cache muda com os arquivos que preparam a
+  distro, e, sem cache, o job a cria assim e a guarda para os próximos.
 - Usam uma configuração no `$TestDrive`: o teste troca o `$env:LOCALAPPDATA`
   por uma pasta no `$TestDrive`, grava ali a distro de testes com
   `Save-Configuracao` e restaura o valor original no `AfterAll`. Sem isso, o teste

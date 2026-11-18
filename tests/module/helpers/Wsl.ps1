@@ -44,6 +44,7 @@ function Initialize-DistribuicaoWslDeTeste {
         PastaDoPerfil = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
     }
     $null = New-Item -ItemType Directory -Path $parametros.PastaDoSsh -Force
+    $null = New-Item -ItemType Directory -Path (Join-Path $parametros.PastaDoPerfil '.ansible\collections'), (Join-Path $parametros.PastaDoPerfil '.ansible\roles') -Force
     $parametros.HashDosCaminhosDoWindows = InModuleScope WinPlaybook { -join ([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes((Get-ScriptDosCaminhosDoWindows))) | ForEach-Object { $_.ToString('x2') }) }
     InModuleScope WinPlaybook -Parameters $parametros {
         $estaInstalada = $Nome -in @(Get-DistribuicaoDoWsl)
