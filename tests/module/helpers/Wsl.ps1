@@ -62,3 +62,30 @@ function Initialize-DistribuicaoWslDeTeste {
 
     return $parametros.Nome
 }
+
+function Reset-ConfiguracaoDeTeste {
+    <#
+    .SYNOPSIS
+    Volta a configuração do WinPlaybook à de uma instalação básica na distribuição WSL dos testes.
+
+    .DESCRIPTION
+    Grava só a distribuição e a raiz de montagem dela, sem pasta de shims, agente SSH ou
+    localhost_windows. Os contextos que gravam uma configuração própria chamam esta função
+    no AfterAll para não afetar os seguintes.
+
+    .PARAMETER Distribuicao
+    A distribuição WSL dos testes, de Initialize-DistribuicaoWslDeTeste.
+
+    .EXAMPLE
+    Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [string] $Distribuicao
+    )
+
+    InModuleScope WinPlaybook -Parameters @{ Distribuicao = $Distribuicao } {
+        Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
+    }
+}

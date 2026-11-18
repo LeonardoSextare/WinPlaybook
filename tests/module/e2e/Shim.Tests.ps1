@@ -79,9 +79,7 @@ Describe 'Shim' {
         }
 
         AfterAll {
-            InModuleScope WinPlaybook -Parameters @{ Distribuicao = $nomeDaDistribuicao } {
-                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = (Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao) }
-            }
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
         }
 
         It 'completa <Linha> com <Esperado>' -ForEach @(
