@@ -50,7 +50,8 @@
 
     .PARAMETER PythonPackage
     Os pacotes Python que as collections precisam, como boto3, no formato do pip. O padrão
-    são os escolhidos na instalação anterior. Uma lista vazia (@()) tira os pacotes extras.
+    são os escolhidos na instalação anterior. Uma lista vazia (@()) tira os pacotes extras. Os
+    comandos desses pacotes, como o yamllint, ganham shims como os do Ansible.
 
     .EXAMPLE
     Install-WinPlaybook
@@ -138,7 +139,7 @@
             Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh $pastaDoSsh -PastaDoPerfil $pastaDoPerfil -UsuarioDoWindows (Get-NomeDoUsuarioDoWindows)
             Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
             $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
-            $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao -RaizDeMontagem $raizDeMontagem
+            $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao
         }
         catch {
             if ($vaiCriarAPastaDoSsh) {

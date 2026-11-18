@@ -264,7 +264,7 @@ BeforeAll {
     InModuleScope WinPlaybook -Parameters $parametrosDosShims {
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
-        foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
+        foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao) {
             New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo) -CaminhoDoExecutavel $CaminhoDoExecutavel
         }
     }

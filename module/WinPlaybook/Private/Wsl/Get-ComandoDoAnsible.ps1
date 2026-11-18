@@ -1,33 +1,30 @@
 ﻿function Get-ComandoDoAnsible {
     <#
     .SYNOPSIS
-    Lista os comandos do Ansible que estão no PATH de uma distribuição WSL.
+    Lista os comandos que o ambiente do Ansible instala numa distribuição WSL.
 
     .DESCRIPTION
-    Lê o PATH de um login shell, que tem as pastas do usuário, como ~/.local/bin. As pastas
-    das unidades do Windows ficam de fora, porque o WSL acrescenta o Path do Windows à
-    distribuição, e ele tem os shims do WinPlaybook.
+    São os comandos de ~/.local/bin que o uv liga ao ambiente do Ansible: os do Ansible, os
+    do ansible-lint e os dos pacotes Python extras, como o molecule. Os outros programas da
+    distribuição, inclusive os que vêm como dependência desses pacotes, ficam de fora.
 
     .PARAMETER Distribuicao
     A distribuição WSL, como o wsl --list mostra.
 
-    .PARAMETER RaizDeMontagem
-    A pasta onde a distribuição monta as unidades do Windows, como /mnt/.
-
     .EXAMPLE
-    Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/'
+    Get-ComandoDoAnsible -Distribuicao 'WinPlaybook'
 
-    Devolve ansible, ansible-config, ansible-lint, ansible-playbook e os outros comandos do Ansible.
+    Devolve ansible, ansible-config, ansible-lint, ansible-playbook, os outros comandos do
+    Ansible e os dos pacotes extras.
     #>
     [CmdletBinding()]
     [OutputType([string[]])]
     param(
-        [Parameter(Mandatory)] [string] $Distribuicao,
-        [Parameter(Mandatory)] [string] $RaizDeMontagem
+        [Parameter(Mandatory)] [string] $Distribuicao
     )
 
-    $script = 'raiz_de_montagem="$0"; IFS=:; for pasta in $PATH; do case $pasta in "$raiz_de_montagem"*) ;; *) ls "$pasta" 2>/dev/null || : ;; esac; done'
-    $argumentosDoWsl = @('--distribution', $Distribuicao, '--exec', 'sh', '-lc', $script, $RaizDeMontagem)
+    $script = 'for comando in "$HOME"/.local/bin/*; do case $(readlink -f "$comando") in "$HOME"/.local/share/uv/tools/ansible/*) printf "%s\n" "${comando##*/}";; esac; done'
+    $argumentosDoWsl = @('--distribution', $Distribuicao, '--exec', 'sh', '-c', $script)
 
     $ehPassagemLegada = Test-PassagemDeArgumentosLegada
     if ($ehPassagemLegada) {
@@ -42,10 +39,10 @@
         throw (Get-Mensagem -Nome 'ComandosNaoListados' -Valores $Distribuicao, $LASTEXITCODE)
     }
 
-    $comandos = @($listagem | Where-Object { $_.StartsWith('ansible') } | Sort-Object -Unique)
+    $comandos = @($listagem | Where-Object { $_ } | Sort-Object -Unique)
 
-    $temComandos = $comandos.Count -gt 0
-    if (-not $temComandos) {
+    $temComandosDoAnsible = @($comandos | Where-Object { $_.StartsWith('ansible') }).Count -gt 0
+    if (-not $temComandosDoAnsible) {
         throw (Get-Mensagem -Nome 'DistribuicaoSemAnsible' -Valores $Distribuicao)
     }
 

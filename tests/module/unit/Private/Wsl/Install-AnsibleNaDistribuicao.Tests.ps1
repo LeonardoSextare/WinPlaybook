@@ -28,7 +28,7 @@ Describe 'Install-AnsibleNaDistribuicao' {
         ) {
             InModuleScope WinPlaybook -Parameters @{ Versao = $Versao; Pacotes = $Pacotes } { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible $Versao -PacotesPython $Pacotes }
 
-            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { ($Argumentos[1..($Argumentos.Count - 1)] -join ',') -eq $Esperado }
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { ($Argumentos[2..($Argumentos.Count - 1)] -join ',') -eq $Esperado }
         }
 
         It 'grava no ambiente do Ansible o módulo que aceita caminhos do Windows' {
@@ -44,8 +44,18 @@ Describe 'Install-AnsibleNaDistribuicao' {
             InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
 
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Script.Contains('--with-executables-from ansible-core,ansible-lint --with pywinrm')
+                $Script.Contains('--with-executables-from "$executaveis" --with pywinrm') -and $Argumentos[1] -eq 'ansible-core,ansible-lint'
             }
+        }
+
+        It 'expõe os comandos <Descricao>' -ForEach @(
+            @{ Descricao = 'dos pacotes Python escolhidos, pelo nome deles'; Pacotes = @('molecule', 'yamllint>=1.30', 'ruamel.yaml[jinja2]', 'pacote-local @ file:///tmp/pacote'); Esperado = 'ansible-core,ansible-lint,molecule,yamllint,ruamel.yaml,pacote-local' }
+            @{ Descricao = 'só do Ansible sem pacotes Python escolhidos'; Pacotes = @(); Esperado = 'ansible-core,ansible-lint' }
+            @{ Descricao = 'só do Ansible para um pacote pedido por URL ou caminho'; Pacotes = @('git+https://exemplo.com/pacote.git', './pacote'); Esperado = 'ansible-core,ansible-lint' }
+        ) {
+            InModuleScope WinPlaybook -Parameters @{ Pacotes = $Pacotes } { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' -PacotesPython $Pacotes }
+
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Argumentos[1] -eq $Esperado }
         }
     }
 

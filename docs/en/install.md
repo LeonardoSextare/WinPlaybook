@@ -102,6 +102,14 @@ the parameters:
 Install-WinPlaybook -AnsibleVersion '12.*' -PythonPackage 'boto3', 'netaddr'
 ```
 
+A tool installed this way, such as `molecule` or `yamllint`, gets a command on
+Windows, like the Ansible commands:
+
+```powershell
+Install-WinPlaybook -PythonPackage 'molecule', 'yamllint'
+yamllint .
+```
+
 The next runs of `Install-WinPlaybook` keep these choices. To go back to the
 latest version, pass `-AnsibleVersion ''`. To remove the packages, pass
 `-PythonPackage @()`.
