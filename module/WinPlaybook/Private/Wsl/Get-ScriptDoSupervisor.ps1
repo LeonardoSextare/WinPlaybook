@@ -12,7 +12,8 @@
     com essas variáveis somadas às da distribuição e sai com o código de
     saída dele, ou com 128 mais o número do sinal que o encerrou. Os processos que o comando
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
-    script.
+    script. Um comando que não está no PATH, já com o ambiente do projeto, sai com 127 e
+    a mensagem da variável WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE no stderr.
 
     Os programas .com, .exe, .bat e .cmd das pastas do Path do Windows entram no fim do PATH,
     pela pasta ~/.cache/winplaybook/path-do-windows, com o nome completo e com o nome sem a
@@ -47,7 +48,9 @@
     ansible-core nas dependências, o comando roda no ambiente desse projeto, como o uv run.
     O uv sync prepara o ambiente em ~/.cache/winplaybook/projetos, no disco da distribuição,
     um por projeto, e ele recebe o módulo de Get-ScriptDosCaminhosDoWindows. O PATH começa
-    pelo ambiente do projeto e perde os comandos do ambiente global, menos o uv e o uvx.
+    pelo ambiente do projeto e perde os comandos do ambiente global, menos o uv e o uvx. Com
+    comandosDoProjeto no JSON, o script grava nesse arquivo, um por linha, os comandos do
+    ambiente do projeto, sem os do próprio Python (python, pip, pydoc e activate).
 
     Com o relay de rede, uma conexão TCP ao localhost da distribuição (127.0.0.1 ou ::1)
     numa porta em que o Windows escuta, e a distribuição não, chega ao localhost do Windows.
@@ -97,6 +100,7 @@ PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
 UV = os.path.expanduser('~/.local/bin/uv')
 PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
+COMANDO_DO_AMBIENTE_PYTHON = re.compile(r'^(python[0-9.]*|pip[0-9.]*|pydoc[0-9.]*|activate.*|deactivate)$')
 NFT_DA_PONTE = '/usr/local/lib/winplaybook/nft'
 PORTA_DA_PONTE = 47999
 SO_ORIGINAL_DST = 80
@@ -444,7 +448,14 @@ def instalar_modulo_do_winplaybook(ambiente_do_projeto):
             arquivo.write(conteudo)
 
 
-def preparar_ambiente_do_projeto():
+def listar_comandos_do_projeto(ambiente_do_projeto, caminho_da_lista):
+    pasta = ambiente_do_projeto + '/bin'
+    comandos = sorted(nome for nome in os.listdir(pasta) if not COMANDO_DO_AMBIENTE_PYTHON.match(nome) and os.path.isfile(os.path.join(pasta, nome)) and os.access(os.path.join(pasta, nome), os.X_OK))
+    with open(caminho_da_lista, 'w', encoding='utf-8') as arquivo:
+        arquivo.write('\n'.join(comandos) + '\n')
+
+
+def preparar_ambiente_do_projeto(caminho_da_lista_de_comandos):
     projeto = achar_projeto_do_ansible(os.getcwd())
     if projeto is None:
         return
@@ -454,6 +465,8 @@ def preparar_ambiente_do_projeto():
     if sincronizacao.returncode != 0:
         sys.exit(sincronizacao.returncode)
     instalar_modulo_do_winplaybook(ambiente_do_projeto)
+    if caminho_da_lista_de_comandos:
+        listar_comandos_do_projeto(ambiente_do_projeto, caminho_da_lista_de_comandos)
     pasta_do_uv = os.path.expanduser('~/.cache/winplaybook/uv')
     os.makedirs(pasta_do_uv, exist_ok=True)
     for programa in ('uv', 'uvx'):
@@ -626,8 +639,13 @@ preparar_config_do_git(ambiente['pathDoWindows'])
 if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):
     os.environ['EDITOR'] = 'notepad.exe'
 preparar_certificados(ambiente['certificadosDoWindows'])
-preparar_ambiente_do_projeto()
+preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))
 iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
+mensagem_de_comando_ausente = os.environ.pop('WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE', '')
+pastas_da_distribuicao = ':'.join(pasta for pasta in os.environ.get('PATH', '').split(':') if pasta != PASTA_DO_PATH_DO_WINDOWS)
+if shutil.which(sys.argv[1], path=pastas_da_distribuicao) is None:
+    print(mensagem_de_comando_ausente, file=sys.stderr)
+    sys.exit(127)
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

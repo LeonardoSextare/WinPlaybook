@@ -18,7 +18,7 @@ Describe 'Invoke-ComandoNoWsl' {
             $global:LASTEXITCODE = 0
             $args
         }
-        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; SshAgentPipe = $null } }
+        Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; ShimPowerShellPath = $null; SshAgentPipe = $null } }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
         Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{} }
         Mock Get-CaminhoDoSupervisor -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\supervisor-teste.py' }
@@ -201,7 +201,7 @@ Describe 'Invoke-ComandoNoWsl' {
             $pastaDosShims = Join-Path $TestDrive 'bin'
             $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe/relay-do-agente-ssh.exe') -Force
             $relayNaDistribuicao = '/mnt/' + $pastaDosShims.Substring(0, 1).ToLowerInvariant() + $pastaDosShims.Substring(2).Replace('\', '/') + '/exe/relay-do-agente-ssh.exe'
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = $null; SshAgentPipe = $null } }
             Mock Test-PipeDoWindows -ModuleName WinPlaybook { $true }
         }
 
@@ -225,7 +225,7 @@ Describe 'Invoke-ComandoNoWsl' {
 
         Context 'quando a configuração escolhe outro pipe para o agente' {
             BeforeAll {
-                Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = 'outro-agente' } }
+                Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = $null; SshAgentPipe = 'outro-agente' } }
             }
 
             It 'usa o pipe escolhido' {
@@ -240,7 +240,7 @@ Describe 'Invoke-ComandoNoWsl' {
         BeforeAll {
             $pastaDosShims = Join-Path $TestDrive 'bin'
             $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe/relay-do-agente-ssh.exe') -Force
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = $null; SshAgentPipe = $null } }
             Mock Test-PipeDoWindows -ModuleName WinPlaybook { $false }
         }
 
@@ -260,7 +260,7 @@ Describe 'Invoke-ComandoNoWsl' {
     Context 'quando o relay do agente SSH não está na pasta dos shims' {
         BeforeAll {
             $pastaSemRelay = Join-Path $TestDrive 'bin-sem-relay'
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaSemRelay; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaSemRelay; ShimPowerShellPath = $null; SshAgentPipe = $null } }
             Mock Test-PipeDoWindows -ModuleName WinPlaybook { $true }
         }
 
@@ -274,7 +274,7 @@ Describe 'Invoke-ComandoNoWsl' {
     Context 'quando o Path do Windows tem a pasta dos shims' {
         BeforeAll {
             $pastaDosShims = Join-Path $TestDrive 'bin-dos-shims'
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = $null; SshAgentPipe = $null } }
             $pathOriginal = $env:Path
             $env:Path = "C:\Ferramentas;$pastaDosShims;D:\Outras\"
         }
@@ -295,7 +295,7 @@ Describe 'Invoke-ComandoNoWsl' {
         BeforeAll {
             $pastaDosShims = Join-Path $TestDrive 'bin-com-relay-de-rede'
             $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe\relay-de-rede.exe') -Force
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = $null; SshAgentPipe = $null } }
             Mock Get-CaminhoDoRelayDoAgenteSsh -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-relay-do-agente.exe' }
         }
 
@@ -315,6 +315,35 @@ Describe 'Invoke-ComandoNoWsl' {
         $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
 
         $ambiente.PSObject.Properties.Name | Should-NotContainCollection 'relayDeRede'
+    }
+
+    Context 'quando o WinPlaybook está instalado com shims' {
+        BeforeAll {
+            $pastaDosShims = Join-Path $TestDrive 'bin-dos-comandos-do-projeto'
+            $null = New-Item -ItemType Directory -Path $pastaDosShims -Force
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; ShimPowerShellPath = 'C:\PowerShell\pwsh.exe'; SshAgentPipe = $null } }
+            Mock Get-CaminhoDoRelayDoAgenteSsh -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-relay-do-agente.exe' }
+            Mock Add-ShimDeComandoDoProjeto -ModuleName WinPlaybook { }
+        }
+
+        It 'pede ao supervisor a lista dos comandos do projeto, na pasta do supervisor' {
+            Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+            $ambiente.comandosDoProjeto | Should-BeLikeString '/mnt/c/Temp/WinPlaybook/comandos-do-projeto-*.txt'
+        }
+
+        It 'cria os shims dos comandos do projeto depois do comando, sem mudar o código de saída' {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = 3 }
+
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            $LASTEXITCODE | Should-Be 3
+            Should-Invoke Add-ShimDeComandoDoProjeto -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $CaminhoDaLista -like 'C:\Temp\WinPlaybook\comandos-do-projeto-*.txt' -and $PastaDosShims -eq $pastaDosShims -and $CaminhoDoPowerShell -eq 'C:\PowerShell\pwsh.exe'
+            }
+        }
     }
 
     It 'passa ao supervisor o arquivo dos certificados raiz do Windows, pela unidade montada' {
@@ -450,7 +479,7 @@ Describe 'Invoke-ComandoNoWsl' {
 
     Context 'quando o WinPlaybook não foi instalado' {
         BeforeAll {
-            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null; ShimFolder = $null; SshAgentPipe = $null } }
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = $null; WslMountRoot = $null; ShimFolder = $null; ShimPowerShellPath = $null; SshAgentPipe = $null } }
         }
 
         It 'explica como instalar' {

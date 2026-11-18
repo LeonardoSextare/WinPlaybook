@@ -136,6 +136,9 @@ pacotes, e o uv grava o `uv.lock` no projeto. As instalações do
 o `molecule` nesse exemplo, não funciona nesse projeto. O ambiente fica
 no disco da distribuição, e a pasta do projeto não ganha uma `.venv`.
 
+Uma ferramenta que o projeto declara, como o `yamllint`, ganha um comando no
+Windows depois do primeiro comando do WinPlaybook na pasta do projeto.
+
 ## Usar chaves SSH com passphrase
 
 O Ansible não responde ao pedido de passphrase de uma chave SSH. Para usar

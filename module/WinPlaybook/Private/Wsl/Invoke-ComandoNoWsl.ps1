@@ -32,6 +32,10 @@
     chaves do agente, e uma chave com passphrase não pede a passphrase. O socket existe só
     enquanto o comando roda.
 
+    Quando o comando roda no ambiente de um projeto com pyproject.toml, os comandos desse
+    ambiente que ainda não têm shim, como o molecule, ganham um na pasta dos shims depois
+    do comando, por Add-ShimDeComandoDoProjeto.
+
     .PARAMETER Comando
     O comando na distribuição, como ansible-playbook.
 
@@ -139,7 +143,7 @@
     $script = @(
         'mensagem_de_comando_ausente="$0"; supervisor="$1"; shift;'
         $leituraDoAgente
-        'command -v "$1" > /dev/null || { printf ''%s\n'' "$mensagem_de_comando_ausente" >&2; exit 127; };'
+        'export WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE="$mensagem_de_comando_ausente";'
         $preparacaoDoAgente
         $execucaoDoComando
     ) -join ' '
@@ -155,6 +159,11 @@
     $temRelayDeRede = $temPastaDosShims -and (Test-Path -LiteralPath (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -PathType Leaf)
     if ($temRelayDeRede) {
         $ambienteDoComando['relayDeRede'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -RaizDeMontagem $raizDeMontagem
+    }
+    $criaShimsDoProjeto = $temPastaDosShims -and [bool] $configuracao.ShimPowerShellPath
+    if ($criaShimsDoProjeto) {
+        $caminhoDosComandosDoProjeto = Join-Path -Path (Split-Path -Path (Get-CaminhoDoSupervisor) -Parent) -ChildPath "comandos-do-projeto-$([guid]::NewGuid().ToString('N')).txt"
+        $ambienteDoComando['comandosDoProjeto'] = ConvertTo-CaminhoDoWsl -Caminho $caminhoDosComandosDoProjeto -RaizDeMontagem $raizDeMontagem
     }
     $ambiente = ConvertTo-Json -InputObject $ambienteDoComando -Compress
 
@@ -205,6 +214,10 @@
     }
 
     $codigoDeSaida = $LASTEXITCODE
+    if ($criaShimsDoProjeto) {
+        Add-ShimDeComandoDoProjeto -CaminhoDaLista $caminhoDosComandosDoProjeto -PastaDosShims $configuracao.ShimFolder -CaminhoDoPowerShell $configuracao.ShimPowerShellPath
+        $global:LASTEXITCODE = $codigoDeSaida
+    }
     $oWslFalhou = $codigoDeSaida -eq -1
     if ($oWslFalhou) {
         $distribuicaoExiste = $distribuicao -in @(Get-DistribuicaoDoWsl)
