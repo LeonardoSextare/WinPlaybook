@@ -56,7 +56,8 @@
     numa porta em que o Windows escuta, e a distribuição não, chega ao localhost do Windows.
     Uma regra do nftables leva essas conexões à porta 47999, onde o supervisor as repassa ao
     relay, e a lista de portas acompanha o Windows a cada segundo. Com comandos em paralelo,
-    um supervisor só cuida da ponte, e outro assume quando ele termina.
+    um supervisor só cuida da ponte, e outro assume quando ele termina. O comando começa
+    depois que a ponte aplica a primeira lista de portas, ou depois de 5 segundos.
 
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
@@ -117,6 +118,9 @@ table inet winplaybook {
 '''
 portas_do_windows = []
 processos_da_ponte = []
+portas_mudaram = threading.Event()
+lista_de_portas_recebida = [False]
+ponte_pronta = threading.Event()
 EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PRIORIDADE_DAS_EXTENSOES = {'.com': 0, '.exe': 1, '.bat': 2, '.cmd': 3}
 NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)
@@ -503,6 +507,8 @@ def acompanhar_portas_do_windows(relay):
     processos_da_ponte.append(processo)
     for linha in processo.stdout:
         portas_do_windows[:] = [int(porta) for porta in linha.split()]
+        lista_de_portas_recebida[0] = True
+        portas_mudaram.set()
 
 
 def atualizar_portas_da_ponte():
@@ -515,7 +521,10 @@ def atualizar_portas_da_ponte():
                 comandos += 'add element inet winplaybook portas_do_windows { ' + ', '.join(str(porta) for porta in portas) + ' }\n'
             aplicar_regras_de_rede(comandos)
             aplicadas = portas
-        time.sleep(1)
+        if lista_de_portas_recebida[0]:
+            ponte_pronta.set()
+        portas_mudaram.wait(1)
+        portas_mudaram.clear()
 
 
 def copiar_conexao(ler, escrever, fechar):
@@ -579,6 +588,8 @@ def abrir_servidores_da_ponte():
 
 def assumir_a_ponte_de_rede(relay):
     servidores = abrir_servidores_da_ponte()
+    if not servidores:
+        ponte_pronta.set()
     while not servidores:
         time.sleep(1)
         servidores = abrir_servidores_da_ponte()
@@ -599,6 +610,7 @@ def encerrar_a_ponte_de_rede():
 def iniciar_ponte_de_rede(relay):
     if relay and os.access(relay, os.X_OK) and os.access(NFT_DA_PONTE, os.X_OK):
         threading.Thread(target=assumir_a_ponte_de_rede, args=(relay,), daemon=True).start()
+        ponte_pronta.wait(5)
 
 
 def preparar_config_do_ssh():

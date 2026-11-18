@@ -1045,7 +1045,7 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'alcança o serviço do Windows pelo <_> da distribuição' -ForEach @('127.0.0.1', 'localhost', '::1') {
-            $saida = Invoke-WinPlaybook sh -c "sleep 2; python3 cliente.py $_ $portaDoWindows" 2>&1 | Out-String
+            $saida = Invoke-WinPlaybook python3 cliente.py $_ $portaDoWindows 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida.Trim() | Should-Be 'oi do windows'
@@ -1058,7 +1058,7 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'recusa a conexão numa porta em que o Windows não escuta' {
-            $saida = Invoke-WinPlaybook sh -c "sleep 2; python3 cliente.py 127.0.0.1 $portaFechada" 2>&1 | Out-String
+            $saida = Invoke-WinPlaybook python3 cliente.py 127.0.0.1 $portaFechada 2>&1 | Out-String
 
             $saida | Should-BeLikeString '*ConnectionRefusedError*'
         }
