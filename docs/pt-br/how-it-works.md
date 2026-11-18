@@ -53,6 +53,14 @@ de fora, e o Python e o pip do Windows só funcionam com a extensão
 Python do Windows. Os argumentos que são caminhos da distribuição, como o
 `{{ playbook_dir }}`, chegam ao programa do Windows como caminhos do Windows.
 
+Um _script_ do projeto roda pela extensão, como no Windows, sem precisar da
+permissão de execução do Linux. Assim, um arquivo de senha do vault
+(`--vault-password-file senha.bat`) ou um inventário dinâmico
+(`-i inventario.py`) executa em vez de ser lido como texto. O `.bat` e o
+`.cmd` rodam pelo `cmd.exe`, o `.exe` e o `.com` direto, o `.ps1` pelo
+`powershell.exe`, e o `.py` e o `.sh` pelo _shebang_, ou pelo Python do Ansible
+e pelo `sh`. Os outros arquivos, como o `senha.txt`, continuam lidos como texto.
+
 O `git` da distribuição usa o seu `.gitconfig` do Windows, com o mesmo
 usuário, os mesmos atalhos e o mesmo login: o `credential.helper` do Git for
 Windows passa a ser o Git Credential Manager do Windows. Assim o

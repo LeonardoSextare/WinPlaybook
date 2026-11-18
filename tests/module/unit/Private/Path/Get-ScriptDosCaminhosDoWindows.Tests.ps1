@@ -37,6 +37,20 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
         $script.Contains("'ansible.plugins.action': ajustar_action_base") | Should-BeTrue
     }
 
+    It 'executa pela extensão os scripts das pastas do Windows sem permissão de execução' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains("EXTENSOES_DE_SCRIPT = ('.bat', '.cmd', '.exe', '.com', '.ps1', '.py', '.sh')") | Should-BeTrue
+        $script.Contains("'ansible.module_utils.common.file': ajustar_arquivo") | Should-BeTrue
+        $script.Contains('subprocess.Popen = PopenComScriptsDoWindows') | Should-BeTrue
+    }
+
+    It 'ajusta cada módulo pelo próprio carregador, sem mudar o carregador que ele divide com outros' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains('especificacao.loader = CarregadorAjustado(especificacao.loader, nome)') | Should-BeTrue
+    }
+
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {
         $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
 

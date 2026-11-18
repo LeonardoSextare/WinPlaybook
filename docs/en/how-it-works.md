@@ -55,6 +55,15 @@ interpreter discovery doesn't choose the Windows Python. The arguments that are
 distribution paths, such as `{{ playbook_dir }}`, reach the Windows program as
 Windows paths.
 
+A script in the project runs by its extension, as on Windows, without the
+Linux execute permission. This way, a vault password file
+(`--vault-password-file password.bat`) or a dynamic inventory
+(`-i inventory.py`) runs instead of being read as text. `.bat` and `.cmd`
+files run with `cmd.exe`, `.exe` and `.com` files run directly, `.ps1` files
+run with `powershell.exe`, and `.py` and `.sh` files run with their shebang,
+or with the Ansible Python and `sh`. Other files, such as `password.txt`, are
+still read as text.
+
 The `git` command of the distribution uses your Windows `.gitconfig` file,
 with the same user, aliases, and sign-in: the `credential.helper` of Git for
 Windows becomes the Windows Git Credential Manager. This way, `ansible-galaxy`
