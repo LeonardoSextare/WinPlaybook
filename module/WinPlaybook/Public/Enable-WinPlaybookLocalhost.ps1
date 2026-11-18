@@ -19,6 +19,9 @@
 
     .LINK
     https://docs.ansible.com/ansible/latest/os_guide/windows_ssh.html
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/enable-winplaybooklocalhost/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

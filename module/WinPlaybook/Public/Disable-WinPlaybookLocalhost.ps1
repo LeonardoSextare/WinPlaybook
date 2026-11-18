@@ -11,6 +11,9 @@
 
     .EXAMPLE
     Disable-WinPlaybookLocalhost
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/disable-winplaybooklocalhost/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]

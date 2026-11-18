@@ -17,6 +17,9 @@
     'segredo' | Invoke-WinPlaybook ansible-vault encrypt_string --stdin-name senha
 
     Cifra o texto que chega pelo pipeline.
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/invoke-winplaybook/
     #>
 
     Show-AvisoDeVersaoNova -VersaoAtual $MyInvocation.MyCommand.Module.Version

@@ -17,6 +17,9 @@
 
     .LINK
     https://learn.microsoft.com/powershell/module/microsoft.powershell.core/register-argumentcompleter
+
+    .LINK
+    https://leonardosextare.github.io/WinPlaybook/pt-br/register-winplaybookargumentcompleter/
     #>
     [CmdletBinding()]
     [OutputType([void])]

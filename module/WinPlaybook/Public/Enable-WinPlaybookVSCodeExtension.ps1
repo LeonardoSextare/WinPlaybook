@@ -21,7 +21,7 @@
     Corrige a extensão e mostra a versão, a pasta e as configurações necessárias.
 
     .LINK
-    https://leonardosextare.github.io/WinPlaybook/pt-br/vscode/
+    https://leonardosextare.github.io/WinPlaybook/pt-br/enable-winplaybookvscodeextension/
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([pscustomobject])]
