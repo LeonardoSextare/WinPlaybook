@@ -81,6 +81,12 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("iniciar_ponte_de_rede(ambiente.get('relayDeRede'))") | Should-BeTrue
     }
 
+    It 'começa o comando depois que a ponte para o localhost do Windows aplica as portas' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains('ponte_pronta.wait(5)') | Should-BeTrue
+    }
+
     It 'adota os processos que o comando deixa para trás' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
