@@ -58,6 +58,10 @@
     são os escolhidos na instalação anterior. Uma lista vazia (@()) tira os pacotes extras. Os
     comandos desses pacotes, como o yamllint, ganham shims como os do Ansible.
 
+    .PARAMETER EnableLocalhost
+    Liga o localhost_windows sem perguntar, como o Enable-WinPlaybookLocalhost. Sem este
+    parâmetro, a instalação pergunta uma vez, num terminal interativo, e guarda a recusa.
+
     .EXAMPLE
     Install-WinPlaybook
 
