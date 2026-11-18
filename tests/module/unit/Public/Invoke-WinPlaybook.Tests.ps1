@@ -12,6 +12,16 @@ Describe 'Invoke-WinPlaybook' {
         Mock Invoke-ComandoNoWsl -ModuleName WinPlaybook { }
     }
 
+    It 'confere se existe uma versão nova, com a versão do módulo carregado' {
+        Mock Show-AvisoDeVersaoNova -ModuleName WinPlaybook { }
+
+        Invoke-WinPlaybook ansible --version
+
+        Should-Invoke Show-AvisoDeVersaoNova -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $VersaoAtual -eq (Get-Module WinPlaybook).Version
+        }
+    }
+
     It 'executa o primeiro argumento como o comando, com os outros argumentos' {
         Invoke-WinPlaybook ansible-playbook -i inventory.yml site.yml --check
 
