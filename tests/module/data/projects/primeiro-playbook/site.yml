@@ -1,0 +1,16 @@
+- name: Meu primeiro playbook no Windows
+  hosts: localhost_windows
+  tasks:
+    - name: Cria a pasta ola-ansible no meu perfil
+      ansible.windows.win_file:
+        path: '{{ ansible_facts.user_dir }}\ola-ansible'
+        state: directory
+
+    - name: Grava um arquivo na pasta
+      ansible.windows.win_copy:
+        dest: '{{ ansible_facts.user_dir }}\ola-ansible\leia-me.txt'
+        content: Este arquivo foi criado pelo Ansible.
+
+    - name: Mostra a versão do Windows
+      ansible.builtin.debug:
+        msg: 'Configurei o {{ ansible_facts.os_name }}'
