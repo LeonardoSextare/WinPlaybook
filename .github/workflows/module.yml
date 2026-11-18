@@ -103,11 +103,50 @@ jobs:
       - name: Instala as dependências de teste
         uses: ./.github/actions/instala-dependencias-de-teste
 
+      - name: Restaura a distribuição de testes do cache
+        id: cache-da-distribuicao
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}\distribuicao-de-testes
+          key: distribuicao-de-testes-${{ hashFiles('module/WinPlaybook/Private/Wsl/New-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Initialize-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Install-AnsibleNaDistribuicao.ps1', 'module/WinPlaybook/Private/Path/Get-ScriptDosCaminhosDoWindows.ps1', 'tests/module/helpers/Wsl.ps1') }}
+
       - name: Troca o módulo pelo pacote publicado
         run: |
           $pacote = ./scripts/Build-PacoteDoModulo.ps1 -Versao 0.0.0 -PastaDeDestino (Join-Path $env:RUNNER_TEMP 'pacote')
           Remove-Item -LiteralPath module/WinPlaybook -Recurse -Force
           Copy-Item -LiteralPath $pacote -Destination module/WinPlaybook -Recurse
+
+      - name: Importa a distribuição de testes do cache
+        if: steps.cache-da-distribuicao.outputs.cache-hit == 'true'
+        run: |
+          $pasta = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\WinPlaybookE2E'
+          $null = New-Item -ItemType Directory -Path $pasta -Force
+          $disco = Join-Path $pasta 'ext4.vhdx'
+          Move-Item -LiteralPath (Join-Path $env:RUNNER_TEMP 'distribuicao-de-testes\ext4.vhdx') -Destination $disco
+          wsl --import-in-place WinPlaybookE2E $disco
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Prepara a distribuição de testes
+        run: |
+          Import-Module Pester
+          Import-Module ./module/WinPlaybook/WinPlaybook.psd1
+          . ./tests/module/helpers/Wsl.ps1
+          $null = Initialize-DistribuicaoWslDeTeste
+
+      - name: Exporta a distribuição de testes
+        if: steps.cache-da-distribuicao.outputs.cache-hit != 'true'
+        run: |
+          $pasta = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'distribuicao-de-testes') -Force
+          wsl --shutdown
+          wsl --export WinPlaybookE2E (Join-Path $pasta 'ext4.vhdx') --vhd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Guarda a distribuição de testes no cache
+        if: steps.cache-da-distribuicao.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}\distribuicao-de-testes
+          key: ${{ steps.cache-da-distribuicao.outputs.cache-primary-key }}
 
       - name: Roda os testes (PowerShell 7)
         if: matrix.edicao.shell == 'pwsh'
