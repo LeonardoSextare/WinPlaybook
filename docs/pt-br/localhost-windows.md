@@ -4,6 +4,9 @@ Com o host `localhost_windows`, os _playbooks_ configuram a máquina Windows em
 que o Ansible roda, com os módulos `ansible.windows`. O `localhost` continua
 sendo o nó de controle, como no Ansible.
 
+Para ver o recurso funcionando do zero, siga o tutorial
+[Seu primeiro playbook](first-playbook.md).
+
 ## Ligar o localhost_windows
 
 O `Install-WinPlaybook` pergunta se você quer ligar o `localhost_windows`.
@@ -13,9 +16,17 @@ Para ligar depois, execute no PowerShell:
 Enable-WinPlaybookLocalhost
 ```
 
-O Windows pede a aprovação de administrador. O comando instala o recurso
-OpenSSH Server quando ele falta, o que pode levar alguns minutos, e cria o
-serviço `WinPlaybookSshd`, que só aceita conexões da própria máquina.
+!!! note "Administrador"
+
+    O Windows pede a aprovação de administrador. Se o recurso OpenSSH Server
+    não estiver instalado, o comando o instala, o que pode levar alguns
+    minutos.
+
+O comando cria o serviço `WinPlaybookSshd`, que só aceita conexões da própria
+máquina e só aceita a chave guardada na distribuição do WinPlaybook. Veja o
+que muda no sistema em [O que o WinPlaybook altera no sistema](system-changes.md#localhost_windows).
+
+---
 
 ## Testar a conexão
 
@@ -23,7 +34,11 @@ serviço `WinPlaybookSshd`, que só aceita conexões da própria máquina.
 ansible localhost_windows -m ansible.windows.win_ping
 ```
 
-O resultado é `"ping": "pong"`.
+!!! success "Resultado esperado"
+
+    A saída mostra `"ping": "pong"`.
+
+---
 
 ## Usar nos playbooks
 
@@ -36,8 +51,15 @@ O resultado é `"ping": "pong"`.
         state: directory
 ```
 
-O host não precisa estar no inventário e fica fora do grupo `all`, como o
-`localhost`. As tarefas rodam com o seu usuário do Windows.
+!!! tip "Sem inventário"
+
+    O host não precisa estar no inventário e não faz parte do grupo `all`,
+    como o `localhost`. As tarefas rodam com o seu usuário do Windows.
+
+Os módulos disponíveis estão na documentação da
+[collection ansible.windows](https://docs.ansible.com/ansible/latest/collections/ansible/windows/index.html).
+
+---
 
 ## Desligar o localhost_windows
 
@@ -45,6 +67,12 @@ O host não precisa estar no inventário e fica fora do grupo `all`, como o
 Disable-WinPlaybookLocalhost
 ```
 
-O comando apaga o serviço `WinPlaybookSshd` e desinstala o OpenSSH Server
-quando foi o WinPlaybook que o instalou. O `Uninstall-WinPlaybook` também
-desliga o `localhost_windows`.
+O comando apaga o serviço `WinPlaybookSshd` e desinstala o OpenSSH Server,
+se foi o WinPlaybook que o instalou. O `Uninstall-WinPlaybook` também desliga
+o `localhost_windows`.
+
+---
+
+## Se algo der errado
+
+Veja [Problemas no localhost_windows](troubleshooting-localhost-windows.md).

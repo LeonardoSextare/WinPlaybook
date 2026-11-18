@@ -22,6 +22,8 @@ monta o ambiente de novo do outro lado e se acostuma com outro terminal, outro
 janela do editor fica no Windows, mas o terminal, os arquivos e parte das
 extensões rodam no Linux, e essas extensões precisam ser instaladas de novo.
 
+---
+
 ## Por que uma distribuição WSL própria
 
 O WinPlaybook coloca os comandos do Ansible no `PATH` do Windows e roda cada
@@ -35,10 +37,10 @@ _playbooks_ na pasta onde eles já estão, e o WinPlaybook converte os caminhos
 do Windows nos argumentos para os caminhos da distribuição. Você não instala o
 Python nem o Ansible no Windows.
 
-A distribuição é própria para não mexer nas que você já tem. O WinPlaybook a
+A distribuição é própria para não mexer nas distribuições que você já tem. O WinPlaybook a
 configura como o Ansible precisa, e o `Uninstall-WinPlaybook` a apaga por
 inteiro.
 
 Em troca, a primeira instalação baixa o Debian e o Ansible e leva alguns
 minutos, e cada comando leva um pouco mais para começar. Essas e outras
-limitações estão em [Como funciona](how-it-works.md#limitacoes).
+limitações estão em [Limitações conhecidas](limitations.md).

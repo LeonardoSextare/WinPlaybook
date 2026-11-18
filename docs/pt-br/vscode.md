@@ -2,7 +2,7 @@
 
 Com a extensão Ansible da Red Hat, o VS Code mostra a documentação dos
 módulos, completa os playbooks e os valida com o `ansible-lint`. Esta página
-deixa a extensão funcionando com o WinPlaybook.
+mostra como deixar a extensão funcionando com o WinPlaybook.
 
 ## Instalar a versão testada
 
@@ -13,11 +13,15 @@ da extensão precisa ser testada antes. A versão testada é a 26.11.0:
 code --install-extension redhat.ansible@26.11.0
 ```
 
+---
+
 ## Desligar a atualização automática da extensão
 
 Uma atualização da extensão desfaz as correções. Na aba **Extensões** do VS
 Code, clique com o botão direito na extensão **Ansible** e desmarque
 **Atualização Automática** (_Auto Update_).
+
+---
 
 ## Aplicar as correções
 
@@ -30,6 +34,8 @@ Enable-WinPlaybookVSCodeExtension
 O comando mostra a versão corrigida, a pasta dela e as configurações que o
 VS Code precisa ter.
 
+---
+
 ## Liberar a pasta da distribuição
 
 A documentação dos módulos fica na distribuição do WinPlaybook, que o VS Code
@@ -41,6 +47,8 @@ Open User Settings (JSON)**) e acrescente:
 ```
 
 Depois, recarregue a janela (**Developer: Reload Window**).
+
+---
 
 ## Desfazer as correções
 

@@ -1,8 +1,8 @@
 # Consultar os logs
 
 O WinPlaybook grava um log de cada comando, com o código de saída e o tempo de
-cada etapa. Ele ajuda a entender um erro e a medir quanto o WinPlaybook soma ao
-tempo do Ansible. Esta página mostra onde ficam os logs e como escolher o
+cada etapa. Ele ajuda a entender um erro e a medir quanto tempo o WinPlaybook acrescenta
+ao Ansible. Esta página mostra onde ficam os logs e como escolher o nível de
 detalhe.
 
 ## Onde ficam
@@ -15,9 +15,11 @@ Os logs ficam em `%LOCALAPPDATA%\WinPlaybook\logs`, um arquivo por dia, como
 Get-Content "$env:LOCALAPPDATA\WinPlaybook\logs\winplaybook-$(Get-Date -Format yyyy-MM-dd).log" -Tail 20
 ```
 
-## Escolher o detalhe
+---
 
-A variável de ambiente `WINPLAYBOOK_LOG` escolhe o nível:
+## Escolher o nível de detalhe
+
+A variável de ambiente `WINPLAYBOOK_LOG` define o nível:
 
 | Nível   | O que grava                                                                   |
 | ------- | ----------------------------------------------------------------------------- |
@@ -32,8 +34,12 @@ Para a sessão atual do PowerShell:
 $env:WINPLAYBOOK_LOG = 'debug'
 ```
 
-No nível `debug`, os argumentos dos comandos vão para o log. Se você passa
-senhas nos argumentos, como num `-e senha=...`, volte para o `info` depois.
+!!! warning "Senhas no log"
+
+    No nível `debug`, os argumentos dos comandos vão para o log. Se você passa
+    senhas nos argumentos, como num `-e senha=...`, volte para o `info` depois.
+
+---
 
 ## Anexar a uma issue
 

@@ -13,10 +13,14 @@ of the extension needs to be tested first. The tested version is 26.11.0:
 code --install-extension redhat.ansible@26.11.0
 ```
 
+---
+
 ## Turn off automatic updates for the extension
 
 An update of the extension undoes the fixes. In the **Extensions** view of VS
 Code, right-click the **Ansible** extension and clear **Auto Update**.
+
+---
 
 ## Apply the fixes
 
@@ -29,6 +33,8 @@ Enable-WinPlaybookVSCodeExtension
 The command shows the fixed version, its folder, and the settings that VS
 Code needs.
 
+---
+
 ## Allow the distribution folder
 
 The module documentation is in the WinPlaybook distribution, which VS Code
@@ -40,6 +46,8 @@ Open User Settings (JSON)**) and add:
 ```
 
 Then reload the window (**Developer: Reload Window**).
+
+---
 
 ## Undo the fixes
 
