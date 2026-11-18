@@ -31,6 +31,13 @@ Describe 'Get-ScriptDosCaminhosDoWindows' {
         $script.Contains('sys.stdout = mostrar_saida_com_caminhos_do_windows(sys.stdout)') | Should-BeTrue
     }
 
+    It 'mostra os caminhos da distribuição só nos comandos do nó de controle' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
+
+        $script.Contains("PROGRAMAS_DO_NO_DE_CONTROLE = ('ansible-config', 'ansible-doc', 'ansible-galaxy')") | Should-BeTrue
+        $script.Contains("b'//wsl.localhost/' + distribuicao.encode() + caminho") | Should-BeTrue
+    }
+
     It 'tira os CR dos scripts com shebang que o ansible.builtin.script envia' {
         $script = InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }
 
