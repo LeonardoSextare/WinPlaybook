@@ -35,6 +35,7 @@ Describe 'ConvertTo-ArgumentoDoWsl' {
             @{ Descricao = 'um padrão de hosts com barra invertida'; Argumento = '~web\d+' }
             @{ Descricao = 'um argumento sem caminhos'; Argumento = '--check' }
             @{ Descricao = 'um argumento vazio'; Argumento = '' }
+            @{ Descricao = 'um argumento com várias linhas'; Argumento = "primeira linha`nsegunda linha" }
         ) {
             $resultado = InModuleScope WinPlaybook -Parameters @{ Argumento = $Argumento; PastaAtual = $pastaDoProjeto } {
                 ConvertTo-ArgumentoDoWsl -Argumento $Argumento -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' -PastaAtual $PastaAtual
