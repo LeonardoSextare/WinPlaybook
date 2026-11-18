@@ -159,6 +159,11 @@ Funções privadas:
 - Nos perfis do PowerShell (o `profile.ps1` do PowerShell 7 e o do Windows
   PowerShell, em Documentos), o WinPlaybook acrescenta só a linha do
   autocomplete, e a desinstalação a tira. Um perfil que fica vazio é apagado.
+- O log fica em `%LOCALAPPDATA%\WinPlaybook\logs`, gravado só pelo
+  `Write-Log`, no nível da variável `WINPLAYBOOK_LOG`. Uma falha ao gravar o
+  log nunca interrompe o comando. O log não recebe senhas, valores de
+  variáveis de ambiente nem conteúdo de arquivos; os argumentos dos comandos
+  entram só no nível `debug`.
 - A extensão Ansible do VS Code só muda pelo
   `Enable-WinPlaybookVSCodeExtension`, que guarda cada arquivo original ao
   lado dele, com `.winplaybook-original`. O WinPlaybook não altera as

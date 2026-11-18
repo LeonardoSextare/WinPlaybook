@@ -52,6 +52,9 @@
     comandosDoProjeto no JSON, o script grava nesse arquivo, um por linha, os comandos do
     ambiente do projeto, sem os do próprio Python (python, pip, pydoc e activate).
 
+    Com log no JSON, o caminho do log do WinPlaybook na distribuição, o script acrescenta a
+    ele, no fim, uma linha DEBUG com o tempo de cada preparação e o do comando.
+
     Com o relay de rede, uma conexão TCP ao localhost da distribuição (127.0.0.1 ou ::1)
     numa porta em que o Windows escuta, e a distribuição não, chega ao localhost do Windows.
     Uma regra do nftables leva essas conexões à porta 47999, onde o supervisor as repassa ao
@@ -642,17 +645,46 @@ signal.signal(signal.SIGHUP, guardar_sinal_de_fim)
 signal.signal(signal.SIGTERM, guardar_sinal_de_fim)
 signal.signal(signal.SIGINT, ignorar_interrupcao)
 
+tempos_das_etapas = []
+inicio_da_etapa = [time.monotonic()]
+
+
+def marcar_etapa(nome):
+    agora = time.monotonic()
+    tempos_das_etapas.append(nome + ': ' + str(int((agora - inicio_da_etapa[0]) * 1000)) + ' ms')
+    inicio_da_etapa[0] = agora
+
+
+def registrar_tempos_no_log(caminho_do_log):
+    marcar_etapa('comando')
+    linha = time.strftime('%Y-%m-%dT%H:%M:%S%z') + ' [DEBUG] [supervisor ' + str(os.getpid()) + '] ' + os.path.basename(sys.argv[1]) + ': ' + ', '.join(tempos_das_etapas)
+    try:
+        os.makedirs(os.path.dirname(caminho_do_log), exist_ok=True)
+        with open(caminho_do_log, 'a', encoding='utf-8') as arquivo:
+            arquivo.write(linha + '\n')
+    except OSError:
+        pass
+
+
 entrada = criar_entrada_do_usuario()
 ambiente = json.loads(os.environ.pop('WINPLAYBOOK_ENVIRONMENT'))
 os.environ.update(ambiente['variaveis'])
+if ambiente.get('log'):
+    atexit.register(registrar_tempos_no_log, ambiente['log'])
 os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
+marcar_etapa('path do Windows')
 preparar_config_do_ssh()
+marcar_etapa('config do ssh')
 preparar_config_do_git(ambiente['pathDoWindows'])
+marcar_etapa('config do git')
 if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDITOR') and not os.environ.get('VISUAL'):
     os.environ['EDITOR'] = 'notepad.exe'
 preparar_certificados(ambiente['certificadosDoWindows'])
+marcar_etapa('certificados')
 preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))
+marcar_etapa('ambiente do projeto')
 iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
+marcar_etapa('ponte de rede')
 mensagem_de_comando_ausente = os.environ.pop('WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE', '')
 pastas_da_distribuicao = ':'.join(pasta for pasta in os.environ.get('PATH', '').split(':') if pasta != PASTA_DO_PATH_DO_WINDOWS)
 if shutil.which(sys.argv[1], path=pastas_da_distribuicao) is None:

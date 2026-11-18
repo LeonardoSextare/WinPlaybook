@@ -36,6 +36,10 @@
     ambiente que ainda não têm shim, como o molecule, ganham um na pasta dos shims depois
     do comando, por Add-ShimDeComandoDoProjeto.
 
+    Cada comando grava no log de Write-Log uma linha com o código de saída e o tempo total,
+    o da preparação no Windows e o da distribuição. No nível debug, o log recebe também a
+    pasta, os argumentos e o tempo de cada preparação do supervisor na distribuição.
+
     .PARAMETER Comando
     O comando na distribuição, como ansible-playbook.
 
@@ -65,6 +69,7 @@
         [AllowEmptyCollection()] [object[]] $Entrada = @()
     )
 
+    $relogio = [Diagnostics.Stopwatch]::StartNew()
     $configuracao = Get-Configuracao
     $distribuicao = $configuracao.WslDistribution
     $raizDeMontagem = $configuracao.WslMountRoot
@@ -160,6 +165,10 @@
     if ($temRelayDeRede) {
         $ambienteDoComando['relayDeRede'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -RaizDeMontagem $raizDeMontagem
     }
+    $registraAsEtapasNoLog = (Get-NivelDoLog) -ge 3
+    if ($registraAsEtapasNoLog) {
+        $ambienteDoComando['log'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoLog) -RaizDeMontagem $raizDeMontagem
+    }
     $criaShimsDoProjeto = $temPastaDosShims -and [bool] $configuracao.ShimPowerShellPath
     if ($criaShimsDoProjeto) {
         $caminhoDosComandosDoProjeto = Join-Path -Path (Split-Path -Path (Get-CaminhoDoSupervisor) -Parent) -ChildPath "comandos-do-projeto-$([guid]::NewGuid().ToString('N')).txt"
@@ -188,6 +197,8 @@
         $argumentosDoWsl = @(ConvertTo-ArgumentoNativoLegado -Argumento $argumentosDoWsl)
     }
 
+    $tempoDePreparacao = $relogio.ElapsedMilliseconds
+    Write-Log -Nivel 'debug' -Mensagem "$Comando na pasta $pastaAtualNaDistribuicao, com os argumentos $(ConvertTo-Json -InputObject @($argumentosNaDistribuicao) -Compress)"
     $ErrorActionPreference = 'Continue'
     $codificacaoDoConsole = [Console]::OutputEncoding
     $utf8DoWslOriginal = $env:WSL_UTF8
@@ -214,15 +225,18 @@
     }
 
     $codigoDeSaida = $LASTEXITCODE
+    $tempoNaDistribuicao = $relogio.ElapsedMilliseconds - $tempoDePreparacao
     if ($criaShimsDoProjeto) {
         Add-ShimDeComandoDoProjeto -CaminhoDaLista $caminhoDosComandosDoProjeto -PastaDosShims $configuracao.ShimFolder -CaminhoDoPowerShell $configuracao.ShimPowerShellPath
         $global:LASTEXITCODE = $codigoDeSaida
     }
+    Write-Log -Nivel 'info' -Mensagem "$Comando saiu com $codigoDeSaida em $($relogio.ElapsedMilliseconds) ms (preparação no Windows: $tempoDePreparacao ms, distribuição: $tempoNaDistribuicao ms)"
     $oWslFalhou = $codigoDeSaida -eq -1
     if ($oWslFalhou) {
         $distribuicaoExiste = $distribuicao -in @(Get-DistribuicaoDoWsl)
         $global:LASTEXITCODE = $codigoDeSaida
         if (-not $distribuicaoExiste) {
+            Write-Log -Nivel 'error' -Mensagem "$($Comando): a distribuição $distribuicao não existe mais"
             throw (Get-Mensagem -Nome 'DistribuicaoNaoExisteMais' -Valores $distribuicao)
         }
     }
