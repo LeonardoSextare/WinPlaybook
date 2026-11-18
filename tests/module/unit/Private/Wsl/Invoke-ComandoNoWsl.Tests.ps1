@@ -22,6 +22,7 @@ Describe 'Invoke-ComandoNoWsl' {
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
         Mock Get-DestinoDeUnidade -ModuleName WinPlaybook { @{} }
         Mock Get-CaminhoDoSupervisor -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\supervisor-teste.py' }
+        Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { Join-Path $TestDrive 'configuracao' }
         Mock Get-CaminhoDosCertificadosDoWindows -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\certificados-teste.pem' }
         Mock Mount-PastaDoWindows -ModuleName WinPlaybook { }
 
@@ -500,6 +501,55 @@ Describe 'Invoke-ComandoNoWsl' {
 
         It 'explica como instalar o WSL' {
             { InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } } | Should-Throw -ExceptionMessage 'O WSL não foi encontrado*wsl --install*'
+        }
+    }
+
+    Context 'quando grava o log' {
+        BeforeEach {
+            $nivelOriginal = $env:WINPLAYBOOK_LOG
+            Remove-Item -LiteralPath (Join-Path $TestDrive 'configuracao\logs') -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        AfterEach {
+            Remove-Item -LiteralPath 'Env:WINPLAYBOOK_LOG' -ErrorAction SilentlyContinue
+            if ($null -ne $nivelOriginal) {
+                $env:WINPLAYBOOK_LOG = $nivelOriginal
+            }
+        }
+
+        It 'registra o comando, o código de saída e os tempos' {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = 4 }
+
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+            $log = Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8
+            $log | Should-BeLikeString '*`[INFO`]*ansible-playbook saiu com 4 em * ms (preparação no Windows: * ms, distribuição: * ms)*'
+        }
+
+        It 'não registra os argumentos fora do nível debug' {
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = 0 }
+
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'segredo.yml' }
+
+            Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8 | Should-NotBeLikeString '*segredo.yml*'
+        }
+
+        It 'passa ao supervisor o log, no nível debug' {
+            $env:WINPLAYBOOK_LOG = 'debug'
+            Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+            $ambiente.log | Should-BeLikeString '/mnt/*/configuracao/logs/winplaybook-*.log'
+        }
+
+        It 'não grava nada no nível off' {
+            $env:WINPLAYBOOK_LOG = 'off'
+            Mock wsl -ModuleName WinPlaybook { $global:LASTEXITCODE = 0 }
+
+            $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' }
+
+            Test-Path -LiteralPath (Join-Path $TestDrive 'configuracao\logs') | Should-BeFalse
         }
     }
 }

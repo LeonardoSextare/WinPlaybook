@@ -121,6 +121,8 @@
         return
     }
 
+    $relogio = [Diagnostics.Stopwatch]::StartNew()
+    Write-Log -Nivel 'info' -Mensagem "Install-WinPlaybook começou: pasta dos shims $pastaDosShims, versão do Ansible '$versaoDoAnsible', $(@($pacotesPython).Count) pacotes Python extras"
     $pastaDoExecutavel = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-$([guid]::NewGuid().ToString('N'))"
     $caminhoDoExecutavel = Join-Path -Path $pastaDoExecutavel -ChildPath 'shim.exe'
     $caminhoDoRelay = Join-Path -Path $pastaDoExecutavel -ChildPath 'relay-do-agente-ssh.exe'
@@ -149,6 +151,7 @@
             $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao
         }
         catch {
+            Write-Log -Nivel 'error' -Mensagem "Install-WinPlaybook falhou: $($_.Exception.Message)"
             if ($vaiCriarAPastaDoSsh) {
                 Remove-PastaVazia -Pasta $pastaDoSsh
             }
@@ -203,6 +206,7 @@
         Remove-Item -LiteralPath $pastaDoExecutavel -Recurse -Force -ErrorAction SilentlyContinue
     }
 
+    Write-Log -Nivel 'info' -Mensagem "Install-WinPlaybook terminou em $($relogio.ElapsedMilliseconds) ms, com $(@($comandos).Count) comandos"
     return [pscustomobject]@{
         Folder       = $pastaDosShims
         Distribution = $distribuicao

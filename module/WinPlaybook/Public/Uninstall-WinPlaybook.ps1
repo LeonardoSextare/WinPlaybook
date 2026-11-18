@@ -6,7 +6,7 @@
     .DESCRIPTION
     A distribuição WinPlaybook é apagada com tudo o que há nela, como as collections e as
     roles que o ansible-galaxy instalou e as chaves SSH guardadas no Linux. Por isso o
-    comando pede confirmação; use -Confirm:$false para pular. Também apaga a configuração do
+    comando pede confirmação; use -Confirm:$false para pular. Também apaga a configuração e os logs do
     WinPlaybook. A pasta escolhida com o -Path do Install-WinPlaybook fica, e só a pasta
     WinPlaybook criada dentro dela é apagada. A pasta .ssh do usuário que a instalação
     criou é apagada só se continuar vazia. As correções do Enable-WinPlaybookVSCodeExtension
@@ -45,5 +45,6 @@
     foreach ($extensao in Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode)) {
         Remove-PatchDaExtensaoAnsible -Caminho $extensao.Caminho
     }
+    Remove-Item -LiteralPath (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'logs') -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Configuracao
 }

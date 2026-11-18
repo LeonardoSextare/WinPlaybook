@@ -989,6 +989,32 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o log está no nível debug' {
+        BeforeAll {
+            $nivelOriginal = $env:WINPLAYBOOK_LOG
+            $env:WINPLAYBOOK_LOG = 'debug'
+            Push-Location $TestDrive
+            $null = Invoke-WinPlaybook ansible --version 2>&1
+            $log = Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8
+        }
+
+        AfterAll {
+            Pop-Location
+            Remove-Item -LiteralPath 'Env:WINPLAYBOOK_LOG' -ErrorAction SilentlyContinue
+            if ($null -ne $nivelOriginal) {
+                $env:WINPLAYBOOK_LOG = $nivelOriginal
+            }
+        }
+
+        It 'registra os argumentos e o tempo do comando' {
+            $log | Should-BeLikeString '*`[DEBUG`]*ansible na pasta*"--version"*`[INFO`]*ansible saiu com 0 em * ms*'
+        }
+
+        It 'registra o tempo de cada preparação do supervisor na distribuição' {
+            $log | Should-BeLikeString '*`[DEBUG`] `[supervisor *`] ansible: path do Windows: * ms, config do ssh: * ms*comando: * ms*'
+        }
+    }
+
     Context 'quando o processo do Windows termina no meio do comando' {
         It 'encerra o comando e os processos que ele criou na distribuição' {
             $resultado = Get-SobraDeComandoInterrompido -CaminhoDoModulo $caminhoDoModulo -Distribuicao $nomeDaDistribuicao -PastaDeTrabalho $TestDrive

@@ -108,6 +108,13 @@ Describe 'Install-WinPlaybook' {
     }
 
     Context 'quando instala pela primeira vez' {
+        It 'registra no log o começo e o fim da instalação, com o tempo' {
+            $null = Install-WinPlaybook
+
+            $log = Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8
+            $log | Should-BeLikeString '*Install-WinPlaybook começou*Install-WinPlaybook terminou em * ms, com 2 comandos*'
+        }
+
         It 'cria a distribuição WinPlaybook na pasta do WinPlaybook' {
             $null = Install-WinPlaybook
 
@@ -311,6 +318,12 @@ Describe 'Install-WinPlaybook' {
             { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
 
             Test-Path -LiteralPath (Join-Path $pastaDoPerfil '.ansible') | Should-BeFalse
+        }
+
+        It 'registra a falha no log' {
+            { Install-WinPlaybook } | Should-Throw -ExceptionMessage '*sem internet*'
+
+            Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8 | Should-BeLikeString '*`[ERROR`]*Install-WinPlaybook falhou: sem internet*'
         }
 
         It 'prepara a distribuição com o perfil e o nome do usuário do Windows' {
