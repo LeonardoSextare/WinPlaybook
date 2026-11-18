@@ -13,7 +13,10 @@
     argumentos podem ter barras invertidas sem ser caminhos. O caminho pode vir depois de
     uma opção (--inventory=) e depois de @, como em -e @vars\prod.yml. Um caminho absoluto
     também vira o da distribuição como valor de um chave=valor, como os do -e e do -a
-    (-e pasta=C:\infra\files, -a "path=C:\infra\site.yml mode=0644"). Os outros argumentos
+    (-e pasta=C:\infra\files, -a "path=C:\infra\site.yml mode=0644"). Um caminho do Windows
+    no formato de uma URI, com uma barra antes da unidade (/C:/infra/site.yml), como o
+    passam programas que convertem URIs, como a extensão Ansible do VS Code, é tratado
+    como C:/infra/site.yml. Os outros argumentos
     voltam sem mudança.
 
     .PARAMETER Argumento
@@ -60,6 +63,7 @@
     $null = $Argumento -match '^(?<prefixo>(--[\w-]+=)?@?)(?<valor>.*)$'
     $prefixo = $Matches.prefixo
     $valor = $Matches.valor
+    $valor = $valor -replace '^/(?=[A-Za-z]:[\\/])', ''
 
     $ehCaminhoAbsolutoDoWindows = $valor -match '^[A-Za-z]:[\\/]'
     if ($ehCaminhoAbsolutoDoWindows) {
