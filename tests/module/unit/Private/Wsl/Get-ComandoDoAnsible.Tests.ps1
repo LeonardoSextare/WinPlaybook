@@ -12,31 +12,23 @@ Describe 'Get-ComandoDoAnsible' {
     BeforeAll {
         Mock wsl -ModuleName WinPlaybook {
             $global:LASTEXITCODE = 0
-            'python3', 'ansible-playbook', 'ansible', 'ansible-lint', 'ansible', 'pip'
+            'ansible-playbook', 'yamllint', 'ansible', 'ansible-lint', 'ansible', ''
         }
         Mock Test-PassagemDeArgumentosLegada -ModuleName WinPlaybook { $false }
     }
 
-    Context 'quando a distribuição lista os comandos dela' {
-        It 'devolve os comandos do Ansible em ordem e sem repetição' {
-            $resultado = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' }
+    Context 'quando a distribuição lista os comandos do ambiente do Ansible' {
+        It 'devolve os comandos em ordem e sem repetição, inclusive os dos pacotes extras' {
+            $resultado = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' }
 
-            $resultado | Should-BeCollection @('ansible', 'ansible-lint', 'ansible-playbook')
+            $resultado | Should-BeCollection @('ansible', 'ansible-lint', 'ansible-playbook', 'yamllint')
         }
 
-        It 'pergunta a um login shell da distribuição' {
-            $null = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' }
+        It 'lista os comandos de ~/.local/bin ligados ao ambiente do Ansible no uv' {
+            $null = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' }
 
             Should-Invoke wsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                ($args[0..4] -join ' ') -eq '--distribution Ubuntu --exec sh -lc'
-            }
-        }
-
-        It 'passa a raiz de montagem, para o script pular as pastas das unidades do Windows' {
-            $null = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' }
-
-            Should-Invoke wsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $args[-1] -eq '/mnt/'
+                ($args[0..4] -join ' ') -eq '--distribution Ubuntu --exec sh -c' -and $args[5].Contains('"$HOME"/.local/bin/*') -and $args[5].Contains('"$HOME"/.local/share/uv/tools/ansible/*')
             }
         }
     }
@@ -47,10 +39,10 @@ Describe 'Get-ComandoDoAnsible' {
         }
 
         It 'escapa as aspas do script' {
-            $null = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' }
+            $null = InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' }
 
             Should-Invoke wsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $args[5].Contains('\"$0\"')
+                $args[5].Contains('\"$comando\"')
             }
         }
     }
@@ -61,7 +53,7 @@ Describe 'Get-ComandoDoAnsible' {
         }
 
         It 'informa a distribuição que não conseguiu executar' {
-            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' } } | Should-Throw -ExceptionMessage '*listar os comandos da distribuição WSL Ubuntu*'
+            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' } } | Should-Throw -ExceptionMessage '*listar os comandos da distribuição WSL Ubuntu*'
         }
     }
 
@@ -69,12 +61,12 @@ Describe 'Get-ComandoDoAnsible' {
         BeforeAll {
             Mock wsl -ModuleName WinPlaybook {
                 $global:LASTEXITCODE = 0
-                'python3', 'pip'
+                'yamllint'
             }
         }
 
         It 'explica que falta o Ansible na distribuição' {
-            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' -RaizDeMontagem '/mnt/' } } | Should-Throw -ExceptionMessage '*Ubuntu não tem comandos do Ansible*Install-WinPlaybook*'
+            { InModuleScope WinPlaybook { Get-ComandoDoAnsible -Distribuicao 'Ubuntu' } } | Should-Throw -ExceptionMessage '*Ubuntu não tem comandos do Ansible*Install-WinPlaybook*'
         }
     }
 }

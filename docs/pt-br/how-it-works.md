@@ -93,7 +93,8 @@ Um _shim_ é um executável que repassa a chamada para outro programa. Os
 _shims_ do WinPlaybook ficam em
 `C:\Users\<usuário>\AppData\Local\WinPlaybook\bin`, no `PATH` do usuário. O
 `Install-WinPlaybook` cria um para cada comando do Ansible que encontra na
-distribuição.
+distribuição, inclusive os do `ansible-lint` e os dos pacotes do
+`-PythonPackage`.
 
 O caminho até o módulo depende de quem chama o comando. O PowerShell executa
 o `.ps1` direto; os outros programas passam pelo `.exe`:

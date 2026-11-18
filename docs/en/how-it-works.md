@@ -95,7 +95,8 @@ reinstalls Ansible and the shims.
 A shim is an executable that passes a call to another program. The WinPlaybook
 shims are in `C:\Users\<user>\AppData\Local\WinPlaybook\bin`, which is in the
 user `PATH`. `Install-WinPlaybook` creates one for each Ansible command that it
-finds in the distribution.
+finds in the distribution, including the `ansible-lint` command and the
+commands of the `-PythonPackage` packages.
 
 How the call reaches the module depends on the program that runs the command.
 PowerShell runs the `.ps1` file directly; other programs go through the `.exe`

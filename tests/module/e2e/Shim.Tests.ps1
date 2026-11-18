@@ -34,7 +34,7 @@
     InModuleScope WinPlaybook -Parameters $parametrosDosShims {
         $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
         Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem }
-        foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem) {
+        foreach ($comando in Get-ComandoDoAnsible -Distribuicao $Distribuicao) {
             New-ShimDeComando -Nome $comando -Pasta $Pasta -CaminhoDoPowerShell $CaminhoDoPowerShell -PastaDoModulo (Get-PastaDoModulo) -CaminhoDoExecutavel $CaminhoDoExecutavel
         }
         New-ShimDeComando -Nome 'ansible-playbook' -Pasta $PastaDaOutraEdicao -CaminhoDoPowerShell (Get-CaminhoDoPowerShell -Edicao $OutraEdicao) -PastaDoModulo (Get-PastaDoModulo) -CaminhoDoExecutavel $CaminhoDoExecutavel
@@ -53,6 +53,16 @@ AfterAll {
 }
 
 Describe 'Shim' {
+    Context 'quando os shims vêm dos comandos do ambiente do Ansible' {
+        It 'cria o shim do <_>' -ForEach @('ansible-playbook', 'ansible-lint', 'ansible-galaxy') {
+            Test-Path -LiteralPath (Join-Path $pastaDosShims "$_.ps1") | Should-BeTrue
+        }
+
+        It 'não cria shim para o <_>, que não é do ambiente do Ansible' -ForEach @('uv', 'uvx') {
+            Test-Path -LiteralPath (Join-Path $pastaDosShims "$_.ps1") | Should-BeFalse
+        }
+    }
+
     Context 'quando é chamado pelo PowerShell' {
         It 'executa o playbook' {
             $saida = & (Join-Path $pastaDosShims 'ansible-playbook.ps1') site.yml 2>&1 | Out-String
