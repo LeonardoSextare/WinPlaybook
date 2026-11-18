@@ -18,14 +18,21 @@
     $projetoComConfiguracao = Join-Path $PSScriptRoot '../data/projects/configuracao-do-projeto'
     $projetoComInventario = Join-Path $PSScriptRoot '../data/projects/inventario'
     $projetoComSincronizacao = Join-Path $PSScriptRoot '../data/projects/sincronizacao'
+
+    $vigia = Start-VigiaDeTesteTravado -Segundos 300
 }
 
 AfterAll {
+    Stop-VigiaDeTesteTravado -Vigia $vigia
     Remove-Module WinPlaybook
     $env:LOCALAPPDATA = $localAppDataOriginal
 }
 
 Describe 'Invoke-WinPlaybook' {
+    BeforeEach {
+        Update-VigiaDeTesteTravado -Vigia $vigia
+    }
+
     Context 'quando é chamado da pasta do projeto' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'projeto'
@@ -822,6 +829,23 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook sh -c 'printf "[%s]" "$EDITOR"' 2>&1 | Out-String
 
             $saida.Trim() | Should-Be '[]'
+        }
+    }
+
+    Context 'quando um comando passa do limite de tempo dos testes' {
+        It 'encerra o comando e devolve o controle ao teste' {
+            $vigiaCurto = Start-VigiaDeTesteTravado -Segundos 10
+            $relogio = [Diagnostics.Stopwatch]::StartNew()
+
+            try {
+                $saida = Invoke-WinPlaybook sleep 300 2>&1 | Out-String
+            }
+            finally {
+                Stop-VigiaDeTesteTravado -Vigia $vigiaCurto
+            }
+
+            $LASTEXITCODE | Should-NotBe 0 -Because $saida
+            $relogio.Elapsed.TotalSeconds | Should-BeLessThan 120
         }
     }
 

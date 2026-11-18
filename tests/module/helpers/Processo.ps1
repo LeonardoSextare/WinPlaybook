@@ -229,3 +229,100 @@ function Get-SobraDeComandoInterrompido {
         ProcessosQueSobraram  = $sobra
     }
 }
+
+function Start-VigiaDeTesteTravado {
+    <#
+    .SYNOPSIS
+    Abre um processo que encerra os processos filhos dos testes quando um teste passa do limite de tempo.
+
+    .DESCRIPTION
+    O vigia acompanha um arquivo que o Update-VigiaDeTesteTravado renova no começo de cada
+    teste. Quando o arquivo fica mais velho que o limite, o vigia encerra todos os processos
+    que descendem deste PowerShell, como o wsl.exe e os shims, e o teste preso falha com o
+    nome dele, em vez de travar a bateria inteira. O vigia termina junto com este PowerShell.
+    Devolve um objeto com o Processo do vigia e o Arquivo que ele acompanha.
+
+    .PARAMETER Segundos
+    O tempo máximo de um teste.
+
+    .EXAMPLE
+    $vigia = Start-VigiaDeTesteTravado -Segundos 300
+    #>
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [int] $Segundos = 300
+    )
+
+    $arquivo = (New-TemporaryFile).FullName
+    $caminhoDoScript = Join-Path ([IO.Path]::GetTempPath()) "vigia-de-teste-travado-$([guid]::NewGuid().ToString('N')).ps1"
+    $script = @"
+`$idDoPai = $PID
+`$arquivo = '$arquivo'
+while (Get-Process -Id `$idDoPai -ErrorAction SilentlyContinue) {
+    `$idade = ((Get-Date) - (Get-Item -LiteralPath `$arquivo).LastWriteTime).TotalSeconds
+    if (`$idade -gt $Segundos) {
+        `$processos = @(Get-CimInstance -ClassName Win32_Process)
+        `$pais = @(`$idDoPai)
+        `$descendentes = @()
+        while (`$pais.Count -gt 0) {
+            `$filhos = @(`$processos | Where-Object { `$pais -contains `$_.ParentProcessId -and `$_.CommandLine -notlike '*vigia-de-teste-travado-*' })
+            `$descendentes += `$filhos
+            `$pais = @(`$filhos | ForEach-Object { `$_.ProcessId })
+        }
+        `$descendentes | ForEach-Object { Stop-Process -Id `$_.ProcessId -Force -ErrorAction SilentlyContinue }
+        (Get-Item -LiteralPath `$arquivo).LastWriteTime = Get-Date
+    }
+    Start-Sleep -Seconds 2
+}
+Remove-Item -LiteralPath `$arquivo, '$caminhoDoScript' -Force -ErrorAction SilentlyContinue
+"@
+    [IO.File]::WriteAllText($caminhoDoScript, $script)
+    $processo = Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', "`"$caminhoDoScript`"" -WindowStyle Hidden -PassThru
+    return [pscustomobject]@{
+        Processo = $processo
+        Arquivo  = $arquivo
+        Script   = $caminhoDoScript
+    }
+}
+
+function Update-VigiaDeTesteTravado {
+    <#
+    .SYNOPSIS
+    Avisa ao vigia que um teste novo começou, e o limite de tempo conta de novo.
+
+    .PARAMETER Vigia
+    O objeto que o Start-VigiaDeTesteTravado devolveu.
+
+    .EXAMPLE
+    Update-VigiaDeTesteTravado -Vigia $vigia
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [pscustomobject] $Vigia
+    )
+
+    (Get-Item -LiteralPath $Vigia.Arquivo).LastWriteTime = Get-Date
+}
+
+function Stop-VigiaDeTesteTravado {
+    <#
+    .SYNOPSIS
+    Encerra o vigia e apaga o arquivo que ele acompanha.
+
+    .PARAMETER Vigia
+    O objeto que o Start-VigiaDeTesteTravado devolveu.
+
+    .EXAMPLE
+    Stop-VigiaDeTesteTravado -Vigia $vigia
+    #>
+    [CmdletBinding()]
+    [OutputType([void])]
+    param(
+        [Parameter(Mandatory)] [pscustomobject] $Vigia
+    )
+
+    Stop-Process -Id $Vigia.Processo.Id -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath $Vigia.Arquivo, $Vigia.Script -Force -ErrorAction SilentlyContinue
+}

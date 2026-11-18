@@ -133,6 +133,11 @@ mantenedor antes de virar padrão.
   `$env:PSModulePath`, como o usuário que instalou o módulo para uma edição só.
 - Argumentos com aspas, como JSON, são testados de ponta a ponta: só o
   `wsl.exe` real mostra o que o PowerShell 5.1 faz com eles.
+- Cada arquivo e2e abre um vigia no fim do `BeforeAll`
+  (`Start-VigiaDeTesteTravado`, de `tests/helpers/Processo.ps1`), renova ele no
+  `BeforeEach` do `Describe` e o fecha no `AfterAll`. Um teste que passa de 5
+  minutos tem os processos filhos encerrados e falha com o nome dele, em vez de
+  travar o job até o timeout do CI.
 
 ## Comparação com o Ansible nativo
 
