@@ -291,6 +291,32 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    Context 'quando a pasta dos shims tem o relay de rede' {
+        BeforeAll {
+            $pastaDosShims = Join-Path $TestDrive 'bin-com-relay-de-rede'
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDosShims 'exe\relay-de-rede.exe') -Force
+            Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $pastaDosShims; SshAgentPipe = $null } }
+            Mock Get-CaminhoDoRelayDoAgenteSsh -ModuleName WinPlaybook { Join-Path $TestDrive 'sem-relay-do-agente.exe' }
+        }
+
+        It 'passa ao supervisor o relay de rede, pela unidade montada' {
+            Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+            $esperado = '/mnt/' + $pastaDosShims.Substring(0, 1).ToLowerInvariant() + $pastaDosShims.Substring(2).Replace('\', '/') + '/exe/relay-de-rede.exe'
+
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+            $ambiente.relayDeRede | Should-Be $esperado
+        }
+    }
+
+    It 'não passa o relay de rede sem a pasta dos shims' {
+        Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+        $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+        $ambiente.PSObject.Properties.Name | Should-NotContainCollection 'relayDeRede'
+    }
+
     It 'passa ao supervisor o arquivo dos certificados raiz do Windows, pela unidade montada' {
         Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
 

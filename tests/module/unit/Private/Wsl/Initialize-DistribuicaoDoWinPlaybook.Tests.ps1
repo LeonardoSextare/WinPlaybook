@@ -61,8 +61,14 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             Test-Path -LiteralPath (Join-Path $pastaDoPerfil $_) -PathType Container | Should-BeTrue
         }
 
-        It 'instala o <_>' -ForEach @('python3', 'git', 'openssh-client', 'sshpass', 'rsync', 'socat', 'curl') {
+        It 'instala o <_>' -ForEach @('python3', 'git', 'openssh-client', 'sshpass', 'rsync', 'socat', 'curl', 'nftables', 'libcap2-bin') {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter { $Script -match "apt-get install [^;]*\b$_\b" }
+        }
+
+        It 'dá ao usuário winplaybook uma cópia do nft com a capability CAP_NET_ADMIN' {
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Scope Context -Times 1 -Exactly -ParameterFilter {
+                $Script.Contains('install -m 750 -g "$1" /usr/sbin/nft /usr/local/lib/winplaybook/nft;') -and $Script.Contains('setcap cap_net_admin+ep /usr/local/lib/winplaybook/nft;')
+            }
         }
 
         It 'para a distribuição, para a configuração valer no próximo comando' {

@@ -7,8 +7,8 @@
     O script recebe nos argumentos o comando e os argumentos dele, e na variável
     WINPLAYBOOK_ENVIRONMENT um JSON com as variáveis de ambiente do
     comando (variaveis), as pastas do Path do Windows na montagem com execução
-    (pathDoWindows) e o arquivo PEM com os certificados raiz do Windows
-    (certificadosDoWindows). Ele executa o comando
+    (pathDoWindows), o arquivo PEM com os certificados raiz do Windows
+    (certificadosDoWindows) e, quando existe, o relay de rede (relayDeRede). Ele executa o comando
     com essas variáveis somadas às da distribuição e sai com o código de
     saída dele, ou com 128 mais o número do sinal que o encerrou. Os processos que o comando
     deixa para trás, mesmo numa sessão própria, como os workers do Ansible, ficam sob o
@@ -49,6 +49,12 @@
     um por projeto, e ele recebe o módulo de Get-ScriptDosCaminhosDoWindows. O PATH começa
     pelo ambiente do projeto e perde os comandos do ambiente global, menos o uv e o uvx.
 
+    Com o relay de rede, uma conexão TCP ao localhost da distribuição (127.0.0.1 ou ::1)
+    numa porta em que o Windows escuta, e a distribuição não, chega ao localhost do Windows.
+    Uma regra do nftables leva essas conexões à porta 47999, onde o supervisor as repassa ao
+    relay, e a lista de portas acompanha o Windows a cada segundo. Com comandos em paralelo,
+    um supervisor só cuida da ponte, e outro assume quando ele termina.
+
     Quando a entrada padrão não é um terminal, ela chega ao comando por um pipe do próprio
     usuário, e o comando pode reabri-la pelo /dev/stdin. O pipe que o WSL entrega é do root.
 
@@ -67,6 +73,7 @@
     param()
 
     $script = @'
+import atexit
 import base64
 import ctypes
 import glob
@@ -77,6 +84,8 @@ import re
 import shlex
 import shutil
 import signal
+import socket
+import struct
 import subprocess
 import sys
 import tempfile
@@ -88,6 +97,22 @@ PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
 UV = os.path.expanduser('~/.local/bin/uv')
 PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
+NFT_DA_PONTE = '/usr/local/lib/winplaybook/nft'
+PORTA_DA_PONTE = 47999
+SO_ORIGINAL_DST = 80
+REGRAS_DA_PONTE = '''table inet winplaybook
+delete table inet winplaybook
+table inet winplaybook {
+    set portas_do_windows { type inet_service; }
+    chain saida {
+        type nat hook output priority -100; policy accept;
+        ip daddr 127.0.0.1 tcp dport @portas_do_windows redirect to :47999
+        ip6 daddr ::1 tcp dport @portas_do_windows redirect to :47999
+    }
+}
+'''
+portas_do_windows = []
+processos_da_ponte = []
 EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PRIORIDADE_DAS_EXTENSOES = {'.com': 0, '.exe': 1, '.bat': 2, '.cmd': 3}
 NOME_CURTO_RESERVADO = re.compile(r'^(python|pip|py)[0-9.]*$', re.IGNORECASE)
@@ -441,6 +466,128 @@ def preparar_ambiente_do_projeto():
     os.environ['VIRTUAL_ENV'] = ambiente_do_projeto
 
 
+def ler_portas_da_distribuicao():
+    portas = set()
+    for caminho in ('/proc/net/tcp', '/proc/net/tcp6'):
+        try:
+            with open(caminho) as tabela:
+                next(tabela)
+                for linha in tabela:
+                    campos = linha.split()
+                    if campos[3] == '0A':
+                        portas.add(int(campos[1].rsplit(':', 1)[1], 16))
+        except (OSError, StopIteration):
+            pass
+    return portas
+
+
+def aplicar_regras_de_rede(regras):
+    subprocess.run([NFT_DA_PONTE, '-f', '-'], input=regras.replace('\r', ''), text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def acompanhar_portas_do_windows(relay):
+    processo = subprocess.Popen([relay, 'portas'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    processos_da_ponte.append(processo)
+    for linha in processo.stdout:
+        portas_do_windows[:] = [int(porta) for porta in linha.split()]
+
+
+def atualizar_portas_da_ponte():
+    aplicadas = None
+    while True:
+        portas = sorted(set(portas_do_windows) - ler_portas_da_distribuicao() - {PORTA_DA_PONTE})
+        if portas != aplicadas:
+            comandos = 'flush set inet winplaybook portas_do_windows\n'
+            if portas:
+                comandos += 'add element inet winplaybook portas_do_windows { ' + ', '.join(str(porta) for porta in portas) + ' }\n'
+            aplicar_regras_de_rede(comandos)
+            aplicadas = portas
+        time.sleep(1)
+
+
+def copiar_conexao(ler, escrever, fechar):
+    try:
+        while True:
+            dados = ler(65536)
+            if not dados:
+                break
+            escrever(dados)
+    except OSError:
+        pass
+    finally:
+        try:
+            fechar()
+        except OSError:
+            pass
+
+
+def escrever_no_relay(processo):
+    def escrever(dados):
+        processo.stdin.write(dados)
+        processo.stdin.flush()
+    return escrever
+
+
+def atender_conexao(conexao, familia, relay):
+    with conexao:
+        nivel = socket.SOL_IP if familia == socket.AF_INET else socket.IPPROTO_IPV6
+        endereco = conexao.getsockopt(nivel, SO_ORIGINAL_DST, 16 if familia == socket.AF_INET else 28)
+        porta = struct.unpack('!H', endereco[2:4])[0]
+        processo = subprocess.Popen([relay, 'conectar', str(porta)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        do_windows = threading.Thread(target=copiar_conexao, args=(processo.stdout.read1, conexao.sendall, lambda: conexao.shutdown(socket.SHUT_WR)), daemon=True)
+        do_windows.start()
+        copiar_conexao(conexao.recv, escrever_no_relay(processo), processo.stdin.close)
+        do_windows.join()
+        processo.wait()
+
+
+def aceitar_conexoes(servidor, familia, relay):
+    while True:
+        conexao, _ = servidor.accept()
+        threading.Thread(target=atender_conexao, args=(conexao, familia, relay), daemon=True).start()
+
+
+def abrir_servidores_da_ponte():
+    servidores = []
+    for familia, endereco in ((socket.AF_INET, '127.0.0.1'), (socket.AF_INET6, '::1')):
+        servidor = None
+        try:
+            servidor = socket.socket(familia, socket.SOCK_STREAM)
+            if familia == socket.AF_INET6:
+                servidor.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            servidor.bind((endereco, PORTA_DA_PONTE))
+            servidor.listen(128)
+            servidores.append((servidor, familia))
+        except OSError:
+            if servidor is not None:
+                servidor.close()
+    return servidores
+
+
+def assumir_a_ponte_de_rede(relay):
+    servidores = abrir_servidores_da_ponte()
+    while not servidores:
+        time.sleep(1)
+        servidores = abrir_servidores_da_ponte()
+    aplicar_regras_de_rede(REGRAS_DA_PONTE)
+    atexit.register(encerrar_a_ponte_de_rede)
+    for servidor, familia in servidores:
+        threading.Thread(target=aceitar_conexoes, args=(servidor, familia, relay), daemon=True).start()
+    threading.Thread(target=acompanhar_portas_do_windows, args=(relay,), daemon=True).start()
+    atualizar_portas_da_ponte()
+
+
+def encerrar_a_ponte_de_rede():
+    aplicar_regras_de_rede('flush set inet winplaybook portas_do_windows\n')
+    for processo in processos_da_ponte:
+        processo.kill()
+
+
+def iniciar_ponte_de_rede(relay):
+    if relay and os.access(relay, os.X_OK) and os.access(NFT_DA_PONTE, os.X_OK):
+        threading.Thread(target=assumir_a_ponte_de_rede, args=(relay,), daemon=True).start()
+
+
 def preparar_config_do_ssh():
     destino = os.path.expanduser('~/.cache/winplaybook/ssh_config')
     try:
@@ -480,6 +627,7 @@ if os.path.basename(sys.argv[1]) == 'ansible-vault' and not os.environ.get('EDIT
     os.environ['EDITOR'] = 'notepad.exe'
 preparar_certificados(ambiente['certificadosDoWindows'])
 preparar_ambiente_do_projeto()
+iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)

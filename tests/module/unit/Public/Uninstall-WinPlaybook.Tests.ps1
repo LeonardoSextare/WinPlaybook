@@ -13,6 +13,8 @@ Describe 'Uninstall-WinPlaybook' {
         Mock New-ExecutavelDeShim -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'shim modelo' -Force }
         Mock New-ExecutavelDoRelay -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'relay modelo' -Force }
         Mock Install-RelayDoAgenteSsh -ModuleName WinPlaybook { }
+        Mock New-ExecutavelDoRelayDeRede -ModuleName WinPlaybook { $null = New-Item -ItemType File -Path $Caminho -Value 'relay de rede modelo' -Force }
+        Mock Install-RelayDeRede -ModuleName WinPlaybook { }
         Mock Test-WslInstalado -ModuleName WinPlaybook { $true }
         Mock Get-DistribuicaoDoWsl -ModuleName WinPlaybook { 'WinPlaybook' }
         Mock Initialize-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
