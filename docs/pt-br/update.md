@@ -18,6 +18,10 @@ roda um comando dele no terminal:
 WinPlaybook: a versão 0.20.0 está disponível (você usa a 0.19.0). Atualize com: Update-WinPlaybook
 ```
 
+Ele consulta a PowerShell Gallery em segundo plano, no máximo uma vez por
+hora, sem atrasar o comando. Uma versão publicada depois da última consulta
+aparece no aviso em até uma hora.
+
 Para desligar o aviso, defina a variável de ambiente
 `WINPLAYBOOK_UPDATE_CHECK` como `off`:
 
