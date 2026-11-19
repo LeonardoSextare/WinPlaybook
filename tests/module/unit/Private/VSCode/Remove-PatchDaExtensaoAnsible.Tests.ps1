@@ -11,9 +11,8 @@ Describe 'Remove-PatchDaExtensaoAnsible' {
     Context 'quando a extensão tem as correções' {
         BeforeAll {
             $extensao = New-ExtensaoAnsibleFalsa -PastaDasExtensoes $TestDrive -Versao '26.11.0'
-            $pastaDoServidor = Join-Path $extensao 'packages\ansible-language-server\dist'
             $originais = @{}
-            foreach ($arquivo in Get-ChildItem -LiteralPath $pastaDoServidor -Recurse -File) {
+            foreach ($arquivo in Get-ChildItem -LiteralPath $extensao -Recurse -File) {
                 $originais[$arquivo.FullName] = [IO.File]::ReadAllText($arquivo.FullName)
             }
             InModuleScope WinPlaybook -Parameters @{ Caminho = $extensao } {

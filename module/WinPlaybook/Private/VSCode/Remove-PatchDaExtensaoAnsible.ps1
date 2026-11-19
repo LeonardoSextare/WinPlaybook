@@ -19,13 +19,12 @@
         [Parameter(Mandatory)] [string] $Caminho
     )
 
-    $pastaDoServidor = Join-Path -Path $Caminho -ChildPath 'packages\ansible-language-server\dist'
-    $pastaExiste = Test-Path -LiteralPath $pastaDoServidor -PathType Container
+    $pastaExiste = Test-Path -LiteralPath $Caminho -PathType Container
     if (-not $pastaExiste) {
         return
     }
 
-    foreach ($original in Get-ChildItem -LiteralPath $pastaDoServidor -Filter '*.winplaybook-original' -Recurse -File) {
+    foreach ($original in Get-ChildItem -LiteralPath $Caminho -Filter '*.winplaybook-original' -Recurse -File) {
         $caminhoDoArquivo = $original.FullName.Substring(0, $original.FullName.Length - '.winplaybook-original'.Length)
         Move-Item -LiteralPath $original.FullName -Destination $caminhoDoArquivo -Force
     }

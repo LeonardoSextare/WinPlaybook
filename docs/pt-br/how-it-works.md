@@ -25,8 +25,8 @@ flowchart LR
 
     ---
 
-    Um Debian que é só do WinPlaybook, com o Ansible, o `ansible-lint` e o
-    `pywinrm`. As suas distribuições WSL não são usadas.
+    Um Debian que é só do WinPlaybook, com o Ansible, o `ansible-lint`, o
+    `ansible-creator` e o `pywinrm`. As suas distribuições WSL não são usadas.
 
 -   :lucide-terminal: **Os comandos no Windows**
 

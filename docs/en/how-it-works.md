@@ -26,7 +26,7 @@ flowchart LR
     ---
 
     A Debian that belongs only to WinPlaybook, with Ansible, `ansible-lint`,
-    and `pywinrm`. Your WSL distributions aren't used.
+    `ansible-creator`, and `pywinrm`. Your WSL distributions aren't used.
 
 -   :lucide-terminal: **The commands on Windows**
 

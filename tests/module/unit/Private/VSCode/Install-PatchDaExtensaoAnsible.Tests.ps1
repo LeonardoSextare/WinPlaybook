@@ -18,9 +18,8 @@ Describe 'Install-PatchDaExtensaoAnsible' {
     Context 'quando a extensão tem os trechos da versão testada' {
         BeforeAll {
             $extensao = New-ExtensaoAnsibleFalsa -PastaDasExtensoes (Join-Path $TestDrive 'com-trechos') -Versao '26.11.0'
-            $pastaDoServidor = Join-Path $extensao 'packages\ansible-language-server\dist'
             $originais = @{}
-            foreach ($arquivo in Get-ChildItem -LiteralPath $pastaDoServidor -Recurse -File) {
+            foreach ($arquivo in Get-ChildItem -LiteralPath $extensao -Recurse -File) {
                 $originais[$arquivo.FullName] = [IO.File]::ReadAllText($arquivo.FullName)
             }
             InModuleScope WinPlaybook -Parameters @{ Caminho = $extensao; Trocas = $trocas } { Install-PatchDaExtensaoAnsible -Caminho $Caminho -Trocas $Trocas -Versao '26.11.0' }
@@ -28,7 +27,7 @@ Describe 'Install-PatchDaExtensaoAnsible' {
         }
 
         It 'troca o trecho <De> em <Arquivo>' -ForEach $trocasDaVersao {
-            $texto = [IO.File]::ReadAllText((Join-Path $pastaDoServidor $Arquivo))
+            $texto = [IO.File]::ReadAllText((Join-Path $extensao $Arquivo))
 
             $texto.Contains($Para) | Should-BeTrue
         }

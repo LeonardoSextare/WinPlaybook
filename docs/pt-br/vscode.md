@@ -1,8 +1,9 @@
 # Usar o VS Code
 
 Com a extensão Ansible da Red Hat, o VS Code mostra a documentação dos
-módulos, completa os playbooks e os valida com o `ansible-lint`. Esta página
-mostra como deixar a extensão funcionando com o WinPlaybook.
+módulos, completa os playbooks, os valida com o `ansible-lint` e cria projetos
+novos com o `ansible-creator`. Esta página mostra como deixar a extensão
+funcionando com o WinPlaybook.
 
 ## Instalar a versão testada
 
