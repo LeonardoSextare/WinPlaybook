@@ -99,6 +99,10 @@ function textoDoHover(hover) {
   enviar({ method: 'textDocument/didSave', params: { textDocument: { uri: uriDoPlaybook } } });
   const publicados = await diagnosticos;
   escrever({ tipo: 'diagnosticos', mensagens: publicados ? publicados.params.diagnostics.map((d) => `${d.source}: ${d.code || ''} ${d.message}`) : [] });
+  const metadados = esperar((m) => m.method === 'update/ansible-metadata', 60000);
+  enviar({ method: 'update/ansible-metadata', params: uriDoPlaybook });
+  const notificacao = await metadados;
+  escrever({ tipo: 'metadados', dados: notificacao ? notificacao.params[0] : null });
   filho.kill();
   process.exit(0);
 })();
