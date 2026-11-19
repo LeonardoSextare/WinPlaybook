@@ -25,6 +25,7 @@ Describe 'Invoke-ComandoNoWsl' {
         Mock Get-PastaDeConfiguracao -ModuleName WinPlaybook { Join-Path $TestDrive 'configuracao' }
         Mock Get-CaminhoDosCertificadosDoWindows -ModuleName WinPlaybook { 'C:\Temp\WinPlaybook\certificados-teste.pem' }
         Mock Mount-PastaDoWindows -ModuleName WinPlaybook { }
+        Mock Repair-InteropDoWsl -ModuleName WinPlaybook { }
 
         Push-Location $pastaDoProjeto
     }
@@ -70,6 +71,12 @@ Describe 'Invoke-ComandoNoWsl' {
                 $Montagem[0].Origem -eq '\\servidor\infra' -and $Montagem[0].PontoDeMontagem -eq '/mnt/unc/servidor/infra'
             }
         }
+    }
+
+    It 'refaz o interop do WSL na distribuição antes de rodar o comando' {
+        $null = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
+
+        Should-Invoke Repair-InteropDoWsl -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Distribuicao -eq 'Ubuntu' }
     }
 
     It 'executa na distribuição escolhida na instalação' {
