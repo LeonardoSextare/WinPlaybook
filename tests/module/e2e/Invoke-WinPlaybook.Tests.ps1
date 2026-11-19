@@ -795,6 +795,47 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o projeto usa caminhos relativos com barra invertida' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'caminhos-relativos-do-windows'
+            $null = New-Item -ItemType Directory -Path (Join-Path $projeto 'inventario'), (Join-Path $projeto 'segredos'), (Join-Path $projeto 'roles\internas\role_interna\tasks'), (Join-Path $projeto 'files') -Force
+            [IO.File]::WriteAllText((Join-Path $projeto 'ansible.cfg'), "[defaults]`r`ninventory = inventario\hosts.yml`r`nvault_password_file = segredos\senha.txt`r`nroles_path = roles\internas`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'inventario\hosts.yml'), "all:`r`n  hosts:`r`n    servidor-relativo:`r`n      ansible_connection: local`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'segredos\senha.txt'), "senha-de-teste`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'roles\internas\role_interna\tasks\main.yml'), "- ansible.builtin.debug:`r`n    msg: role achada pelo caminho relativo`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'files\dado.txt'), "conteudo relativo`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: servidor-relativo`r`n  gather_facts: false`r`n  roles: [role_interna]`r`n  tasks:`r`n    - ansible.builtin.debug:`r`n        msg: `"{{ lookup('ansible.builtin.file', 'files\\dado.txt') }}`"`r`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'segredo.yml'), "valor: segredo relativo`r`n")
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'lê o inventário do caminho relativo do ansible.cfg' {
+            $saida = Invoke-WinPlaybook ansible-inventory --list 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*servidor-relativo*'
+        }
+
+        It 'usa a senha do vault do caminho relativo do ansible.cfg' {
+            $saida = Invoke-WinPlaybook ansible-vault encrypt segredo.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            Get-Content -LiteralPath (Join-Path $projeto 'segredo.yml') -TotalCount 1 | Should-Be '$ANSIBLE_VAULT;1.1;AES256'
+        }
+
+        It 'acha a role e o arquivo pelos caminhos relativos' {
+            $saida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*role achada pelo caminho relativo*'
+            $saida | Should-BeLikeString '*conteudo relativo*'
+        }
+    }
+
     Context 'quando os arquivos do projeto têm caminhos do Windows' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'caminhos-do-windows'

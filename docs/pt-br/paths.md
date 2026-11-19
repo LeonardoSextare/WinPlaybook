@@ -48,6 +48,11 @@ variável (`arquivo: C:\infra\files\dado.txt`), no `src` de um `copy` ou
 `ansible.cfg`, como o `roles_path`, que pode separar vários caminhos do Windows
 por `;`.
 
+Um caminho relativo com `\` também funciona nesses lugares, como
+`inventory = inventario\hosts.yml` e `vault_password_file = segredos\senha.txt`
+no `ansible.cfg`, ou `lookup('ansible.builtin.file', 'files\dado.txt')` num
+playbook.
+
 ---
 
 ## Nas variáveis de ambiente
