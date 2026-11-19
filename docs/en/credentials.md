@@ -18,6 +18,10 @@ files on Windows.
   Windows user name.
 - `config` can have Windows paths. `ssh` uses a translated copy of it, made
   again for each command, and the Windows file stays as it is.
+- A key outside `.ssh`, such as one in a project or a downloaded `.pem`, also
+  works in `ansible_ssh_private_key_file` and `--private-key`. `ssh` gets a
+  copy of it with the permissions it requires, kept on the distribution disk,
+  and the Windows file stays as it is.
 
 ### The SSH agent
 

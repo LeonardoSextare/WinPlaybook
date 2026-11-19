@@ -16,6 +16,8 @@
       caminhos do Windows ou de \\wsl.localhost;
     - scripts: roda pela extensão os scripts das pastas do Windows, que não têm a permissão de
       execução, e tira os CR dos scripts com shebang que o ansible.builtin.script envia;
+    - chaves: entrega ao ssh uma cópia com 0600 da chave de private_key_file que está numa
+      pasta do Windows, legível por outros;
     - localhost_windows: cria o host implícito localhost_windows, com a porta, o usuário e a
       chave da variável WINPLAYBOOK_LOCALHOST_WINDOWS.
 

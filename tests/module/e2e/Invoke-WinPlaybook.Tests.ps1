@@ -846,6 +846,41 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando a chave SSH do host está numa pasta do Windows' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'chave-numa-pasta-do-windows'
+            $null = New-Item -ItemType Directory -Path (Join-Path $projeto 'chaves') -Force
+            [IO.File]::WriteAllText((Join-Path $projeto 'chaves\deploy'), "-----BEGIN OPENSSH PRIVATE KEY-----`nchave de teste`n-----END OPENSSH PRIVATE KEY-----`n")
+            $sshQueMostraAChave = '/tmp/winplaybook-e2e-ssh-que-mostra-a-chave'
+            $linhasDoSsh = @(
+                '#!/bin/sh'
+                'for argumento in "$@"; do'
+                '  case "$argumento" in IdentityFile=*)'
+                '    chave="${argumento#IdentityFile=}"; chave="${chave#\"}"; chave="${chave%\"}"'
+                '    echo "permissao da chave: $(stat -c %a "$chave")" >&2'
+                '    echo "conteudo: $(sed -n 2p "$chave")" >&2;;'
+                '  esac'
+                'done'
+                'exit 255'
+            )
+            $scriptEmBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(($linhasDoSsh -join "`n") + "`n"))
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u winplaybook -- sh -c `"echo $scriptEmBase64 | base64 -d > $sshQueMostraAChave && chmod 755 $sshQueMostraAChave`""
+            Push-Location $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u winplaybook -- rm -f $sshQueMostraAChave"
+        }
+
+        It 'entrega ao ssh a chave com permissão só para o usuário' {
+            $saida = Invoke-WinPlaybook ansible all -i 'alvo,' -c ssh -e "ansible_ssh_executable=$sshQueMostraAChave" -e "ansible_ssh_private_key_file=$projeto\chaves\deploy" -m ansible.builtin.ping 2>&1 | Out-String
+
+            $saida | Should-BeLikeString '*permissao da chave: 600*'
+            $saida | Should-BeLikeString '*conteudo: chave de teste*'
+        }
+    }
+
     Context 'quando os arquivos do projeto têm caminhos do Windows' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'caminhos-do-windows'
