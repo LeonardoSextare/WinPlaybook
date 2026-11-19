@@ -43,7 +43,7 @@ Uninstall-WinPlaybook -Confirm:$false
 - Deletes the distribution, the commands, the configuration, and the logs.
 - Removes the commands folder from `PATH` and the autocomplete line from the
   PowerShell profiles.
-- Deletes the `.ansible\collections`, `.ansible\roles`, and `.ssh` folders of
+- Deletes the `.ansible\collections`, `.ansible\roles`, `.ansible\plugins`, and `.ssh` folders of
   the profile only if they're empty.
 
 The module stays installed. See [Uninstall WinPlaybook](uninstall.md).

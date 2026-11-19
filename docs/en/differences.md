@@ -33,6 +33,7 @@ Both exist without being in the inventory and aren't in the `all` group.
 | ----------------------- | ------------------------ | --------------------------------------- |
 | Collections             | `~/.ansible/collections` | `C:\Users\<user>\.ansible\collections`  |
 | Roles                   | `~/.ansible/roles`       | `C:\Users\<user>\.ansible\roles`        |
+| Plugins                 | `~/.ansible/plugins`     | `C:\Users\<user>\.ansible\plugins`      |
 | User configuration      | `~/.ansible.cfg`         | `C:\Users\<user>\.ansible.cfg`          |
 | ssh keys and configuration | `~/.ssh`              | `C:\Users\<user>\.ssh`                  |
 

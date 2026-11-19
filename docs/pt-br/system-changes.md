@@ -13,7 +13,7 @@ acontece com cada item na desinstalação. `%LOCALAPPDATA%` é `C:\Users\<usuár
 | Configuração e aviso de versão nova    | `%LOCALAPPDATA%\WinPlaybook`                           | Apagados                    |
 | Logs                                   | `%LOCALAPPDATA%\WinPlaybook\logs`                      | Apagados                    |
 | Linha do autocomplete                  | `profile.ps1` do PowerShell 7 e do Windows PowerShell  | Removida; um perfil vazio é apagado |
-| Pastas de _collections_ e _roles_      | `C:\Users\<usuário>\.ansible`                          | Apagadas só se vazias       |
+| Pastas de _collections_, _roles_ e _plugins_| `C:\Users\<usuário>\.ansible`                          | Apagadas só se vazias       |
 | Pasta `.ssh`, quando não existe        | `C:\Users\<usuário>\.ssh`                              | Apagada só se vazia         |
 
 ---
