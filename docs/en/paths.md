@@ -48,6 +48,11 @@ task, in a lookup or `include`, in the inventory, and in the `ansible.cfg`
 paths, such as `roles_path`, which can separate several Windows paths with
 `;`.
 
+A relative path with `\` also works in these places, such as
+`inventory = inventory\hosts.yml` and `vault_password_file = secrets\password.txt`
+in `ansible.cfg`, or `lookup('ansible.builtin.file', 'files\data.txt')` in a
+playbook.
+
 ---
 
 ## In the environment variables

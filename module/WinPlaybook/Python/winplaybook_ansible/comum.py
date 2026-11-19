@@ -5,6 +5,8 @@ import sys
 PROGRAMA_DO_ANSIBLE = re.compile(r'^ansible(-[a-z]+)?$')
 CAMINHO_DO_WINDOWS = re.compile(r'^[A-Za-z]:[\\/]')
 CAMINHO_DO_WINDOWS_EM_BYTES = re.compile(rb'^[A-Za-z]:[\\/]')
+CAMINHO_RELATIVO_DO_WINDOWS = re.compile(r'^[^\\/:]+(\\[^\\/:]*)+$')
+CAMINHO_RELATIVO_DO_WINDOWS_EM_BYTES = re.compile(rb'^[^\\/:]+(\\[^\\/:]*)+$')
 programa_eh_do_ansible = []
 
 
@@ -18,6 +20,10 @@ def converter_caminho(caminho):
         return raiz + '/' + caminho[0].lower() + caminho[2:].replace('\\', '/')
     if isinstance(caminho, bytes) and CAMINHO_DO_WINDOWS_EM_BYTES.match(caminho):
         return raiz.encode() + b'/' + caminho[0:1].lower() + caminho[2:].replace(b'\\', b'/')
+    if isinstance(caminho, str) and CAMINHO_RELATIVO_DO_WINDOWS.match(caminho):
+        return caminho.replace('\\', '/')
+    if isinstance(caminho, bytes) and CAMINHO_RELATIVO_DO_WINDOWS_EM_BYTES.match(caminho):
+        return caminho.replace(b'\\', b'/')
     return caminho
 
 

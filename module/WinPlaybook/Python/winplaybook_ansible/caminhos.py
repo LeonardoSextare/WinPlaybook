@@ -5,6 +5,7 @@ from .comum import converter_caminho
 
 LISTA_COM_CAMINHO_DO_WINDOWS = re.compile(r'(^|;)\s*[A-Za-z]:[\\/]')
 CAMINHO_DO_WINDOWS_SEM_ASPAS = re.compile(r'((?:^|(?<=[\s=]))[A-Za-z]:)(\\[^\s\'"]*)')
+TIPOS_DE_CAMINHO = ('path', 'tmppath', 'temppath', 'tmp')
 expanduser_original = os.path.expanduser
 
 
@@ -36,8 +37,13 @@ def ajustar_gerenciador_de_configuracao(modulo):
     ensure_type = modulo.ensure_type
 
     def ensure_type_com_windows(value, value_type, *args, **kwargs):
-        if value_type == 'pathspec' and isinstance(value, str) and LISTA_COM_CAMINHO_DO_WINDOWS.search(value):
-            value = ':'.join(converter_caminho(item.strip()) for item in value.split(';'))
+        if isinstance(value, str) and value_type in TIPOS_DE_CAMINHO:
+            value = converter_caminho(value)
+        elif isinstance(value, str) and value_type == 'pathlist':
+            value = ','.join(converter_caminho(item.strip()) for item in value.split(','))
+        elif isinstance(value, str) and value_type == 'pathspec':
+            separador = ';' if LISTA_COM_CAMINHO_DO_WINDOWS.search(value) or ';' in value else ':'
+            value = ':'.join(converter_caminho(item.strip()) for item in value.split(separador))
         return ensure_type(value, value_type, *args, **kwargs)
 
     modulo.ensure_type = ensure_type_com_windows
