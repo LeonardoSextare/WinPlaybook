@@ -5,7 +5,8 @@
 
     .DESCRIPTION
     As mensagens ficam nos arquivos pt-BR\Mensagens.psd1 e en-US\Mensagens.psd1 da pasta do
-    módulo, com as mesmas chaves. Um idioma sem arquivo usa o inglês. Os marcadores {0},
+    módulo, com as mesmas chaves. Qualquer variante do português, como pt-PT, usa as mensagens
+    em português do Brasil, e um idioma sem arquivo usa o inglês. Os marcadores {0},
     {1}... da mensagem viram os valores, na ordem.
 
     .PARAMETER Nome
@@ -31,6 +32,10 @@
 
     $pastaDoModulo = $ExecutionContext.SessionState.Module.ModuleBase
     $cultura = Get-CulturaDaInterface
+    $ehOutraVarianteDoPortugues = $cultura -like 'pt-*'
+    if ($ehOutraVarianteDoPortugues) {
+        $cultura = 'pt-BR'
+    }
     $temMensagensNoIdioma = $cultura -and (Test-Path -LiteralPath (Join-Path -Path $pastaDoModulo -ChildPath "$cultura\Mensagens.psd1"))
     if (-not $temMensagensNoIdioma) {
         $cultura = 'en-US'

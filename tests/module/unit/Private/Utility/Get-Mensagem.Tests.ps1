@@ -31,10 +31,19 @@ Describe 'Get-Mensagem' {
         }
     }
 
+    Context 'quando a interface do Windows está em outra variante do português' {
+        It 'devolve a mensagem em português do Brasil para <_>' -ForEach 'pt-PT', 'pt-AO' {
+            Mock Get-CulturaDaInterface -ModuleName WinPlaybook -MockWith ([scriptblock]::Create("'$_'"))
+
+            $resultado = InModuleScope WinPlaybook { Get-Mensagem -Nome 'InformeOComando' }
+
+            $resultado | Should-BeLikeString 'Informe o comando*'
+        }
+    }
+
     Context 'quando a interface do Windows está num idioma sem mensagens' {
         It 'devolve a mensagem em inglês para <Descricao>' -ForEach @(
             @{ Descricao = 'o espanhol'; Cultura = 'es-ES' }
-            @{ Descricao = 'o português de Portugal'; Cultura = 'pt-PT' }
             @{ Descricao = 'a cultura invariável'; Cultura = '' }
         ) {
             Mock Get-CulturaDaInterface -ModuleName WinPlaybook { $Cultura }
