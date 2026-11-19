@@ -43,7 +43,7 @@ The command shows the fixed version and the setting that VS Code needs.
 ## Allow the distribution folder
 
 The module documentation is in the WinPlaybook distribution, which VS Code
-opens through `\wsl.localhost`. Open the user `settings.json` (**Preferences:
+opens through `\\wsl.localhost`. Open the user `settings.json` (**Preferences:
 Open User Settings (JSON)**) and add:
 
 ```json
