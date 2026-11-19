@@ -65,6 +65,16 @@ bugs, e como o código lida com cada um.
   depois do boot. O `Initialize-DistribuicaoDoWinPlaybook` só põe a pasta
   .ssh no `/etc/fstab` quando ela existe.
 
+- Todas as distribuições WSL 2 rodam na mesma VM, e o `systemd-binfmt` de uma
+  distribuição com systemd, como o Ubuntu, apaga o registro `WSLInterop` do
+  `binfmt_misc` da VM inteira. Sem ele, a distribuição não executa programas
+  do Windows (`Exec format error`), e a ponte de rede, o agente SSH e os
+  programas do `Path` param. Antes de cada comando, o `Invoke-ComandoNoWsl`
+  chama o `Repair-InteropDoWsl`, que confere o registro pelo `\\wsl.localhost`
+  e só o refaz como root quando ele falta. O teste "executa programas do
+  Windows depois que outra distribuição apaga o registro do interop" do
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` confere.
+
 ## Unidades e pastas de rede
 
 - O WSL monta só as unidades fixas. Uma unidade do `subst`, uma unidade de

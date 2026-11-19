@@ -67,6 +67,11 @@ def ignorar_interrupcao(numero, quadro):
     pass
 
 
+def ignorar_falha_de_programa_do_windows(argumentos):
+    if not issubclass(argumentos.exc_type, OSError):
+        threading.__excepthook__(argumentos)
+
+
 def listar_descendentes():
     filhos_por_pai = {}
     for nome in os.listdir('/proc'):
@@ -571,6 +576,7 @@ def preparar_config_do_ssh():
 
 
 ctypes.CDLL(None).prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0)
+threading.excepthook = ignorar_falha_de_programa_do_windows
 signal.signal(signal.SIGHUP, guardar_sinal_de_fim)
 signal.signal(signal.SIGTERM, guardar_sinal_de_fim)
 signal.signal(signal.SIGINT, ignorar_interrupcao)

@@ -183,6 +183,8 @@
     $valoresDoAnsible = @($variaveisDoWindows.Keys | Where-Object { $_.StartsWith('ANSIBLE_', [StringComparison]::Ordinal) } | ForEach-Object { $variaveisDoWindows[$_] })
     $textosDoComando = @($pastaAtualNaDistribuicao) + $argumentosNaDistribuicao + $valoresDoAnsible
     $montagens = @(Get-MontagemNecessaria -Texto $textosDoComando -RaizDeMontagem $raizDeMontagem)
+    Repair-InteropDoWsl -Distribuicao $distribuicao
+
     $temPastaParaMontar = $montagens.Count -gt 0
     if ($temPastaParaMontar) {
         Mount-PastaDoWindows -Distribuicao $distribuicao -Montagem $montagens

@@ -722,6 +722,7 @@ Describe 'Invoke-WinPlaybook' {
         AfterAll {
             Pop-Location
             $env:Path = $pathOriginal
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- sh -c `"test -e /proc/sys/fs/binfmt_misc/WSLInterop || echo :WSLInterop:M::MZ::/init:PF > /proc/sys/fs/binfmt_misc/register`""
         }
 
         It 'executa o <Descricao>' -ForEach @(
@@ -736,6 +737,15 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString $Esperado
+        }
+
+        It 'executa programas do Windows depois que outra distribuição apaga o registro do interop' {
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- sh -c `"echo -1 > /proc/sys/fs/binfmt_misc/WSLInterop`""
+
+            $saida = Invoke-WinPlaybook sh -c 'cmd.exe /c echo oi depois do systemd' 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*oi depois do systemd*'
         }
 
         It 'não executa os shims do WinPlaybook pelo Path' {
