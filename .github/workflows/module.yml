@@ -110,7 +110,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ${{ runner.temp }}\distribuicao-de-testes
-          key: distribuicao-de-testes-${{ hashFiles('module/WinPlaybook/Private/Wsl/New-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Initialize-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Install-AnsibleNaDistribuicao.ps1', 'module/WinPlaybook/Private/Path/Get-ScriptDosCaminhosDoWindows.ps1', 'tests/module/helpers/Wsl.ps1') }}
+          key: distribuicao-de-testes-${{ hashFiles('module/WinPlaybook/Private/Wsl/New-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Initialize-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Install-AnsibleNaDistribuicao.ps1', 'module/WinPlaybook/Python/winplaybook_ansible/*.py', 'tests/module/helpers/Wsl.ps1') }}
 
       - name: Troca o módulo pelo pacote publicado
         run: |

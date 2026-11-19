@@ -31,12 +31,16 @@ Describe 'Install-AnsibleNaDistribuicao' {
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { ($Argumentos[2..($Argumentos.Count - 1)] -join ',') -eq $Esperado }
         }
 
-        It 'grava no ambiente do Ansible o módulo que aceita caminhos do Windows' {
+        It 'grava no ambiente do Ansible o pacote que adapta o Ansible ao Windows, no lugar do módulo antigo' {
             InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
 
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($Argumentos[0])) -eq (InModuleScope WinPlaybook { Get-ScriptDosCaminhosDoWindows }) -and
-                $Script.Contains('"$site_packages/winplaybook_caminhos_do_windows.py"') -and $Script.Contains('import winplaybook_caminhos_do_windows\n'' > "$site_packages/winplaybook.pth"')
+                $linhas = $Argumentos[0] -split "`n"
+                $arquivos = @(InModuleScope WinPlaybook { Get-ArquivoDoHookDoAnsible })
+                $linhas.Count -eq $arquivos.Count -and
+                $linhas[0] -eq "__init__.py $([Convert]::ToBase64String($arquivos[0].Conteudo))" -and
+                $Script.Contains('"$site_packages/winplaybook_ansible/$nome"') -and $Script.Contains('import winplaybook_ansible\n'' > "$site_packages/winplaybook.pth"') -and
+                $Script.Contains('rm -rf "$site_packages/winplaybook_caminhos_do_windows.py"')
             }
         }
 
