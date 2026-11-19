@@ -15,7 +15,8 @@ Uninstall-WinPlaybook [-WhatIf] [-Confirm]
 
 ### -Confirm
 
-O comando pede confirmação. `-Confirm:$false` pula a pergunta.
+Num terminal interativo, o comando pede confirmação, com o não como padrão.
+`-Confirm:$false` pula a pergunta.
 
 ### -WhatIf
 

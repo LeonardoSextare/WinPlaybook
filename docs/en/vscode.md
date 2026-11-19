@@ -35,8 +35,7 @@ In PowerShell:
 Enable-WinPlaybookVSCodeExtension
 ```
 
-The command shows the fixed version, its folder, and the settings that VS
-Code needs.
+The command shows the fixed version and the setting that VS Code needs.
 
 ---
 

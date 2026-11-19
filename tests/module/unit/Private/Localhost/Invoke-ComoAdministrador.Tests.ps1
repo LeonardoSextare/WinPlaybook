@@ -50,18 +50,22 @@ Describe 'Invoke-ComoAdministrador' {
         { InModuleScope WinPlaybook { Invoke-ComoAdministrador -Comando 'Enable-WinPlaybookLocalhost' } } | Should-Throw -ExceptionMessage '*não abriu o PowerShell de administrador*cancelada pelo usuário*'
     }
 
-    It 'mostra na etapa em andamento o progresso que o PowerShell elevado conta' {
-        Mock Set-TextoDaEtapa -ModuleName WinPlaybook { }
+    It 'aplica ao plano em andamento as etapas que o PowerShell elevado conta' {
+        Mock Set-EventoDoPlano -ModuleName WinPlaybook { }
         Mock Start-Process -ModuleName WinPlaybook {
             $script = [Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($ArgumentList[4]))
             $arquivo = [regex]::Match($script, "WINPLAYBOOK_PROGRESS_FILE = '([^']+)'").Groups[1].Value
             $processo = [pscustomobject]@{ ExitCode = 0; HasExited = $false; Arquivo = $arquivo; Voltas = 0 }
-            $processo | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milissegundos) $this.Voltas++; if ($this.Voltas -eq 1) { [IO.File]::WriteAllText($this.Arquivo, "Instalando o OpenSSH Server`n"); return $false }; $this.HasExited = $true; return $true }
+            $processo | Add-Member -MemberType ScriptMethod -Name WaitForExit -Value { param($Milissegundos) $this.Voltas++; if ($this.Voltas -eq 1) { [IO.File]::WriteAllText($this.Arquivo, "inicio localhost.openssh`n"); return $false }; $this.HasExited = $true; return $true }
             return $processo
         }
 
-        InModuleScope WinPlaybook { Invoke-ComoAdministrador -Comando 'Enable-WinPlaybookLocalhost' }
+        InModuleScope WinPlaybook {
+            $plano = New-Plano -Itens @{ Id = 'localhost.openssh'; Texto = 'Baixar o OpenSSH' }
+            Invoke-ComoAdministrador -Comando 'Enable-WinPlaybookLocalhost'
+            Close-Plano -Plano $plano
+        } 6> $null
 
-        Should-Invoke Set-TextoDaEtapa -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Texto -eq 'Instalando o OpenSSH Server' }
+        Should-Invoke Set-EventoDoPlano -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Evento -eq 'inicio' -and $Id -eq 'localhost.openssh' }
     }
 }

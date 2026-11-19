@@ -48,7 +48,7 @@
     }
 
     $extensoes = @(Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode))
-    $extensaoJaFoiCorrigida = @($extensoes | Where-Object { Get-ChildItem -LiteralPath $_.Caminho -Recurse -File -Filter '*.winplaybook-original' -ErrorAction SilentlyContinue | Select-Object -First 1 }).Count -gt 0
+    $extensaoJaFoiCorrigida = @($extensoes | Where-Object { Test-ExtensaoAnsibleCorrigida -Caminho $_.Caminho }).Count -gt 0
     $perguntaDoVSCode = $podePerguntar -and -not $CorrigirVSCode -and $extensoes.Count -gt 0 -and -not $extensaoJaFoiCorrigida
     if ($perguntaDoVSCode) {
         $escolhas.CorrigirVSCode = Read-Escolha -Pergunta (Get-Mensagem -Nome 'PerguntaDoVSCode') -Explicacao (Get-Mensagem -Nome 'ExplicacaoDoVSCode') -Link (Get-Mensagem -Nome 'PaginaDaDocumentacao' -Valores 'vscode') -AjudaDoSim (Get-Mensagem -Nome 'OpcaoSimDoVSCode') -AjudaDoNao (Get-Mensagem -Nome 'OpcaoNaoDoVSCode')

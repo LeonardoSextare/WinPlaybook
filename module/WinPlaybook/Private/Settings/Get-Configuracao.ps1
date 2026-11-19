@@ -18,18 +18,17 @@
     param()
 
     $configuracao = @{
-        ShimFolder                          = $null
-        ShimPowerShellPath                  = $null
-        WslDistribution                     = $null
-        WslMountRoot                        = $null
-        AnsibleVersion                      = $null
-        PythonPackages                      = $null
-        SshAgentPipe                        = $null
-        CreatedSshFolder                    = $null
-        LocalhostWindowsPort                = $null
-        LocalhostWindowsUser                = $null
-        LocalhostWindowsDeclined            = $null
-        OpenSshServerInstalledByWinPlaybook = $null
+        ShimFolder               = $null
+        ShimPowerShellPath       = $null
+        WslDistribution          = $null
+        WslMountRoot             = $null
+        AnsibleVersion           = $null
+        PythonPackages           = $null
+        SshAgentPipe             = $null
+        CreatedSshFolder         = $null
+        LocalhostWindowsPort     = $null
+        LocalhostWindowsUser     = $null
+        LocalhostWindowsDeclined = $null
     }
 
     $caminhoDoArquivo = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'settings.json'

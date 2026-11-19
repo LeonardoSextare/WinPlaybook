@@ -9,7 +9,7 @@ Uninstall-WinPlaybook
 !!! warning "Warning"
 
     The command asks for confirmation, because the distribution is deleted with
-    everything in it. If `localhost_windows` is on, Windows also asks for
+    everything in it. The default is no: Enter cancels, without changing anything. If `localhost_windows` is on, Windows also asks for
     administrator approval to turn it off.
 
 Then remove the module:

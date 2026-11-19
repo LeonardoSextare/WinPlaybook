@@ -36,8 +36,7 @@ No PowerShell:
 Enable-WinPlaybookVSCodeExtension
 ```
 
-O comando mostra a versão corrigida, a pasta dela e as configurações que o
-VS Code precisa ter.
+O comando mostra a versão corrigida e a configuração que o VS Code precisa ter.
 
 ---
 

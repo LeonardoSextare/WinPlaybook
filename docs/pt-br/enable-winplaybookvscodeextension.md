@@ -7,14 +7,15 @@ extensão instalada, desde que o WinPlaybook já tenha testado essa versão.
 ## Sintaxe
 
 ```powershell
-Enable-WinPlaybookVSCodeExtension [-WhatIf] [-Confirm]
+Enable-WinPlaybookVSCodeExtension [-PassThru] [-WhatIf] [-Confirm]
 ```
 
 ---
 
 ## Saída
 
-Um objeto com:
+O comando mostra a versão corrigida e a configuração que o `settings.json` do
+VS Code precisa ter. Com `-PassThru`, devolve também um objeto com:
 
 | Propriedade        | Conteúdo                                                 |
 | ------------------ | -------------------------------------------------------- |

@@ -18,10 +18,26 @@
     [OutputType([void])]
     param()
 
-    foreach ($extensao in Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode)) {
-        $confirmou = $PSCmdlet.ShouldProcess($extensao.Caminho, (Get-Mensagem -Nome 'DesativarExtensaoAnsible' -Valores $extensao.Caminho))
-        if ($confirmou) {
+    $extensoes = @(foreach ($extensao in Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode)) {
+            $confirmou = $PSCmdlet.ShouldProcess($extensao.Caminho, (Get-Mensagem -Nome 'DesativarExtensaoAnsible' -Valores $extensao.Caminho))
+            if ($confirmou) {
+                Write-Output $extensao
+            }
+        })
+    $temExtensao = $extensoes.Count -gt 0
+    if (-not $temExtensao) {
+        return
+    }
+
+    $plano = New-Plano -Itens @{ Id = 'vscode'; Texto = (Get-Mensagem -Nome 'PassoDesfazerOVSCode') }
+    try {
+        Start-ItemDoPlano -Plano $plano -Id 'vscode'
+        foreach ($extensao in $extensoes) {
             Remove-PatchDaExtensaoAnsible -Caminho $extensao.Caminho
         }
+        Complete-ItemDoPlano -Plano $plano -Id 'vscode' -Remocao
+    }
+    finally {
+        Close-Plano -Plano $plano
     }
 }

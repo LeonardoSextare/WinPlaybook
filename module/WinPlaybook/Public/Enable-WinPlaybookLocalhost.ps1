@@ -38,23 +38,40 @@
         return
     }
 
-    $ehAdministrador = Test-Administrador
-    if (-not $ehAdministrador) {
-        Invoke-ComoAdministrador -Comando 'Enable-WinPlaybookLocalhost -Confirm:$false'
-        return
+    $plano = New-Plano -Itens @(Get-PassoDoLocalhostWindows)
+    try {
+        $ehAdministrador = Test-Administrador
+        if (-not $ehAdministrador) {
+            Invoke-ComoAdministrador -Comando 'Enable-WinPlaybookLocalhost -Confirm:$false' -IdDaAprovacao 'localhost.aprovacao'
+        }
+        else {
+            Write-ProgressoDoAdministrador -Id 'localhost.chave'
+            $chavePublica = New-ChaveDoLocalhostWindows -Distribuicao $configuracao.WslDistribution
+            Write-ProgressoDoAdministrador -Id 'localhost.chave' -Fim
+
+            Write-ProgressoDoAdministrador -Id 'localhost.openssh'
+            $pastaDoOpenSsh = Install-OpenSshDoWinPlaybook
+            Write-ProgressoDoAdministrador -Id 'localhost.openssh' -Fim
+
+            Write-ProgressoDoAdministrador -Id 'localhost.servico'
+            $usuario = Get-UsuarioDoLocalhostWindows
+            $porta = 47022
+            Install-SshdDoWinPlaybook -ChavePublica $chavePublica -Usuario $usuario -Porta $porta -PastaDoOpenSsh $pastaDoOpenSsh
+            $configuracao['LocalhostWindowsPort'] = $porta
+            $configuracao['LocalhostWindowsUser'] = $usuario
+            $configuracao['LocalhostWindowsDeclined'] = $null
+            Save-Configuracao -Configuracao $configuracao
+            Write-ProgressoDoAdministrador -Id 'localhost.servico' -Fim
+        }
+    }
+    finally {
+        Close-Plano -Plano $plano
     }
 
-    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoCriandoAChave')
-    $chavePublica = New-ChaveDoLocalhostWindows -Distribuicao $configuracao.WslDistribution
-    $usuario = Get-UsuarioDoLocalhostWindows
-    $porta = 47022
-    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoBaixandoOOpenSsh')
-    $pastaDoOpenSsh = Install-OpenSshDoWinPlaybook
-    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoCriandoOServico')
-    Install-SshdDoWinPlaybook -ChavePublica $chavePublica -Usuario $usuario -Porta $porta -PastaDoOpenSsh $pastaDoOpenSsh
-
-    $configuracao['LocalhostWindowsPort'] = $porta
-    $configuracao['LocalhostWindowsUser'] = $usuario
-    $configuracao['LocalhostWindowsDeclined'] = $null
-    Save-Configuracao -Configuracao $configuracao
+    if (-not $plano.Aninhado) {
+        Write-Host ''
+        Write-Host "$(Get-Mensagem -Nome 'Pronto') " -ForegroundColor Green -NoNewline
+        Write-Host "$(Get-Mensagem -Nome 'TesteCom') " -NoNewline
+        Write-Host 'ansible localhost_windows -m ansible.windows.win_ping' -ForegroundColor Cyan
+    }
 }

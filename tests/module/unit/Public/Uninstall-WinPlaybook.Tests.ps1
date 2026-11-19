@@ -133,6 +133,7 @@ Describe 'Uninstall-WinPlaybook' {
         It 'desfaz as correções da extensão Ansible do VS Code' {
             $pastaDasExtensoes = Join-Path $TestDrive ([guid]::NewGuid().ToString('N') + '-extensoes')
             $null = New-Item -ItemType Directory -Path (Join-Path $pastaDasExtensoes 'redhat.ansible-26.11.0')
+            $null = New-Item -ItemType File -Path (Join-Path $pastaDasExtensoes 'redhat.ansible-26.11.0/server.js.winplaybook-original')
             Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { $pastaDasExtensoes }
             Mock Remove-PatchDaExtensaoAnsible -ModuleName WinPlaybook { }
 
@@ -190,10 +191,15 @@ Describe 'Uninstall-WinPlaybook' {
     }
 
     Context 'quando o comando é chamado' {
-        It 'pede confirmação antes de apagar a distribuição' {
-            $impacto = (Get-Command Uninstall-WinPlaybook).ScriptBlock.Attributes | Where-Object { $_ -is [System.Management.Automation.CmdletBindingAttribute] } | ForEach-Object { $_.ConfirmImpact }
+        It 'pede confirmação num terminal interativo e não apaga nada com o Enter' {
+            Mock Test-SessaoInterativa -ModuleName WinPlaybook { $true }
+            Mock Read-Host -ModuleName WinPlaybook { '' }
+            Mock Remove-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook { }
 
-            "$impacto" | Should-Be 'High'
+            $saida = Uninstall-WinPlaybook 6>&1 | Out-String
+
+            $saida | Should-BeLikeString '*Desinstalar o WinPlaybook?*o padrão é "N"*Nada foi alterado.*'
+            Should-Invoke Remove-DistribuicaoDoWinPlaybook -ModuleName WinPlaybook -Times 0 -Exactly
         }
     }
 

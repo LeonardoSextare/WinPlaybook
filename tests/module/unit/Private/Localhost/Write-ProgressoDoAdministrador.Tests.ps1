@@ -14,19 +14,23 @@ Describe 'Write-ProgressoDoAdministrador' {
         Remove-Item -LiteralPath 'Env:WINPLAYBOOK_PROGRESS_FILE' -ErrorAction SilentlyContinue
     }
 
-    It 'acrescenta o texto ao arquivo de WINPLAYBOOK_PROGRESS_FILE' {
+    It 'acrescenta o evento ao arquivo de WINPLAYBOOK_PROGRESS_FILE' {
         $env:WINPLAYBOOK_PROGRESS_FILE = Join-Path $TestDrive 'progresso.txt'
 
-        InModuleScope WinPlaybook { Write-ProgressoDoAdministrador -Texto 'Instalando o OpenSSH Server'; Write-ProgressoDoAdministrador -Texto 'Criando o serviço' }
+        InModuleScope WinPlaybook { Write-ProgressoDoAdministrador -Id 'localhost.openssh'; Write-ProgressoDoAdministrador -Id 'localhost.openssh' -Fim; Write-ProgressoDoAdministrador -Id 'localhost.remover' -Remocao }
 
-        Get-Content -LiteralPath $env:WINPLAYBOOK_PROGRESS_FILE -Encoding UTF8 | Should-BeCollection @('Instalando o OpenSSH Server', 'Criando o serviço')
+        Get-Content -LiteralPath $env:WINPLAYBOOK_PROGRESS_FILE -Encoding UTF8 | Should-BeCollection @('inicio localhost.openssh', 'fim localhost.openssh', 'remocao localhost.remover')
     }
 
-    It 'troca o texto da etapa em andamento sem a variável' {
-        Mock Set-TextoDaEtapa -ModuleName WinPlaybook { }
+    It 'atualiza o plano em andamento sem a variável' {
+        Mock Set-EventoDoPlano -ModuleName WinPlaybook { }
 
-        InModuleScope WinPlaybook { Write-ProgressoDoAdministrador -Texto 'Instalando o OpenSSH Server' }
+        InModuleScope WinPlaybook {
+            $plano = New-Plano -Itens @{ Id = 'localhost.openssh'; Texto = 'Baixar o OpenSSH' }
+            Write-ProgressoDoAdministrador -Id 'localhost.openssh' -Fim
+            Close-Plano -Plano $plano
+        }
 
-        Should-Invoke Set-TextoDaEtapa -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Texto -eq 'Instalando o OpenSSH Server' }
+        Should-Invoke Set-EventoDoPlano -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Evento -eq 'fim' -and $Id -eq 'localhost.openssh' }
     }
 }

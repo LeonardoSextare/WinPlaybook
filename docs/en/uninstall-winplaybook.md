@@ -15,7 +15,8 @@ Uninstall-WinPlaybook [-WhatIf] [-Confirm]
 
 ### -Confirm
 
-The command asks for confirmation. `-Confirm:$false` skips the question.
+In an interactive terminal, the command asks for confirmation, with no as the
+default. `-Confirm:$false` skips the question.
 
 ### -WhatIf
 
