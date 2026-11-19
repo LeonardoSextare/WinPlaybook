@@ -57,7 +57,7 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             }
         }
 
-        It 'cria no perfil do Windows a pasta <_>' -ForEach '.ansible\collections', '.ansible\roles' {
+        It 'cria no perfil do Windows a pasta <_>' -ForEach '.ansible\collections', '.ansible\roles', '.ansible\plugins' {
             Test-Path -LiteralPath (Join-Path $pastaDoPerfil $_) -PathType Container | Should-BeTrue
         }
 

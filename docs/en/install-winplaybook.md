@@ -85,7 +85,7 @@ Install-WinPlaybook -Path 'C:\Tools' -PowerShell Desktop
 - Creates the `WinPlaybook` WSL distribution, the first time.
 - Creates the commands in `<Path>\WinPlaybook\bin` and adds the folder to the
   user `PATH`.
-- Creates the `.ansible\collections` and `.ansible\roles` folders and, when it
+- Creates the `.ansible\collections`, `.ansible\roles`, and `.ansible\plugins` folders and, when it
   doesn't exist, the `.ssh` folder, in your profile.
 - Adds the autocomplete line to the PowerShell profiles.
 - Turns on `localhost_windows` and fixes the VS Code Ansible extension, when

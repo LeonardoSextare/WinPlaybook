@@ -18,8 +18,8 @@
     do agente SSH, que fica na subpasta exe da pasta dos shims.
 
     O Ansible usa o perfil do Windows como o do usuário: o .ansible.cfg do perfil, as
-    pastas .ansible\collections e .ansible\roles, que a instalação cria, para o que o
-    ansible-galaxy instala, e o nome do usuário do Windows como usuário padrão do ssh. A
+    pastas .ansible\collections, .ansible\roles e .ansible\plugins, que a instalação cria,
+    para o que o ansible-galaxy instala e para os plugins do usuário, e o nome do usuário do Windows como usuário padrão do ssh. A
     desinstalação apaga essas pastas só se continuarem vazias.
 
     Para cada comando do Ansible, cria um .ps1, que o PowerShell executa, e um .exe, que os

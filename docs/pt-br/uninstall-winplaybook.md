@@ -43,7 +43,7 @@ Uninstall-WinPlaybook -Confirm:$false
 - Apaga a distribuição, os comandos, a configuração e os logs.
 - Tira a pasta dos comandos do `PATH` e a linha do autocomplete dos perfis do
   PowerShell.
-- Apaga as pastas `.ansible\collections`, `.ansible\roles` e `.ssh` do perfil
+- Apaga as pastas `.ansible\collections`, `.ansible\roles`, `.ansible\plugins` e `.ssh` do perfil
   só se elas estiverem vazias.
 
 O módulo continua instalado. Veja [Desinstalar o WinPlaybook](uninstall.md).

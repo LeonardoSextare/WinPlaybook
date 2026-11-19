@@ -4,7 +4,7 @@
     Apaga do perfil do usuário as pastas do Ansible que a instalação criou, quando estão vazias.
 
     .DESCRIPTION
-    Apaga as pastas .ansible\collections, .ansible\roles e .ansible, nessa ordem, cada uma só
+    Apaga as pastas .ansible\collections, .ansible\roles, .ansible\plugins e .ansible, nessa ordem, cada uma só
     quando está vazia. Uma pasta com arquivos, como uma collection instalada, fica.
 
     .PARAMETER PastaDoPerfil
@@ -20,7 +20,7 @@
     )
 
     $pastaDoAnsible = Join-Path -Path $PastaDoPerfil -ChildPath '.ansible'
-    foreach ($pasta in (Join-Path -Path $pastaDoAnsible -ChildPath 'collections'), (Join-Path -Path $pastaDoAnsible -ChildPath 'roles'), $pastaDoAnsible) {
+    foreach ($pasta in (Join-Path -Path $pastaDoAnsible -ChildPath 'collections'), (Join-Path -Path $pastaDoAnsible -ChildPath 'roles'), (Join-Path -Path $pastaDoAnsible -ChildPath 'plugins'), $pastaDoAnsible) {
         Remove-PastaVazia -Pasta $pasta
     }
 }

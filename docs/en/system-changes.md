@@ -13,7 +13,7 @@ when you uninstall it. `%LOCALAPPDATA%` is `C:\Users\<user>\AppData\Local`.
 | Configuration and new version notice | `%LOCALAPPDATA%\WinPlaybook`                           | Deleted                            |
 | Logs                                | `%LOCALAPPDATA%\WinPlaybook\logs`                       | Deleted                            |
 | Autocomplete line                   | `profile.ps1` of PowerShell 7 and Windows PowerShell    | Removed; an empty profile is deleted |
-| Collections and roles folders       | `C:\Users\<user>\.ansible`                              | Deleted only if empty              |
+| Collections, roles, and plugins folders | `C:\Users\<user>\.ansible`                              | Deleted only if empty              |
 | `.ssh` folder, when it doesn't exist | `C:\Users\<user>\.ssh`                                 | Deleted only if empty              |
 
 ---

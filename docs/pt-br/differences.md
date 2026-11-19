@@ -34,6 +34,7 @@ grupo `all`.
 | ---------------------------- | ------------------------- | ------------------------------------------ |
 | _Collections_                | `~/.ansible/collections`  | `C:\Users\<usuário>\.ansible\collections`  |
 | _Roles_                      | `~/.ansible/roles`        | `C:\Users\<usuário>\.ansible\roles`        |
+| _Plugins_                    | `~/.ansible/plugins`      | `C:\Users\<usuário>\.ansible\plugins`      |
 | Configuração do usuário      | `~/.ansible.cfg`          | `C:\Users\<usuário>\.ansible.cfg`          |
 | Chaves e configuração do ssh | `~/.ssh`                  | `C:\Users\<usuário>\.ssh`                  |
 

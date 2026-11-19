@@ -25,9 +25,9 @@
     - o idioma é o C.UTF-8, que o Ansible exige;
     - o ssh conecta com o nome do usuário do Windows quando a conexão não define um usuário,
       como o ssh do Windows;
-    - o Ansible usa o .ansible.cfg do perfil do Windows e guarda as collections e as roles
-      que o ansible-galaxy instala nas pastas .ansible\collections e .ansible\roles do
-      perfil. As que já estavam na distribuição vão para essas pastas;
+    - o Ansible usa o .ansible.cfg do perfil do Windows e as pastas .ansible\collections,
+      .ansible\roles e .ansible\plugins do perfil, onde ficam o que o ansible-galaxy instala e
+      os plugins do usuário. O que já estava nessas pastas da distribuição vai para o perfil;
     - cada unidade fixa do Windows é montada uma segunda vez, em /opt/winplaybook/exec, com
       permissão de execução, para os programas do Windows rodarem da distribuição. Os .bat
       e .cmd rodam pelo cmd.exe do Windows, com o /usr/local/lib/winplaybook/executar-windows,
@@ -69,7 +69,7 @@
     )
 
     $pastaDoAnsible = Join-Path -Path $PastaDoPerfil -ChildPath '.ansible'
-    foreach ($pasta in 'collections', 'roles') {
+    foreach ($pasta in 'collections', 'roles', 'plugins') {
         $null = New-Item -ItemType Directory -Path (Join-Path -Path $pastaDoAnsible -ChildPath $pasta) -Force
     }
 
@@ -94,7 +94,7 @@
         'perfil=$(wslpath -a "$4");'
         'pasta_do_ansible="/home/$1/.ansible";'
         'install -d -o "$1" -g "$1" "$pasta_do_ansible";'
-        'for pasta in collections roles; do'
+        'for pasta in collections roles plugins; do'
         'if [ -d "$pasta_do_ansible/$pasta" ] && [ ! -L "$pasta_do_ansible/$pasta" ]; then cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"; rm -rf "$pasta_do_ansible/$pasta"; fi;'
         'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta";'
         'done;'
