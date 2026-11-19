@@ -44,7 +44,7 @@ O comando mostra a versão corrigida e a configuração que o VS Code precisa te
 ## Liberar a pasta da distribuição
 
 A documentação dos módulos fica na distribuição do WinPlaybook, que o VS Code
-abre pelo `\wsl.localhost`. Abra o `settings.json` do usuário (**Preferences:
+abre pelo `\\wsl.localhost`. Abra o `settings.json` do usuário (**Preferences:
 Open User Settings (JSON)**) e acrescente:
 
 ```json
