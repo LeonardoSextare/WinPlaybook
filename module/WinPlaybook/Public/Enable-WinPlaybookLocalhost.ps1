@@ -9,8 +9,8 @@
     ansible.windows, enquanto o localhost continua sendo o nó de controle.
 
     O comando precisa de administrador, e o Windows pede a aprovação quando o PowerShell não
-    é elevado. Ele instala o recurso opcional OpenSSH Server quando falta, cria o serviço
-    WinPlaybookSshd, que só escuta no 127.0.0.1 da porta 47022 e só aceita a chave que fica
+    é elevado. Ele baixa o OpenSSH da release oficial da Microsoft no GitHub para uma pasta
+    só do WinPlaybook, sem instalar nada no Windows, cria o serviço WinPlaybookSshd, que só escuta no 127.0.0.1 da porta 47022 e só aceita a chave que fica
     na distribuição, sem senha, e guarda a configuração. O Disable-WinPlaybookLocalhost e o
     Uninstall-WinPlaybook desfazem tudo.
 
@@ -48,14 +48,13 @@
     $chavePublica = New-ChaveDoLocalhostWindows -Distribuicao $configuracao.WslDistribution
     $usuario = Get-UsuarioDoLocalhostWindows
     $porta = 47022
-    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoInstalandoOOpenSsh')
-    $instalouOOpenSsh = Install-ServidorOpenSsh
+    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoBaixandoOOpenSsh')
+    $pastaDoOpenSsh = Install-OpenSshDoWinPlaybook
     Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoCriandoOServico')
-    Install-SshdDoWinPlaybook -ChavePublica $chavePublica -Usuario $usuario -Porta $porta
+    Install-SshdDoWinPlaybook -ChavePublica $chavePublica -Usuario $usuario -Porta $porta -PastaDoOpenSsh $pastaDoOpenSsh
 
     $configuracao['LocalhostWindowsPort'] = $porta
     $configuracao['LocalhostWindowsUser'] = $usuario
     $configuracao['LocalhostWindowsDeclined'] = $null
-    $configuracao['OpenSshServerInstalledByWinPlaybook'] = $instalouOOpenSsh -or [bool] $configuracao['OpenSshServerInstalledByWinPlaybook']
     Save-Configuracao -Configuracao $configuracao
 }

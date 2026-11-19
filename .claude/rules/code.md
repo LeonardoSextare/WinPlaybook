@@ -171,10 +171,11 @@ Funções privadas:
   `settings.json`, porque ele pode ter perfis e configurações por projeto.
 - O `localhost_windows` só liga pelo `Enable-WinPlaybookLocalhost`, que pede
   administrador. Ele cria o serviço `WinPlaybookSshd`, com a configuração em
-  `%ProgramData%\WinPlaybook\ssh`, e instala o OpenSSH Server só quando ele
-  falta, guardando isso na configuração. O `Disable-WinPlaybookLocalhost`
-  apaga o serviço e a pasta e só desinstala o OpenSSH Server que ele mesmo
-  instalou. A chave SSH fica no disco da distribuição, nunca na `.ssh` do
+  `%ProgramData%\WinPlaybook\ssh`, e roda um OpenSSH baixado da release oficial
+  da Microsoft no GitHub, com versão fixa e SHA256 conferido, em
+  `%ProgramData%\WinPlaybook\openssh`. Nada é instalado no Windows: o recurso
+  OpenSSH Server, o `ssh-agent` e o cliente `ssh` do usuário não são tocados.
+  O `Disable-WinPlaybookLocalhost` apaga o serviço e as duas pastas. A chave SSH fica no disco da distribuição, nunca na `.ssh` do
   Windows.
 - A desinstalação desfaz toda alteração que o WinPlaybook fez no sistema,
   seja na instalação ou em qualquer outro comando, como a distribuição

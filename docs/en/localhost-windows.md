@@ -19,8 +19,9 @@ Enable-WinPlaybookLocalhost
 
 !!! note "Administrator"
 
-    Windows asks for administrator approval. If the OpenSSH Server feature
-    isn't installed, the command installs it, which can take a few minutes.
+    Windows asks for administrator approval. The first time, the command
+    downloads OpenSSH from the official Microsoft release on GitHub, without
+    installing anything on Windows.
 
 The command creates the `WinPlaybookSshd` service, which only accepts
 connections from the same computer and only accepts the key kept in the
@@ -68,8 +69,8 @@ The available modules are in the documentation of the
 Disable-WinPlaybookLocalhost
 ```
 
-The command deletes the `WinPlaybookSshd` service and uninstalls OpenSSH
-Server, if WinPlaybook installed it. `Uninstall-WinPlaybook` also turns off
+The command deletes the `WinPlaybookSshd` service and the OpenSSH that
+WinPlaybook downloaded. `Uninstall-WinPlaybook` also turns off
 `localhost_windows`.
 
 ---

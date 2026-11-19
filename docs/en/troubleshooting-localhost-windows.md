@@ -44,13 +44,17 @@ message.
 
 ---
 
-## OpenSSH Server wasn't installed
+## OpenSSH wasn't downloaded
 
-The installation of the feature downloads files from Windows Update. In a
-company, Windows can use an update server that doesn't have the feature. Talk
-to the team that manages the computers, or install the feature in
-**Settings**, **System**, **Optional features**, **OpenSSH Server**, and run
-`Enable-WinPlaybookLocalhost` again.
+!!! failure "Error message"
+
+    ```text
+    Could not download OpenSSH from https://github.com/PowerShell/Win32-OpenSSH/...
+    ```
+
+WinPlaybook downloads OpenSSH from GitHub. Check that Windows can reach the
+internet and that the network, or the company proxy, allows `github.com`.
+Then run `Enable-WinPlaybookLocalhost` again.
 
 ---
 

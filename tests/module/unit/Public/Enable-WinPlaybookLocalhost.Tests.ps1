@@ -13,7 +13,7 @@ Describe 'Enable-WinPlaybookLocalhost' {
         Mock Save-Configuracao -ModuleName WinPlaybook { }
         Mock New-ChaveDoLocalhostWindows -ModuleName WinPlaybook { 'ssh-ed25519 AAAA winplaybook' }
         Mock Get-UsuarioDoLocalhostWindows -ModuleName WinPlaybook { 'eu' }
-        Mock Install-ServidorOpenSsh -ModuleName WinPlaybook { $true }
+        Mock Install-OpenSshDoWinPlaybook -ModuleName WinPlaybook { 'C:\ProgramData\WinPlaybook\openssh' }
         Mock Install-SshdDoWinPlaybook -ModuleName WinPlaybook { }
         Mock Invoke-ComoAdministrador -ModuleName WinPlaybook { }
         Mock Test-Administrador -ModuleName WinPlaybook { $true }
@@ -27,13 +27,13 @@ Describe 'Enable-WinPlaybookLocalhost' {
         It 'cria o serviço SSH com a chave da distribuição, o usuário e a porta 47022' {
             Should-Invoke New-ChaveDoLocalhostWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Distribuicao -eq 'WinPlaybook' }
             Should-Invoke Install-SshdDoWinPlaybook -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $ChavePublica -eq 'ssh-ed25519 AAAA winplaybook' -and $Usuario -eq 'eu' -and $Porta -eq 47022
+                $ChavePublica -eq 'ssh-ed25519 AAAA winplaybook' -and $Usuario -eq 'eu' -and $Porta -eq 47022 -and $PastaDoOpenSsh -eq 'C:\ProgramData\WinPlaybook\openssh'
             }
         }
 
-        It 'guarda a porta, o usuário e quem instalou o OpenSSH Server, e esquece a recusa' {
+        It 'guarda a porta e o usuário, e esquece a recusa' {
             Should-Invoke Save-Configuracao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Configuracao['LocalhostWindowsPort'] -eq 47022 -and $Configuracao['LocalhostWindowsUser'] -eq 'eu' -and $Configuracao['OpenSshServerInstalledByWinPlaybook'] -and -not $Configuracao['LocalhostWindowsDeclined']
+                $Configuracao['LocalhostWindowsPort'] -eq 47022 -and $Configuracao['LocalhostWindowsUser'] -eq 'eu' -and -not $Configuracao['LocalhostWindowsDeclined']
             }
         }
     }
