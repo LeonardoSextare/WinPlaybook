@@ -1,13 +1,13 @@
 ﻿function Install-AnsibleNaDistribuicao {
     <#
     .SYNOPSIS
-    Instala o Ansible, o ansible-lint, o pywinrm e o argcomplete na distribuição WSL do WinPlaybook, com o uv.
+    Instala o Ansible, o ansible-lint, o ansible-creator, o pywinrm e o argcomplete na distribuição WSL do WinPlaybook, com o uv.
 
     .DESCRIPTION
     Instala o uv no usuário winplaybook quando ele ainda não está lá e, num ambiente só, o
-    pacote ansible, com as collections dele, o ansible-lint, o pywinrm, o argcomplete, que gera o
+    pacote ansible, com as collections dele, o ansible-lint, o ansible-creator, o pywinrm, o argcomplete, que gera o
     autocomplete dos comandos, e os pacotes Python
-    pedidos. Os comandos do ansible-core, do ansible-lint e dos pacotes pedidos, como o
+    pedidos. Os comandos do ansible-core, do ansible-lint, do ansible-creator e dos pacotes pedidos, como o
     molecule, ficam em ~/.local/bin. Um pacote pedido por URL ou caminho não expõe comandos.
 
     O ansible-core declara só a versão mínima do Python, e uma versão nova demais do Python
@@ -67,7 +67,7 @@
 
     $arquivosDoHook = @(foreach ($arquivo in Get-ArquivoDoHookDoAnsible) { "$($arquivo.Nome) $([Convert]::ToBase64String($arquivo.Conteudo))" }) -join "`n"
     $nomesDosPacotes = @(foreach ($pacote in $PacotesPython) { [regex]::Match($pacote, '^[A-Za-z0-9][A-Za-z0-9._-]*(?=\s*([\[<>=!~;@]|$))').Value })
-    $executaveis = (@('ansible-core', 'ansible-lint') + @($nomesDosPacotes | Where-Object { $_ })) -join ','
+    $executaveis = (@('ansible-core', 'ansible-lint', 'ansible-creator') + @($nomesDosPacotes | Where-Object { $_ })) -join ','
     $argumentos = @($arquivosDoHook, $executaveis, $pacoteDoAnsible) + $PacotesPython
     $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'winplaybook'
     $instalou = $resultado.CodigoDeSaida -eq 0

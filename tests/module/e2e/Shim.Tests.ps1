@@ -61,7 +61,7 @@ Describe 'Shim' {
     }
 
     Context 'quando os shims vêm dos comandos do ambiente do Ansible' {
-        It 'cria o shim do <_>' -ForEach @('ansible-playbook', 'ansible-lint', 'ansible-galaxy') {
+        It 'cria o shim do <_>' -ForEach @('ansible-playbook', 'ansible-lint', 'ansible-galaxy', 'ansible-creator') {
             Test-Path -LiteralPath (Join-Path $pastaDosShims "$_.ps1") | Should-BeTrue
         }
 

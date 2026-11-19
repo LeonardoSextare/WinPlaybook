@@ -29,10 +29,9 @@
         [Parameter(Mandatory)] [string] $Versao
     )
 
-    $pastaDoServidor = Join-Path -Path $Caminho -ChildPath 'packages\ansible-language-server\dist'
     $textos = @{}
     foreach ($troca in $Trocas) {
-        $caminhoDoArquivo = Join-Path -Path $pastaDoServidor -ChildPath $troca.Arquivo
+        $caminhoDoArquivo = Join-Path -Path $Caminho -ChildPath $troca.Arquivo
         $arquivoAindaNaoFoiLido = -not $textos.ContainsKey($caminhoDoArquivo)
         if ($arquivoAindaNaoFoiLido) {
             $textos[$caminhoDoArquivo] = [IO.File]::ReadAllText($caminhoDoArquivo)

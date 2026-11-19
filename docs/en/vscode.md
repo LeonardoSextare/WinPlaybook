@@ -1,8 +1,9 @@
 # Use VS Code
 
 With the Red Hat Ansible extension, VS Code shows the module documentation,
-completes playbooks, and validates them with `ansible-lint`. This page gets
-the extension working with WinPlaybook.
+completes playbooks, validates them with `ansible-lint`, and creates new
+projects with `ansible-creator`. This page gets the extension working with
+WinPlaybook.
 
 ## Install the tested version
 

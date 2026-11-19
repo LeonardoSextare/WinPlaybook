@@ -36,7 +36,7 @@
         if ($SemTrechos) {
             $trechos = @('codigo de outra versao')
         }
-        $caminhoDoArquivo = Join-Path $caminho "packages\ansible-language-server\dist\$arquivo"
+        $caminhoDoArquivo = Join-Path $caminho $arquivo
         $null = New-Item -ItemType Directory -Path (Split-Path -Parent $caminhoDoArquivo) -Force
         [IO.File]::WriteAllText($caminhoDoArquivo, 'inicio;' + ($trechos -join ';meio;') + ';fim')
     }

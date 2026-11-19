@@ -16,7 +16,7 @@ Describe 'Get-PatchDaExtensaoAnsible' {
         $De | Should-NotBe $Para
     }
 
-    It 'troca só arquivos do language server em CommonJS, que a extensão carrega' -ForEach $trocas {
-        $Arquivo | Should-BeLikeString '*.cjs'
+    It 'troca só os arquivos que a extensão carrega: o principal e os do language server em CommonJS' -ForEach $trocas {
+        $Arquivo | Should-MatchString '^(dist\\extension\\extension\.js|packages\\ansible-language-server\\dist\\.+\.cjs)$'
     }
 }

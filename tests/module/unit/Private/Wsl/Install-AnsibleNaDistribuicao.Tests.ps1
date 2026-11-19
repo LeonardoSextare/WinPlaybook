@@ -44,18 +44,18 @@ Describe 'Install-AnsibleNaDistribuicao' {
             }
         }
 
-        It 'instala o ansible-lint, o pywinrm e o argcomplete no mesmo ambiente do Ansible' {
+        It 'instala o ansible-lint, o ansible-creator, o pywinrm e o argcomplete no mesmo ambiente do Ansible' {
             InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
 
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $Script.Contains('--with-executables-from "$executaveis" --with pywinrm --with argcomplete') -and $Argumentos[1] -eq 'ansible-core,ansible-lint'
+                $Script.Contains('--with-executables-from "$executaveis" --with pywinrm --with argcomplete') -and $Argumentos[1] -eq 'ansible-core,ansible-lint,ansible-creator'
             }
         }
 
         It 'expõe os comandos <Descricao>' -ForEach @(
-            @{ Descricao = 'dos pacotes Python escolhidos, pelo nome deles'; Pacotes = @('molecule', 'yamllint>=1.30', 'ruamel.yaml[jinja2]', 'pacote-local @ file:///tmp/pacote'); Esperado = 'ansible-core,ansible-lint,molecule,yamllint,ruamel.yaml,pacote-local' }
-            @{ Descricao = 'só do Ansible sem pacotes Python escolhidos'; Pacotes = @(); Esperado = 'ansible-core,ansible-lint' }
-            @{ Descricao = 'só do Ansible para um pacote pedido por URL ou caminho'; Pacotes = @('git+https://exemplo.com/pacote.git', './pacote'); Esperado = 'ansible-core,ansible-lint' }
+            @{ Descricao = 'dos pacotes Python escolhidos, pelo nome deles'; Pacotes = @('molecule', 'yamllint>=1.30', 'ruamel.yaml[jinja2]', 'pacote-local @ file:///tmp/pacote'); Esperado = 'ansible-core,ansible-lint,ansible-creator,molecule,yamllint,ruamel.yaml,pacote-local' }
+            @{ Descricao = 'só do Ansible sem pacotes Python escolhidos'; Pacotes = @(); Esperado = 'ansible-core,ansible-lint,ansible-creator' }
+            @{ Descricao = 'só do Ansible para um pacote pedido por URL ou caminho'; Pacotes = @('git+https://exemplo.com/pacote.git', './pacote'); Esperado = 'ansible-core,ansible-lint,ansible-creator' }
         ) {
             InModuleScope WinPlaybook -Parameters @{ Pacotes = $Pacotes } { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' -PacotesPython $Pacotes }
 
