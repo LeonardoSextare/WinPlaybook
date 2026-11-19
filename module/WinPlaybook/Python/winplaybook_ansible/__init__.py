@@ -1,9 +1,9 @@
 import sys
 
-from . import caminhos, localhost_windows, saida, scripts
+from . import caminhos, chaves, localhost_windows, saida, scripts
 from .importacao import AjusteDoAnsible
 
-PARTES = (caminhos, saida, scripts, localhost_windows)
+PARTES = (caminhos, chaves, saida, scripts, localhost_windows)
 
 ajustes = {}
 for parte in PARTES:

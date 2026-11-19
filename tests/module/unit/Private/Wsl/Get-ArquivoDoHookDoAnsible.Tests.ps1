@@ -10,7 +10,7 @@ Describe 'Get-ArquivoDoHookDoAnsible' {
     It 'devolve as partes do pacote em ordem de nome, com o __init__.py primeiro' {
         $nomes = InModuleScope WinPlaybook { Get-ArquivoDoHookDoAnsible | ForEach-Object { $_.Nome } }
 
-        Should-BeCollection -Actual $nomes -Expected @('__init__.py', 'caminhos.py', 'comum.py', 'importacao.py', 'localhost_windows.py', 'saida.py', 'scripts.py')
+        Should-BeCollection -Actual $nomes -Expected @('__init__.py', 'caminhos.py', 'chaves.py', 'comum.py', 'importacao.py', 'localhost_windows.py', 'saida.py', 'scripts.py')
     }
 
     It 'converte os caminhos do Windows no os.path.expanduser' {
@@ -62,6 +62,13 @@ Describe 'Get-ArquivoDoHookDoAnsible' {
         $script = InModuleScope WinPlaybook { -join (Get-ArquivoDoHookDoAnsible | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Conteudo) }) }
 
         $script.Contains('especificacao.loader = CarregadorAjustado(especificacao.loader, self._ajustes[nome])') | Should-BeTrue
+    }
+
+    It 'entrega ao ssh uma cópia protegida da chave privada que está numa pasta do Windows' {
+        $script = InModuleScope WinPlaybook { -join (Get-ArquivoDoHookDoAnsible | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Conteudo) }) }
+
+        $script.Contains("'ansible.plugins': ajustar_plugins") | Should-BeTrue
+        $script.Contains('os.open(copia, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)') | Should-BeTrue
     }
 
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {

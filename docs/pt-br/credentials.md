@@ -18,6 +18,10 @@ Windows.
   usuário do Windows.
 - O `config` pode ter caminhos do Windows. O `ssh` usa uma cópia convertida
   dele, refeita a cada comando, e o arquivo do Windows fica como está.
+- Uma chave fora da `.ssh`, como a de um projeto ou um `.pem` baixado, também
+  funciona no `ansible_ssh_private_key_file` e no `--private-key`. O `ssh`
+  recebe uma cópia dela com as permissões que exige, guardada no disco da
+  distribuição, e o arquivo do Windows fica como está.
 
 ### O agente SSH
 
