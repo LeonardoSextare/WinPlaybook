@@ -37,8 +37,11 @@
     Rode de novo para atualizar o Ansible, para trocar a versão ou os pacotes Python, ou
     depois de mudar o módulo de pasta. A instalação precisa do WSL e da internet.
 
-    Devolve um objeto com a pasta dos shims (Folder), a distribuição (Distribution) e os
-    comandos (Commands).
+    Antes de começar, num terminal interativo, a instalação pergunta se o usuário quer ligar
+    o localhost_windows e, com a extensão Ansible do VS Code instalada, corrigir a extensão.
+    Cada etapa demorada aparece no console enquanto roda, e o fim mostra o próximo passo. Com
+    -PassThru, devolve um objeto com a pasta dos shims (Folder), a distribuição
+    (Distribution) e os comandos (Commands).
 
     .PARAMETER Path
     A pasta onde a pasta WinPlaybook é criada; os shims ficam em <Path>\WinPlaybook\bin. O
@@ -60,7 +63,15 @@
 
     .PARAMETER EnableLocalhost
     Liga o localhost_windows sem perguntar, como o Enable-WinPlaybookLocalhost. Sem este
-    parâmetro, a instalação pergunta uma vez, num terminal interativo, e guarda a recusa.
+    parâmetro, a instalação pergunta antes de começar, num terminal interativo, e guarda a
+    recusa.
+
+    .PARAMETER EnableVSCodeExtension
+    Corrige a extensão Ansible do VS Code sem perguntar, como o
+    Enable-WinPlaybookVSCodeExtension.
+
+    .PARAMETER PassThru
+    Devolve o objeto com a pasta dos shims, a distribuição e os comandos.
 
     .EXAMPLE
     Install-WinPlaybook
@@ -88,7 +99,9 @@
         [ValidateSet('Desktop', 'Core')] [string] $PowerShell,
         [AllowEmptyString()] [string] $AnsibleVersion,
         [AllowEmptyCollection()] [string[]] $PythonPackage,
-        [switch] $EnableLocalhost
+        [switch] $EnableLocalhost,
+        [switch] $EnableVSCodeExtension,
+        [switch] $PassThru
     )
 
     $distribuicao = 'WinPlaybook'
@@ -129,6 +142,9 @@
         return
     }
 
+    $escolhas = Get-EscolhaDaInstalacao -Configuracao $configuracao -LigarLocalhost:$EnableLocalhost -CorrigirVSCode:$EnableVSCodeExtension
+    Write-Host ''
+
     $relogio = [Diagnostics.Stopwatch]::StartNew()
     Write-Log -Nivel 'info' -Mensagem "Install-WinPlaybook começou: pasta dos shims $pastaDosShims, versão do Ansible '$versaoDoAnsible', $(@($pacotesPython).Count) pacotes Python extras"
     $pastaDoExecutavel = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-$([guid]::NewGuid().ToString('N'))"
@@ -143,7 +159,15 @@
         $pastaDaDistribuicao = Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro'
         $distribuicaoJaExistia = $distribuicao -in @(Get-DistribuicaoDoWsl)
         if (-not $distribuicaoJaExistia) {
-            New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
+            $etapa = Start-Etapa -Texto (Get-Mensagem -Nome 'EtapaBaixandoODebian')
+            try {
+                New-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta $pastaDaDistribuicao
+            }
+            catch {
+                Complete-Etapa -Etapa $etapa -Falhou
+                throw
+            }
+            Complete-Etapa -Etapa $etapa -Resultado (Get-Mensagem -Nome 'ResultadoDebianBaixado')
         }
 
         $pastaDoPerfil = Get-PastaDoPerfilDoUsuario
@@ -153,12 +177,20 @@
             if ($vaiCriarAPastaDoSsh) {
                 $null = New-Item -ItemType Directory -Path $pastaDoSsh
             }
+            $etapa = Start-Etapa -Texto (Get-Mensagem -Nome 'EtapaPreparandoOAmbiente')
             Initialize-DistribuicaoDoWinPlaybook -Nome $distribuicao -PastaDoSsh $pastaDoSsh -PastaDoPerfil $pastaDoPerfil -UsuarioDoWindows (Get-NomeDoUsuarioDoWindows)
+            Complete-Etapa -Etapa $etapa -Resultado (Get-Mensagem -Nome 'ResultadoAmbientePronto')
+            $etapa = Start-Etapa -Texto (Get-Mensagem -Nome 'EtapaInstalandoOAnsible')
             Install-AnsibleNaDistribuicao -Nome $distribuicao -VersaoDoAnsible $versaoDoAnsible -PacotesPython $pacotesPython
+            Complete-Etapa -Etapa $etapa -Resultado (Get-Mensagem -Nome 'ResultadoAnsibleInstalado')
+            $etapa = $null
             $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $distribuicao
             $comandos = Get-ComandoDoAnsible -Distribuicao $distribuicao
         }
         catch {
+            if ($etapa) {
+                Complete-Etapa -Etapa $etapa -Falhou
+            }
             Write-Log -Nivel 'error' -Mensagem "Install-WinPlaybook falhou: $($_.Exception.Message)"
             if ($vaiCriarAPastaDoSsh) {
                 Remove-PastaVazia -Pasta $pastaDoSsh
@@ -188,6 +220,7 @@
             Remove-PastaDosShims -Pasta $pastaAnterior
         }
 
+        $etapa = Start-Etapa -Texto (Get-Mensagem -Nome 'EtapaCriandoOsComandos')
         Remove-Item -LiteralPath $pastaDosShims -Recurse -Force -ErrorAction SilentlyContinue
         $null = New-Item -ItemType Directory -Path $pastaDosShims -Force
         Save-Configuracao -Configuracao @{
@@ -213,14 +246,26 @@
         foreach ($perfil in Get-PerfilDoPowerShell) {
             Add-AutocompleteNoPerfil -Perfil $perfil
         }
+        Complete-Etapa -Etapa $etapa -Resultado (Get-Mensagem -Nome 'ResultadoComandosCriados' -Valores @($comandos).Count)
     }
     finally {
+        Stop-EtapaAtual
         Remove-Item -LiteralPath $pastaDoExecutavel -Recurse -Force -ErrorAction SilentlyContinue
     }
 
-    Initialize-LocalhostWindows -Configuracao $configuracao -Ligar:$EnableLocalhost
+    if ($escolhas.LigarLocalhost) {
+        Invoke-EtapaOpcional -Texto (Get-Mensagem -Nome 'EtapaLigandoOLocalhostWindows') -Resultado (Get-Mensagem -Nome 'ResultadoLocalhostWindowsLigado') -ComandoParaTentarDeNovo 'Enable-WinPlaybookLocalhost' -Pagina 'troubleshooting-localhost-windows' -Acao { $null = Enable-WinPlaybookLocalhost -Confirm:$false }
+    }
+    $corrigiuOVSCode = $false
+    if ($escolhas.CorrigirVSCode) {
+        $corrigiuOVSCode = Invoke-EtapaOpcional -Texto (Get-Mensagem -Nome 'EtapaCorrigindoOVSCode') -Resultado (Get-Mensagem -Nome 'ResultadoVSCodeCorrigido') -ComandoParaTentarDeNovo 'Enable-WinPlaybookVSCodeExtension' -Pagina 'troubleshooting-vscode' -Acao { $null = Enable-WinPlaybookVSCodeExtension -Confirm:$false }
+    }
 
     Write-Log -Nivel 'info' -Mensagem "Install-WinPlaybook terminou em $($relogio.ElapsedMilliseconds) ms, com $(@($comandos).Count) comandos"
+    Write-ResumoDaInstalacao -CorrigiuOVSCode:$corrigiuOVSCode
+    if (-not $PassThru) {
+        return
+    }
     return [pscustomobject]@{
         Folder       = $pastaDosShims
         Distribution = $distribuicao

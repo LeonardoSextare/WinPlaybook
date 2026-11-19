@@ -27,6 +27,7 @@ Describe 'Install-WinPlaybook' {
         Mock Get-PastaDoPerfilDoUsuario -ModuleName WinPlaybook { $pastaDoPerfil }
         Mock Get-NomeDoUsuarioDoWindows -ModuleName WinPlaybook { 'eu' }
         Mock Test-SessaoInterativa -ModuleName WinPlaybook { $false }
+        Mock Get-PastaDasExtensoesDoVSCode -ModuleName WinPlaybook { Join-Path $TestDrive 'vscode/extensions' }
         Mock Get-PerfilDoPowerShell -ModuleName WinPlaybook { Join-Path $TestDrive 'perfis/PowerShell/profile.ps1'; Join-Path $TestDrive 'perfis/WindowsPowerShell/profile.ps1' }
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
@@ -210,8 +211,8 @@ Describe 'Install-WinPlaybook' {
             "$($configuracao.ShimFolder)|$($configuracao.WslDistribution)|$($configuracao.WslMountRoot)" | Should-Be "$pastaPadraoDosShims|WinPlaybook|/mnt/"
         }
 
-        It 'devolve a pasta dos shims, a distribuição e os comandos' {
-            $resultado = Install-WinPlaybook
+        It 'devolve a pasta dos shims, a distribuição e os comandos com -PassThru' {
+            $resultado = Install-WinPlaybook -PassThru
 
             "$($resultado.Folder)|$($resultado.Distribution)|$($resultado.Commands -join ',')" | Should-Be "$pastaPadraoDosShims|WinPlaybook|ansible,ansible-playbook"
         }
@@ -492,15 +493,36 @@ Describe 'Install-WinPlaybook' {
         }
     }
 
-    Context 'quando o localhost_windows entra na instalação' {
+    Context 'quando o localhost_windows e o VS Code entram na instalação' {
         BeforeEach {
-            Mock Initialize-LocalhostWindows -ModuleName WinPlaybook { }
+            Mock Enable-WinPlaybookLocalhost -ModuleName WinPlaybook { }
+            Mock Enable-WinPlaybookVSCodeExtension -ModuleName WinPlaybook { }
         }
 
-        It 'liga o localhost_windows sem perguntar com -EnableLocalhost' {
-            $null = Install-WinPlaybook -EnableLocalhost
+        It 'passa o -EnableLocalhost e o -EnableVSCodeExtension para as escolhas' {
+            Mock Get-EscolhaDaInstalacao -ModuleName WinPlaybook { @{ LigarLocalhost = $false; CorrigirVSCode = $false } }
 
-            Should-Invoke Initialize-LocalhostWindows -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Ligar }
+            $null = Install-WinPlaybook -EnableLocalhost -EnableVSCodeExtension
+
+            Should-Invoke Get-EscolhaDaInstalacao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $LigarLocalhost -and $CorrigirVSCode }
+        }
+
+        It 'liga o localhost_windows e corrige o VS Code depois de instalar, quando essas são as escolhas' {
+            Mock Get-EscolhaDaInstalacao -ModuleName WinPlaybook { @{ LigarLocalhost = $true; CorrigirVSCode = $true } }
+
+            $null = Install-WinPlaybook
+
+            Should-Invoke Enable-WinPlaybookLocalhost -ModuleName WinPlaybook -Times 1 -Exactly
+            Should-Invoke Enable-WinPlaybookVSCodeExtension -ModuleName WinPlaybook -Times 1 -Exactly
+        }
+
+        It 'termina a instalação e mostra a causa quando o localhost_windows não liga' {
+            Mock Get-EscolhaDaInstalacao -ModuleName WinPlaybook { @{ LigarLocalhost = $true; CorrigirVSCode = $false } }
+            Mock Enable-WinPlaybookLocalhost -ModuleName WinPlaybook { throw 'sem permissão' }
+
+            $saida = Install-WinPlaybook 6>&1 | Out-String
+
+            $saida | Should-BeLikeString '*sem permissão*Enable-WinPlaybookLocalhost*WinPlaybook instalado.*'
         }
 
         It 'mantém a configuração do localhost_windows numa nova instalação' {

@@ -25,6 +25,11 @@ Code, clique com o botão direito na extensão **Ansible** e desmarque
 
 ## Aplicar as correções
 
+!!! tip "Na instalação"
+
+    Com a extensão já instalada, o `Install-WinPlaybook` pergunta se você quer
+    aplicar as correções. Nesse caso, este passo já está feito.
+
 No PowerShell:
 
 ```powershell

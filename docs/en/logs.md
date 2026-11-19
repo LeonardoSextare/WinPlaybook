@@ -1,7 +1,8 @@
 # Read the logs
 
 WinPlaybook writes a log of each command, with the exit code and the time of
-each step. It helps to understand an error and to measure how much WinPlaybook
+each step, and of the installation, with the time of each step and the cause of
+a failure. It helps to understand an error and to measure how much WinPlaybook
 adds to the Ansible time. This page shows where the logs are and how to choose
 the detail.
 

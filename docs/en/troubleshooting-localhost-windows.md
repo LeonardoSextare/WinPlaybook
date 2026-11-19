@@ -30,16 +30,17 @@ computer to run the command for you.
 
 ---
 
-## The command failed in the administrator PowerShell
+## The command failed as administrator
 
 !!! failure "Error message"
 
     ```text
-    The command Enable-WinPlaybookLocalhost -Confirm:$false failed in the administrator PowerShell ...
+    The command Enable-WinPlaybookLocalhost -Confirm:$false failed as administrator (exit code 1): ...
     ```
 
-Open PowerShell as an administrator and run the command there to see the
-error.
+The end of the message has the cause. Fix what it points to and run the command
+again. If the cause isn't clear, [open an issue](report-issue.md) with the full
+message.
 
 ---
 

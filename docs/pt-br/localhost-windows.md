@@ -9,7 +9,8 @@ Para ver o recurso funcionando do zero, siga o tutorial
 
 ## Ligar o localhost_windows
 
-O `Install-WinPlaybook` pergunta se você quer ligar o `localhost_windows`.
+Antes de começar, o `Install-WinPlaybook` pergunta se você quer ligar o
+`localhost_windows`.
 Para ligar depois, execute no PowerShell:
 
 ```powershell

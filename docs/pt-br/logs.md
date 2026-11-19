@@ -1,7 +1,7 @@
 # Consultar os logs
 
 O WinPlaybook grava um log de cada comando, com o código de saída e o tempo de
-cada etapa. Ele ajuda a entender um erro e a medir quanto tempo o WinPlaybook acrescenta
+cada etapa, e da instalação, com o tempo de cada etapa e a causa de uma falha. Ele ajuda a entender um erro e a medir quanto tempo o WinPlaybook acrescenta
 ao Ansible. Esta página mostra onde ficam os logs e como escolher o nível de
 detalhe.
 
