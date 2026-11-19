@@ -223,6 +223,26 @@ bugs, e como o código lida com cada um.
   (`$ExecutionContext.SessionState.Module.ModuleBase`), nunca do
   `$PSScriptRoot`.
 
+## Rede
+
+- Um `redirect` do nftables entrega a conexão a um listener local, e o kernel
+  completa o handshake antes de o destino real responder. Uma porta recusada
+  no destino viraria uma conexão que abre e fecha sem erro. Quando o relay de
+  rede falha ao conectar, o supervisor de `Get-ScriptDoSupervisor` fecha a
+  conexão com RST (`SO_LINGER` 0), e o cliente vê `Connection reset by peer`.
+  O teste "interrompe a conexão quando o destino fora do localhost a recusa"
+  do `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` confere.
+- No Python, fechar um socket enquanto outra thread está bloqueada no `recv`
+  dele não envia nada ao outro lado. Para mandar o RST, o supervisor chama
+  `shutdown(SHUT_RD)`, que libera o `recv`, e o socket fecha quando a thread
+  que o lê termina.
+- As regras do nftables ficam na distribuição depois que o processo que as
+  aplicou termina. Com a regra que leva todo o TCP para a porta da ponte, um
+  comando sem ninguém escutando nela ficaria sem rede. O dono da ponte apaga a
+  tabela ao sair, e um supervisor que não liga a ponte apaga a tabela que
+  ficou sem dono, como a de um comando encerrado à força. O teste "deixa a
+  rede da distribuição como estava quando o comando termina" confere.
+
 ## Pester
 
 - O Pester faz mock de funções, não de métodos do .NET. Uma chamada a método

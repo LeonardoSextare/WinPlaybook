@@ -1170,6 +1170,14 @@ Describe 'Invoke-WinPlaybook' {
             $portaDoWindows = $escutaTemporaria.LocalEndpoint.Port
             $escutaTemporaria.Stop()
             $portaFechada = $portaDoWindows + 1
+            $rotaPadrao = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -- ip -4 route show default"
+            $ipDoWindowsNaRedeDoWsl = ($rotaPadrao.Saida -split '\s+')[2]
+            $portaSoDoWindows = $portaDoWindows + 2
+            $servidorSoDoWindows = Join-Path $TestDrive 'servidor-so-do-windows.ps1'
+            [IO.File]::WriteAllText($servidorSoDoWindows, "`$escuta = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Parse('$ipDoWindowsNaRedeDoWsl'), $portaSoDoWindows)`r`n`$escuta.Start()`r`nwhile (`$true) { `$cliente = `$escuta.AcceptTcpClient(); `$dados = [Text.Encoding]::ASCII.GetBytes(`"oi so do windows`n`"); `$cliente.GetStream().Write(`$dados, 0, `$dados.Length); `$cliente.Close() }`r`n")
+            $regraQueBloqueiaOCaminhoDireto = "table inet e2e_caminho_direto { chain saida { type filter hook output priority 0; policy accept; ip daddr $ipDoWindowsNaRedeDoWsl tcp dport $portaSoDoWindows drop; }; }"
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- nft `"$regraQueBloqueiaOCaminhoDireto`""
+            $processoDoServidorSoDoWindows = Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$servidorSoDoWindows`"" -WindowStyle Hidden -PassThru
             $servidor = Join-Path $TestDrive 'servidor-do-windows.ps1'
             [IO.File]::WriteAllText($servidor, "`$escuta = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, $portaDoWindows)`r`n`$escuta.Start()`r`nwhile (`$true) { `$cliente = `$escuta.AcceptTcpClient(); `$dados = [Text.Encoding]::ASCII.GetBytes(`"oi do windows`n`"); `$cliente.GetStream().Write(`$dados, 0, `$dados.Length); `$cliente.Close() }`r`n")
             $processoDoServidor = Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$servidor`"" -WindowStyle Hidden -PassThru
@@ -1193,7 +1201,30 @@ Describe 'Invoke-WinPlaybook' {
         AfterAll {
             Pop-Location
             Stop-Process -Id $processoDoServidor.Id -Force -ErrorAction SilentlyContinue
+            Stop-Process -Id $processoDoServidorSoDoWindows.Id -Force -ErrorAction SilentlyContinue
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- nft delete table inet e2e_caminho_direto"
             Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
+        }
+
+        It 'alcança pelo Windows um destino que a distribuição não alcança direto' {
+            $saida = Invoke-WinPlaybook python3 cliente.py $ipDoWindowsNaRedeDoWsl $portaSoDoWindows 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida.Trim() | Should-Be 'oi so do windows'
+        }
+
+        It 'deixa a rede da distribuição como estava quando o comando termina' {
+            $null = Invoke-WinPlaybook python3 cliente.py 127.0.0.1 $portaDoWindows 2>&1
+
+            $tabelas = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- nft list tables"
+
+            $tabelas.Saida | Should-NotBeLikeString '*winplaybook*'
+        }
+
+        It 'interrompe a conexão quando o destino fora do localhost a recusa' {
+            $saida = Invoke-WinPlaybook python3 cliente.py $ipDoWindowsNaRedeDoWsl $portaFechada 2>&1 | Out-String
+
+            $saida | Should-BeLikeString '*ConnectionResetError*'
         }
 
         It 'alcança o serviço do Windows pelo <_> da distribuição' -ForEach @('127.0.0.1', 'localhost', '::1') {

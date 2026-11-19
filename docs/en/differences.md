@@ -57,6 +57,10 @@ See [Run Windows programs and scripts](windows-programs.md).
 The `localhost` of the tasks reaches the services that listen on the Windows
 `localhost`, while the command runs.
 
+Connections to servers go out through Windows, with its routes and VPN. A
+connection that the server refuses shows up as reset
+(`Connection reset by peer`). See [Network](network.md).
+
 ---
 
 ## Time

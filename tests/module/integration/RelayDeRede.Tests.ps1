@@ -73,6 +73,53 @@ Describe 'Relay de rede' {
         }
     }
 
+    Context 'quando conecta num endereço de destino' {
+        BeforeAll {
+            $enderecoDaMaquina = [Net.Dns]::GetHostAddresses([Net.Dns]::GetHostName()) | Where-Object { $_.AddressFamily -eq 'InterNetwork' -and -not [Net.IPAddress]::IsLoopback($_) } | Select-Object -First 1
+            $destino = New-Object System.Net.Sockets.TcpListener ($enderecoDaMaquina, 0)
+            $destino.Start()
+            $relay = Start-RelayDeRede -Argumentos "conectar $($destino.LocalEndpoint.Port) $enderecoDaMaquina"
+            $aceite = $destino.AcceptTcpClientAsync()
+            $conectou = $aceite.Wait(10000)
+        }
+
+        AfterAll {
+            if ($conectou) {
+                $aceite.Result.Close()
+            }
+            $destino.Stop()
+            if (-not $relay.HasExited) {
+                $relay.Kill()
+            }
+            $relay.Dispose()
+        }
+
+        It 'conecta no endereço pedido, e não no localhost' {
+            $conectou | Should-BeTrue
+        }
+    }
+
+    Context 'quando o endereço de destino recusa a conexão' {
+        BeforeAll {
+            $portaFechada = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, 0)
+            $portaFechada.Start()
+            $numeroDaPortaFechada = $portaFechada.LocalEndpoint.Port
+            $portaFechada.Stop()
+            $relay = Start-RelayDeRede -Argumentos "conectar $numeroDaPortaFechada 127.0.0.1"
+            $erros = $relay.StandardError.ReadToEnd()
+            $null = $relay.WaitForExit(10000)
+        }
+
+        AfterAll {
+            $relay.Dispose()
+        }
+
+        It 'sai com 1 e explica o erro' {
+            $relay.ExitCode | Should-Be 1
+            $erros | Should-BeLikeString 'WinPlaybook:*'
+        }
+    }
+
     Context 'quando conecta numa porta em que o Windows não escuta' {
         BeforeAll {
             $portaFechada = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, 0)

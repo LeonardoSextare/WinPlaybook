@@ -60,6 +60,10 @@ Veja [Chamar programas e scripts do Windows](windows-programs.md).
 Nas tarefas, o `localhost` também alcança os serviços que estão rodando no
 `localhost` do Windows, enquanto o comando é executado.
 
+As conexões aos servidores saem pelo Windows, com as rotas e a VPN dele. Uma
+conexão recusada pelo servidor aparece como interrompida
+(`Connection reset by peer`). Veja [Rede](network.md).
+
 ---
 
 ## Tempo

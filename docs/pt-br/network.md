@@ -1,8 +1,23 @@
 # Rede
 
-A distribuição do WinPlaybook tem uma rede própria, separada da rede do Windows. Para
-os servidores da rede e da internet, isso não muda nada: o Ansible chega até eles
-do mesmo jeito que o Windows. A diferença está no `localhost`.
+A distribuição do WinPlaybook tem uma rede própria, separada da rede do Windows.
+Enquanto um comando está rodando, o WinPlaybook liga uma ponte entre as duas, e
+o Ansible alcança o que o Windows alcança.
+
+## Os servidores
+
+As conexões TCP do Ansible, como o SSH, o WinRM e o HTTPS, saem pelo Windows.
+Quem conecta é o Windows, então valem as rotas, a VPN e o firewall dele, e o
+Ansible chega aos mesmos servidores que o PowerShell. Isso inclui as máquinas
+virtuais do Hyper-V ligadas ao Default Switch, que a rede própria do WSL não
+alcança.
+
+!!! info "Como uma conexão recusada aparece"
+
+    Quando o servidor recusa a conexão, o Ansible vê a conexão ser
+    interrompida (`Connection reset by peer`), e não recusada
+    (`Connection refused`). Um servidor que não responde continua dando
+    _timeout_.
 
 ## O localhost
 

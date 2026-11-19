@@ -18,7 +18,8 @@ internal static class RelayDeRede
                 return ListarPortas();
             }
 
-            return Conectar(int.Parse(argumentos[1]));
+            IPAddress destino = argumentos.Length > 2 ? IPAddress.Parse(argumentos[2]) : null;
+            return Conectar(int.Parse(argumentos[1]), destino);
         }
         catch (Exception erro)
         {
@@ -50,9 +51,9 @@ internal static class RelayDeRede
         }
     }
 
-    private static int Conectar(int porta)
+    private static int Conectar(int porta, IPAddress destino)
     {
-        using (TcpClient cliente = AbrirConexao(porta))
+        using (TcpClient cliente = destino == null ? AbrirConexao(porta) : AbrirConexaoNoDestino(destino, porta))
         {
             NetworkStream conexao = cliente.GetStream();
             Stream saida = Console.OpenStandardOutput();
@@ -83,6 +84,22 @@ internal static class RelayDeRede
         }
         catch (ObjectDisposedException)
         {
+        }
+    }
+
+    private static TcpClient AbrirConexaoNoDestino(IPAddress destino, int porta)
+    {
+        TcpClient cliente = new TcpClient(destino.AddressFamily);
+        try
+        {
+            cliente.NoDelay = true;
+            cliente.Connect(destino, porta);
+            return cliente;
+        }
+        catch
+        {
+            cliente.Close();
+            throw;
         }
     }
 
