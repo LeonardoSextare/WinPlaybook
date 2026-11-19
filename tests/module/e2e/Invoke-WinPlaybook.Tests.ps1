@@ -755,24 +755,36 @@ Describe 'Invoke-WinPlaybook' {
     Context 'quando um comando do nó de controle mostra caminhos da distribuição' {
         BeforeAll {
             Push-Location $TestDrive
-            $perfilDosTestes = (Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil').Replace('\', '/')
+            $perfilDosTestes = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'WinPlaybookTestes\perfil'
         }
 
         AfterAll {
             Pop-Location
         }
 
-        It 'mostra o disco da distribuição pelo caminho que o Windows abre' {
+        It 'mostra o disco da distribuição pelo caminho que o Windows abre, com barras invertidas' {
             $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString "*ansible python module location = //wsl.localhost/$nomeDaDistribuicao/home/winplaybook/*"
+            $saida | Should-BeLikeString ("*ansible python module location = " + [WildcardPattern]::Escape("\\wsl.localhost\$nomeDaDistribuicao\home\winplaybook\") + "*")
+        }
+
+        It 'mostra os plugins do usuário pela pasta deles no perfil do Windows, escapada como no Python' {
+            $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $saida | Should-BeLikeString ("*configured module search path = *" + [WildcardPattern]::Escape("['$($perfilDosTestes.Replace('\', '\\'))\\.ansible\\plugins\\modules'") + "*")
+        }
+
+        It 'separa por ponto e vírgula uma lista de caminhos' {
+            $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
+
+            $saida | Should-BeLikeString ("*ansible collection location = " + [WildcardPattern]::Escape("$perfilDosTestes\.ansible\collections;\\wsl.localhost\$nomeDaDistribuicao\usr\share\ansible\collections") + "*")
         }
 
         It 'mostra as collections pela pasta delas no perfil do Windows' {
             $saida = Invoke-WinPlaybook ansible-config dump 2>&1 | Out-String
 
-            $saida | Should-BeLikeString ("*" + [WildcardPattern]::Escape("COLLECTIONS_PATHS(default) = ['$perfilDosTestes/.ansible/collections'") + "*")
+            $saida | Should-BeLikeString ("*" + [WildcardPattern]::Escape("COLLECTIONS_PATHS(default) = ['$($perfilDosTestes.Replace('\', '\\'))\\.ansible\\collections'") + "*")
         }
 
         It 'mantém os caminhos dos hosts na saída de um playbook' {
@@ -818,7 +830,7 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible localhost -m ansible.builtin.debug -a 'var=pasta' -e "pasta=$projeto\files" 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString '*/files"*'
+            $saida | Should-BeLikeString '*\\files"*'
         }
 
         It 'converte o caminho do Windows de um chave=valor do -a' {
@@ -832,14 +844,14 @@ Describe 'Invoke-WinPlaybook' {
             $saida = Invoke-WinPlaybook ansible-playbook quebrado.yml 2>&1 | Out-String
 
             $LASTEXITCODE | Should-NotBe 0 -Because $saida
-            $saida | Should-BeLikeString "*Origin: $($projeto.Replace('\', '/'))/quebrado.yml*"
+            $saida | Should-BeLikeString ("*Origin: " + [WildcardPattern]::Escape("$projeto\quebrado.yml") + "*")
         }
 
         It 'mostra o caminho do Windows da configuração no ansible --version' {
             $saida = Invoke-WinPlaybook ansible --version 2>&1 | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $saida | Should-BeLikeString "*config file = $($projeto.Replace('\', '/'))/ansible.cfg*"
+            $saida | Should-BeLikeString ("*config file = " + [WildcardPattern]::Escape("$projeto\ansible.cfg") + "*")
         }
 
         It 'mantém o caminho do Windows de uma variável do inventário INI' {

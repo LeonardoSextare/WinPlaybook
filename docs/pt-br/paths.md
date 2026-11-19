@@ -59,10 +59,15 @@ Os caminhos nas variáveis de ambiente seguem as mesmas regras. Veja
 
 ## Do Linux para o Windows
 
-Na saída dos comandos, os caminhos das unidades do Windows aparecem no formato
-do Windows, com barras normais: um erro aponta para `C:/infra/site.yml`, e não
-para `/mnt/c/infra/site.yml`. Com as barras normais, uma saída em JSON
-continua válida, e o Windows e o VS Code conseguem abrir esses caminhos.
+Na saída dos comandos, os caminhos aparecem no formato do Windows:
+
+- um caminho de unidade vira `C:\infra\site.yml`, e não `/mnt/c/infra/site.yml`;
+- no `ansible --version`, no `ansible-config`, no `ansible-doc` e no
+  `ansible-galaxy`, um caminho da distribuição vira
+  `\\wsl.localhost\WinPlaybook\...`, que o Explorador de Arquivos abre;
+- uma lista de caminhos é separada por `;`, como no `Path`;
+- entre aspas, como numa saída em JSON ou numa lista do Python, as barras
+  invertidas vêm dobradas (`"C:\\infra\\site.yml"`), e o JSON continua válido.
 
 ---
 

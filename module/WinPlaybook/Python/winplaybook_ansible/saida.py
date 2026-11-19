@@ -5,22 +5,60 @@ import sys
 
 from .comum import eh_programa_do_ansible, raiz_de_montagem
 
-CAMINHO_DA_DISTRIBUICAO = re.compile(rb'(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/[^\s\'"\],:;=()]*)?')
+CARACTERE_DE_CAMINHO = rb'[^\s\'"\],:;=()]'
+CAMINHO_DA_DISTRIBUICAO = re.compile(rb'(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/' + CARACTERE_DE_CAMINHO + rb'*)?')
+LISTA_DE_CAMINHOS = re.compile(rb'(?<![\w/.~-])/' + CARACTERE_DE_CAMINHO + rb'*(?::/' + CARACTERE_DE_CAMINHO + rb'*)+')
+ASPAS_SEM_ESCAPE = re.compile(rb'(?<!\\)"')
 PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES = b'/opt/winplaybook/exec/'
 PROGRAMAS_DO_NO_DE_CONTROLE = ('ansible-config', 'ansible-doc', 'ansible-galaxy')
 programa_mostra_caminhos_da_distribuicao = []
 
 
-def mostrar_caminho_do_windows(ocorrencia):
-    if ocorrencia.group('servidor'):
-        return b'//' + ocorrencia.group('servidor') + b'/' + ocorrencia.group('compartilhamento')
-    return ocorrencia.group('unidade').upper() + b':'
-
-
-def traduzir_saida(dados):
+def padrao_da_montagem():
     raiz = re.escape(raiz_de_montagem().encode())
-    padrao = rb'(?<![\w/.-])' + raiz + rb'/(?:unc/(?P<servidor>[^/\s\'"]+)/(?P<compartilhamento>[^/\s\'"]+)|(?P<unidade>[a-z])(?![\w.-]))'
-    return re.sub(padrao, mostrar_caminho_do_windows, dados)
+    return re.compile(rb'(?<![\w/.-])' + raiz + rb'/(?:unc/(?P<servidor>[^/\s\'"]+)/(?P<compartilhamento>[^/\s\'"]+)|(?P<unidade>[a-z])(?![\w.-]))(?P<resto>(?:/' + CARACTERE_DE_CAMINHO + rb'*)?)')
+
+
+def esta_entre_aspas(texto, inicio):
+    if texto[inicio - 1:inicio] == b"'":
+        return True
+    comeco_da_linha = texto.rfind(b'\n', 0, inicio) + 1
+    return len(ASPAS_SEM_ESCAPE.findall(texto, comeco_da_linha, inicio)) % 2 == 1
+
+
+def formatar_caminho_do_windows(caminho, entre_aspas):
+    caminho = caminho.replace(b'/', b'\\')
+    if entre_aspas:
+        return caminho.replace(b'\\', b'\\\\')
+    return caminho
+
+
+def caminho_da_montagem_no_windows(ocorrencia):
+    if ocorrencia.group('servidor'):
+        inicio = b'//' + ocorrencia.group('servidor') + b'/' + ocorrencia.group('compartilhamento')
+    else:
+        inicio = ocorrencia.group('unidade').upper() + b':'
+    return inicio + (ocorrencia.group('resto') or b'/')
+
+
+def eh_caminho_do_windows(caminho):
+    if padrao_da_montagem().fullmatch(caminho):
+        return True
+    return mostra_caminhos_da_distribuicao() and bool(CAMINHO_DA_DISTRIBUICAO.fullmatch(caminho))
+
+
+def separar_lista_de_caminhos(ocorrencia):
+    lista = ocorrencia.group(0)
+    if not all(eh_caminho_do_windows(caminho) for caminho in lista.split(b':')):
+        return lista
+    return lista.replace(b':/', b';/')
+
+
+def traduzir_caminhos_da_montagem(dados):
+    def mostrar(ocorrencia):
+        return formatar_caminho_do_windows(caminho_da_montagem_no_windows(ocorrencia), esta_entre_aspas(ocorrencia.string, ocorrencia.start()))
+
+    return padrao_da_montagem().sub(mostrar, dados)
 
 
 def mostra_caminhos_da_distribuicao():
@@ -32,16 +70,35 @@ def mostra_caminhos_da_distribuicao():
     return programa_mostra_caminhos_da_distribuicao[0]
 
 
-def mostrar_caminho_da_distribuicao(ocorrencia):
-    caminho = ocorrencia.group(0)
+def caminho_da_distribuicao_no_windows(caminho):
     real = os.path.realpath(caminho)
     raiz = raiz_de_montagem().encode() + b'/'
     if real.startswith(PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES):
         real = raiz + real[len(PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES):]
-    if real.startswith(raiz):
-        return traduzir_saida(real)
+    ocorrencia = padrao_da_montagem().fullmatch(real)
+    if ocorrencia:
+        return caminho_da_montagem_no_windows(ocorrencia)
     distribuicao = os.environ.get('WSL_DISTRO_NAME')
-    return b'//wsl.localhost/' + distribuicao.encode() + caminho if distribuicao else caminho
+    if not distribuicao:
+        return None
+    return b'//wsl.localhost/' + distribuicao.encode() + caminho
+
+
+def traduzir_caminhos_da_distribuicao(dados):
+    def mostrar(ocorrencia):
+        caminho = caminho_da_distribuicao_no_windows(ocorrencia.group(0))
+        if caminho is None:
+            return ocorrencia.group(0)
+        return formatar_caminho_do_windows(caminho, esta_entre_aspas(ocorrencia.string, ocorrencia.start()))
+
+    return CAMINHO_DA_DISTRIBUICAO.sub(mostrar, dados)
+
+
+def traduzir_saida(dados):
+    dados = LISTA_DE_CAMINHOS.sub(separar_lista_de_caminhos, dados)
+    if mostra_caminhos_da_distribuicao():
+        dados = traduzir_caminhos_da_distribuicao(dados)
+    return traduzir_caminhos_da_montagem(dados)
 
 
 class SaidaComCaminhosDoWindows(io.BufferedIOBase):
@@ -52,8 +109,6 @@ class SaidaComCaminhosDoWindows(io.BufferedIOBase):
         tamanho = len(dados)
         if eh_programa_do_ansible():
             dados = traduzir_saida(bytes(dados))
-        if mostra_caminhos_da_distribuicao():
-            dados = CAMINHO_DA_DISTRIBUICAO.sub(mostrar_caminho_da_distribuicao, bytes(dados))
         self._original.write(dados)
         return tamanho
 

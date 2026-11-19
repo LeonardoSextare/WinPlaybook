@@ -59,10 +59,15 @@ The paths in environment variables follow the same rules. See
 
 ## On the way back: what Ansible shows
 
-The command output shows the paths on Windows drives as on Windows, with
-forward slashes: an error points to `C:/infra/site.yml`, and not to
-`/mnt/c/infra/site.yml`. The forward slashes keep JSON output valid, and
-Windows and VS Code open these paths.
+The command output shows paths in the Windows format:
+
+- a drive path becomes `C:\infra\site.yml`, and not `/mnt/c/infra/site.yml`;
+- in `ansible --version`, `ansible-config`, `ansible-doc`, and
+  `ansible-galaxy`, a distribution path becomes
+  `\\wsl.localhost\WinPlaybook\...`, which File Explorer opens;
+- a list of paths is separated by `;`, as in `Path`;
+- inside quotes, as in JSON output or a Python list, the backslashes are
+  doubled (`"C:\\infra\\site.yml"`), so the JSON stays valid.
 
 ---
 

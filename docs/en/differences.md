@@ -20,8 +20,7 @@ Both exist without being in the inventory and aren't in the `all` group.
 - Windows paths work in the arguments, in the Ansible files, such as
   playbooks, inventories, and `ansible.cfg`, and in the environment
   variables. See [Paths between Windows and Linux](paths.md).
-- The output shows the paths on Windows drives as on Windows, with forward
-  slashes: `C:/infra/site.yml`.
+- The output shows paths in the Windows format: `C:\infra\site.yml`.
 - Inside the tasks that run on `localhost`, such as in `{{ playbook_dir }}`,
   the paths are the Linux ones: `/mnt/c/infra`.
 

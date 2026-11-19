@@ -21,8 +21,7 @@ grupo `all`.
 - Os caminhos do Windows funcionam nos argumentos, nos arquivos do Ansible,
   como _playbooks_, inventários e o `ansible.cfg`, e nas variáveis de
   ambiente. Veja [Caminhos entre o Windows e o Linux](paths.md).
-- Na saída, os caminhos das unidades do Windows aparecem no formato do
-  Windows, com barras normais: `C:/infra/site.yml`.
+- Na saída, os caminhos aparecem no formato do Windows: `C:\infra\site.yml`.
 - Dentro das tarefas que rodam no `localhost`, como no `{{ playbook_dir }}`,
   os caminhos estão no formato do Linux: `/mnt/c/infra`.
 
