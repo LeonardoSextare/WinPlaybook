@@ -28,12 +28,43 @@
         return
     }
 
+    $versaoAtual = $MyInvocation.MyCommand.Module.Version
+    $plano = New-Plano -Itens @{ Id = 'versao'; Texto = (Get-Mensagem -Nome 'PassoProcurarAVersao') }
     try {
-        Update-ModuloDoWinPlaybook
+        Start-ItemDoPlano -Plano $plano -Id 'versao'
+        try {
+            $versaoMaisNova = Get-VersaoMaisNovaDoWinPlaybook
+        }
+        catch {
+            throw (Get-Mensagem -Nome 'ModuloNaoAtualizado' -Valores $_.Exception.Message)
+        }
+        Complete-ItemDoPlano -Plano $plano -Id 'versao'
     }
-    catch {
-        throw (Get-Mensagem -Nome 'ModuloNaoAtualizado' -Valores $_.Exception.Message)
+    finally {
+        Close-Plano -Plano $plano
+    }
+
+    $jaEstaAtualizado = $versaoMaisNova -le $versaoAtual
+    if ($jaEstaAtualizado) {
+        Write-Host (Get-Mensagem -Nome 'JaEstaAtualizado' -Valores $versaoAtual) -ForegroundColor Green
+        return
+    }
+
+    $plano = New-Plano -Itens @{ Id = 'modulo'; Texto = (Get-Mensagem -Nome 'PassoBaixarOWinPlaybook' -Valores $versaoMaisNova) }
+    try {
+        Start-ItemDoPlano -Plano $plano -Id 'modulo'
+        try {
+            Update-ModuloDoWinPlaybook
+        }
+        catch {
+            throw (Get-Mensagem -Nome 'ModuloNaoAtualizado' -Valores $_.Exception.Message)
+        }
+        Complete-ItemDoPlano -Plano $plano -Id 'modulo'
+    }
+    finally {
+        Close-Plano -Plano $plano
     }
 
     Invoke-InstalacaoDaVersaoNova
+    Write-Host (Get-Mensagem -Nome 'AtualizacaoConcluida' -Valores $versaoMaisNova) -ForegroundColor Green
 }

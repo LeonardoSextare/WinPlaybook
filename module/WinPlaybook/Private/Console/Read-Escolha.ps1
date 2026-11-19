@@ -24,6 +24,10 @@
     .PARAMETER AjudaDoNao
     O que acontece com não, mostrado no ?.
 
+    .PARAMETER PadraoNao
+    Faz do não o padrão do Enter e tira a marca de recomendado, para uma escolha que apaga
+    algo, como a desinstalação.
+
     .EXAMPLE
     Read-Escolha -Pergunta 'Ativar o localhost_windows?' -Explicacao '...' -Link 'https://...' -AjudaDoSim '...' -AjudaDoNao '...'
     #>
@@ -34,26 +38,34 @@
         [Parameter(Mandatory)] [string] $Explicacao,
         [Parameter(Mandatory)] [string] $Link,
         [Parameter(Mandatory)] [string] $AjudaDoSim,
-        [Parameter(Mandatory)] [string] $AjudaDoNao
+        [Parameter(Mandatory)] [string] $AjudaDoNao,
+        [switch] $PadraoNao
     )
 
     $teclaDoSim = Get-Mensagem -Nome 'TeclaDoSim'
     $teclaDoNao = Get-Mensagem -Nome 'TeclaDoNao'
 
     Write-Host ''
-    Write-Host $Pergunta -ForegroundColor White -NoNewline
-    Write-Host " $(Get-Mensagem -Nome 'Recomendado')" -ForegroundColor Green
+    $teclaDoPadrao = $teclaDoSim
+    if ($PadraoNao) {
+        $teclaDoPadrao = $teclaDoNao
+        Write-Host $Pergunta -ForegroundColor White
+    }
+    else {
+        Write-Host $Pergunta -ForegroundColor White -NoNewline
+        Write-Host " $(Get-Mensagem -Nome 'Recomendado')" -ForegroundColor Green
+    }
     Write-Host $Explicacao -ForegroundColor DarkGray
     Write-Host (Get-Mensagem -Nome 'SaibaMais' -Valores $Link) -ForegroundColor DarkGray
     while ($true) {
         Write-Host "[$teclaDoSim] $(Get-Mensagem -Nome 'OpcaoSim')  " -ForegroundColor Yellow -NoNewline
-        Write-Host "[$teclaDoNao] $(Get-Mensagem -Nome 'OpcaoNao')  $(Get-Mensagem -Nome 'PromptDaEscolha' -Valores $teclaDoSim)" -NoNewline
+        Write-Host "[$teclaDoNao] $(Get-Mensagem -Nome 'OpcaoNao')  $(Get-Mensagem -Nome 'PromptDaEscolha' -Valores $teclaDoPadrao)" -NoNewline
         $resposta = "$(Read-Host)".Trim()
-        $escolheuSim = $resposta -eq '' -or $resposta -eq $teclaDoSim
+        $escolheuSim = $resposta -eq $teclaDoSim -or ($resposta -eq '' -and -not $PadraoNao)
         if ($escolheuSim) {
             return $true
         }
-        $escolheuNao = $resposta -eq $teclaDoNao
+        $escolheuNao = $resposta -eq $teclaDoNao -or ($resposta -eq '' -and $PadraoNao)
         if ($escolheuNao) {
             return $false
         }

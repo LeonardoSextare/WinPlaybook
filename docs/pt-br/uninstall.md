@@ -9,7 +9,7 @@ Uninstall-WinPlaybook
 !!! warning "Atenção"
 
     O comando pede confirmação, porque a distribuição é apagada com tudo o que há
-    nela. Se o `localhost_windows` está ligado, o Windows também pede a aprovação
+    nela. O padrão é não: o Enter cancela, sem mudar nada. Se o `localhost_windows` está ligado, o Windows também pede a aprovação
     de administrador para desligá-lo.
 
 Depois, remova o módulo:

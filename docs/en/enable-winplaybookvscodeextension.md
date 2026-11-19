@@ -7,14 +7,15 @@ extension, as long as WinPlaybook already tested that version.
 ## Syntax
 
 ```powershell
-Enable-WinPlaybookVSCodeExtension [-WhatIf] [-Confirm]
+Enable-WinPlaybookVSCodeExtension [-PassThru] [-WhatIf] [-Confirm]
 ```
 
 ---
 
 ## Output
 
-An object with:
+The command shows the fixed version and the setting that the VS Code
+`settings.json` file needs. With `-PassThru`, it also returns an object with:
 
 | Property           | Content                                               |
 | ------------------ | ----------------------------------------------------- |

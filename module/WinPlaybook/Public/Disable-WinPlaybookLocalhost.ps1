@@ -6,8 +6,7 @@
     .DESCRIPTION
     Precisa de administrador, e o Windows pede a aprovação quando o PowerShell não é
     elevado. Apaga o serviço WinPlaybookSshd, a configuração dele e o OpenSSH que o WinPlaybook
-    baixou. O recurso OpenSSH Server do Windows só é desinstalado quando uma versão anterior
-    do WinPlaybook o instalou. Sem o localhost_windows ligado, nada
+    baixou. Sem o localhost_windows ligado, nada
     muda.
 
     .EXAMPLE
@@ -31,20 +30,22 @@
         return
     }
 
-    $ehAdministrador = Test-Administrador
-    if (-not $ehAdministrador) {
-        Invoke-ComoAdministrador -Comando 'Disable-WinPlaybookLocalhost -Confirm:$false'
-        return
+    $plano = New-Plano -Itens @(Get-PassoDoLocalhostWindows -Desligar)
+    try {
+        $ehAdministrador = Test-Administrador
+        if (-not $ehAdministrador) {
+            Invoke-ComoAdministrador -Comando 'Disable-WinPlaybookLocalhost -Confirm:$false' -IdDaAprovacao 'localhost.aprovacao'
+        }
+        else {
+            Write-ProgressoDoAdministrador -Id 'localhost.remover'
+            Remove-SshdDoWinPlaybook
+            $configuracao['LocalhostWindowsPort'] = $null
+            $configuracao['LocalhostWindowsUser'] = $null
+            Save-Configuracao -Configuracao $configuracao
+            Write-ProgressoDoAdministrador -Id 'localhost.remover' -Remocao
+        }
     }
-
-    Remove-SshdDoWinPlaybook
-    $instalouOOpenSsh = [bool] $configuracao['OpenSshServerInstalledByWinPlaybook']
-    if ($instalouOOpenSsh) {
-        Uninstall-ServidorOpenSsh
+    finally {
+        Close-Plano -Plano $plano
     }
-
-    $configuracao['LocalhostWindowsPort'] = $null
-    $configuracao['LocalhostWindowsUser'] = $null
-    $configuracao['OpenSshServerInstalledByWinPlaybook'] = $null
-    Save-Configuracao -Configuracao $configuracao
 }

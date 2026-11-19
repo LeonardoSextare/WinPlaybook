@@ -26,7 +26,7 @@
     .LINK
     https://leonardosextare.github.io/WinPlaybook/pt-br/uninstall-winplaybook/
     #>
-    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    [CmdletBinding(SupportsShouldProcess)]
     [OutputType([void])]
     param()
 
@@ -37,20 +37,63 @@
         return
     }
 
-    Disable-WinPlaybookLocalhost -Confirm:$false
-    $criouAPastaDoSsh = [bool] (Get-Configuracao).CreatedSshFolder
-    Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro')
-    Remove-PastaDosShims -Pasta $pastaDosShims
-    if ($criouAPastaDoSsh) {
-        Remove-PastaVazia -Pasta (Get-PastaDoSshDoUsuario)
+    $vaiPerguntar = -not $PSBoundParameters.ContainsKey('Confirm') -and (Test-SessaoInterativa)
+    if ($vaiPerguntar) {
+        $aceitou = Read-Escolha -Pergunta (Get-Mensagem -Nome 'PerguntaDaDesinstalacao') -Explicacao (Get-Mensagem -Nome 'ExplicacaoDaDesinstalacao') -Link (Get-Mensagem -Nome 'PaginaDaDocumentacao' -Valores 'uninstall') -AjudaDoSim (Get-Mensagem -Nome 'OpcaoSimDaDesinstalacao') -AjudaDoNao (Get-Mensagem -Nome 'OpcaoNaoDaDesinstalacao') -PadraoNao
+        if (-not $aceitou) {
+            Write-Host (Get-Mensagem -Nome 'NadaFoiAlterado') -ForegroundColor DarkGray
+            return
+        }
+        Write-Host ''
     }
-    Remove-PastaDoAnsibleVazia -PastaDoPerfil (Get-PastaDoPerfilDoUsuario)
-    foreach ($perfil in Get-PerfilDoPowerShell) {
-        Remove-AutocompleteDoPerfil -Perfil $perfil
+
+    $localhostEstaLigado = [bool] (Get-Configuracao)['LocalhostWindowsPort']
+    $extensoesCorrigidas = @(Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode) | Where-Object { Test-ExtensaoAnsibleCorrigida -Caminho $_.Caminho })
+    $passos = @(
+        if ($localhostEstaLigado) { Get-PassoDoLocalhostWindows -Desligar }
+        if ($extensoesCorrigidas.Count -gt 0) { @{ Id = 'vscode'; Texto = (Get-Mensagem -Nome 'PassoDesfazerOVSCode') } }
+        @{ Id = 'distribuicao'; Texto = (Get-Mensagem -Nome 'PassoApagarADistribuicao') }
+        @{ Id = 'comandos'; Texto = (Get-Mensagem -Nome 'PassoRemoverOsComandos') }
+    )
+
+    $plano = New-Plano -Itens $passos
+    try {
+        Disable-WinPlaybookLocalhost -Confirm:$false
+
+        Start-ItemDoPlano -Plano $plano -Id 'vscode'
+        foreach ($extensao in $extensoesCorrigidas) {
+            Remove-PatchDaExtensaoAnsible -Caminho $extensao.Caminho
+        }
+        Complete-ItemDoPlano -Plano $plano -Id 'vscode' -Remocao
+
+        $criouAPastaDoSsh = [bool] (Get-Configuracao).CreatedSshFolder
+        Start-ItemDoPlano -Plano $plano -Id 'distribuicao'
+        Remove-DistribuicaoDoWinPlaybook -Nome $distribuicao -Pasta (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'distro')
+        Complete-ItemDoPlano -Plano $plano -Id 'distribuicao' -Remocao
+
+        Start-ItemDoPlano -Plano $plano -Id 'comandos'
+        Remove-PastaDosShims -Pasta $pastaDosShims
+        if ($criouAPastaDoSsh) {
+            Remove-PastaVazia -Pasta (Get-PastaDoSshDoUsuario)
+        }
+        Remove-PastaDoAnsibleVazia -PastaDoPerfil (Get-PastaDoPerfilDoUsuario)
+        foreach ($perfil in Get-PerfilDoPowerShell) {
+            Remove-AutocompleteDoPerfil -Perfil $perfil
+        }
+        Complete-ItemDoPlano -Plano $plano -Id 'comandos' -Remocao
     }
-    foreach ($extensao in Get-ExtensaoAnsibleDoVSCode -PastaDasExtensoes (Get-PastaDasExtensoesDoVSCode)) {
-        Remove-PatchDaExtensaoAnsible -Caminho $extensao.Caminho
+    finally {
+        Close-Plano -Plano $plano
     }
     Remove-Item -LiteralPath (Join-Path -Path (Get-PastaDeConfiguracao) -ChildPath 'logs') -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Configuracao
+    $comandoParaRemoverOModulo = 'Uninstall-Module WinPlaybook'
+    $temPSResourceGet = [bool] (Get-Command -Name 'Uninstall-PSResource' -ErrorAction SilentlyContinue)
+    if ($temPSResourceGet) {
+        $comandoParaRemoverOModulo = 'Uninstall-PSResource WinPlaybook'
+    }
+    Write-Host ''
+    Write-Host "$(Get-Mensagem -Nome 'DesinstalacaoConcluida') " -ForegroundColor Green -NoNewline
+    Write-Host "$(Get-Mensagem -Nome 'RemoverOModulo') " -NoNewline
+    Write-Host $comandoParaRemoverOModulo -ForegroundColor Cyan
 }

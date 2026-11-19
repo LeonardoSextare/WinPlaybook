@@ -12,8 +12,11 @@
 
     Uma atualização da extensão desfaz as correções. Por isso, desligue a atualização
     automática da extensão e mantenha a versão testada. O comando não altera as
-    configurações do VS Code: o objeto que ele devolve tem, em RequiredSettings, o que o
-    settings.json do usuário precisa ter.
+    configurações do VS Code: o fim mostra o que o settings.json do usuário precisa ter.
+
+    .PARAMETER PassThru
+    Devolve um objeto com a versão corrigida (Version), a pasta dela (Path) e, em
+    RequiredSettings, o que o settings.json do usuário precisa ter.
 
     .EXAMPLE
     Enable-WinPlaybookVSCodeExtension
@@ -25,7 +28,9 @@
     #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([pscustomobject])]
-    param()
+    param(
+        [switch] $PassThru
+    )
 
     $pastaDasExtensoes = Get-PastaDasExtensoesDoVSCode
     $patches = Get-PatchDaExtensaoAnsible
@@ -47,7 +52,27 @@
         return
     }
 
-    Install-PatchDaExtensaoAnsible -Caminho $extensao.Caminho -Trocas $patches[$extensao.Versao] -Versao $extensao.Versao
+    $plano = New-Plano -Itens @{ Id = 'vscode'; Texto = (Get-Mensagem -Nome 'PassoCorrigirOVSCode') }
+    try {
+        Start-ItemDoPlano -Plano $plano -Id 'vscode'
+        Install-PatchDaExtensaoAnsible -Caminho $extensao.Caminho -Trocas $patches[$extensao.Versao] -Versao $extensao.Versao
+        Complete-ItemDoPlano -Plano $plano -Id 'vscode'
+    }
+    finally {
+        Close-Plano -Plano $plano
+    }
+
+    if (-not $plano.Aninhado) {
+        Write-Host ''
+        Write-Host "$(Get-Mensagem -Nome 'Pronto') " -ForegroundColor Green -NoNewline
+        Write-Host "$(Get-Mensagem -Nome 'ConfiguracaoDoVSCode') " -NoNewline
+        Write-Host '"security.allowedUNCHosts": ["wsl.localhost"]' -ForegroundColor Cyan
+        Write-Host (Get-Mensagem -Nome 'RecarregueOVSCode') -ForegroundColor DarkGray
+    }
+
+    if (-not $PassThru) {
+        return
+    }
     return [pscustomobject]@{
         Version          = $extensao.Versao
         Path             = $extensao.Caminho

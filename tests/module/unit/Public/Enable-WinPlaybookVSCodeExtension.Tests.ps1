@@ -27,8 +27,8 @@ Describe 'Enable-WinPlaybookVSCodeExtension' {
             @(Get-ChildItem -LiteralPath $extensao -Filter '*.winplaybook-original' -Recurse).Count | Should-BeGreaterThan 0
         }
 
-        It 'devolve a versão, a pasta e a configuração que o settings.json precisa ter' {
-            $resultado = Enable-WinPlaybookVSCodeExtension
+        It 'devolve a versão, a pasta e a configuração que o settings.json precisa ter com -PassThru' {
+            $resultado = Enable-WinPlaybookVSCodeExtension -PassThru
 
             $resultado.Version | Should-Be '26.11.0'
             $resultado.Path | Should-Be $extensao
