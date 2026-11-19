@@ -47,10 +47,11 @@ Install Ansible and create its commands on Windows:
 Install-WinPlaybook
 ```
 
-The first time, the command downloads Debian and Ansible, which takes a few
-minutes. At the end, it asks whether you want to turn on `localhost_windows`,
-which lets playbooks configure Windows itself. To decide later, see
-[Configure Windows itself](localhost-windows.md).
+Before it starts, the command asks whether you want to turn on
+`localhost_windows`, which lets playbooks configure this computer, and, if the
+VS Code Ansible extension is installed, whether you want to fix it. Both are the
+recommended options. Then the installation downloads Debian and Ansible, which
+takes a few minutes the first time, and shows each step while it runs.
 
 Test in the same terminal:
 

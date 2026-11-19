@@ -44,10 +44,13 @@
         return
     }
 
+    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoCriandoAChave')
     $chavePublica = New-ChaveDoLocalhostWindows -Distribuicao $configuracao.WslDistribution
     $usuario = Get-UsuarioDoLocalhostWindows
     $porta = 47022
+    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoInstalandoOOpenSsh')
     $instalouOOpenSsh = Install-ServidorOpenSsh
+    Write-ProgressoDoAdministrador -Texto (Get-Mensagem -Nome 'ProgressoCriandoOServico')
     Install-SshdDoWinPlaybook -ChavePublica $chavePublica -Usuario $usuario -Porta $porta
 
     $configuracao['LocalhostWindowsPort'] = $porta

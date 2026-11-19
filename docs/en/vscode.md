@@ -24,6 +24,11 @@ Code, right-click the **Ansible** extension and clear **Auto Update**.
 
 ## Apply the fixes
 
+!!! tip "During the installation"
+
+    When the extension is already installed, `Install-WinPlaybook` asks whether
+    you want to apply the fixes. In that case, this step is already done.
+
 In PowerShell:
 
 ```powershell

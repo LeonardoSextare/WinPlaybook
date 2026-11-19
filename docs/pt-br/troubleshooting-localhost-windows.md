@@ -30,15 +30,17 @@ para rodar o comando por você.
 
 ---
 
-## O comando falhou no PowerShell de administrador
+## O comando falhou como administrador
 
 !!! failure "Mensagem de erro"
 
     ```text
-    O comando Enable-WinPlaybookLocalhost -Confirm:$false falhou no PowerShell de administrador ...
+    O comando Enable-WinPlaybookLocalhost -Confirm:$false falhou como administrador (código de saída 1): ...
     ```
 
-Abra o PowerShell como administrador e rode o comando nele, para ver o erro.
+O fim da mensagem traz a causa. Corrija o que ela indica e rode o comando de
+novo. Se a causa não estiver clara, [abra uma issue](report-issue.md) com a
+mensagem completa.
 
 ---
 

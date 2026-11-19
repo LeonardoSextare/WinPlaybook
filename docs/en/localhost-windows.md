@@ -9,7 +9,8 @@ To see the feature working from scratch, follow the
 
 ## Turn on localhost_windows
 
-`Install-WinPlaybook` asks whether you want to turn on `localhost_windows`.
+Before it starts, `Install-WinPlaybook` asks whether you want to turn on
+`localhost_windows`.
 To turn it on later, run this in PowerShell:
 
 ```powershell

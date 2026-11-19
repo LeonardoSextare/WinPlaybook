@@ -7,7 +7,7 @@ distribution.
 ## Syntax
 
 ```powershell
-Install-WinPlaybook [-Path <string>] [-PowerShell <Desktop | Core>] [-AnsibleVersion <string>] [-PythonPackage <string[]>] [-EnableLocalhost] [-WhatIf] [-Confirm]
+Install-WinPlaybook [-Path <string>] [-PowerShell <Desktop | Core>] [-AnsibleVersion <string>] [-PythonPackage <string[]>] [-EnableLocalhost] [-EnableVSCodeExtension] [-PassThru] [-WhatIf] [-Confirm]
 ```
 
 ---
@@ -47,8 +47,20 @@ Default: the ones from the previous installation.
 
 ### -EnableLocalhost
 
-Turns on `localhost_windows` without asking. Without it, the installation
-asks once, in an interactive terminal.
+Turns on `localhost_windows` without asking. Without it, the installation asks
+before it starts, in an interactive terminal, and keeps the answer if you
+decline.
+
+### -EnableVSCodeExtension
+
+Fixes the VS Code Ansible extension without asking. Without it, the installation
+asks before it starts, when the extension is installed.
+
+### -PassThru
+
+Returns an object with the commands folder (`Folder`), the distribution
+(`Distribution`), and the commands (`Commands`). Without it, the installation
+only shows the result in the console.
 
 ---
 
@@ -76,5 +88,7 @@ Install-WinPlaybook -Path 'C:\Tools' -PowerShell Desktop
 - Creates the `.ansible\collections` and `.ansible\roles` folders and, when it
   doesn't exist, the `.ssh` folder, in your profile.
 - Adds the autocomplete line to the PowerShell profiles.
+- Turns on `localhost_windows` and fixes the VS Code Ansible extension, when
+  those are the choices.
 
 See [What WinPlaybook changes on the system](system-changes.md).
