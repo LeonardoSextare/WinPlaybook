@@ -1,9 +1,22 @@
 # Network
 
 The WinPlaybook distribution has its own network, separate from the Windows
-one. For servers on the network and on the internet, this doesn't change
-anything: Ansible reaches them as Windows does. The difference is in
-`localhost`.
+one. While a command runs, WinPlaybook turns on a bridge between the two, and
+Ansible reaches what Windows reaches.
+
+## Servers
+
+The Ansible TCP connections, such as SSH, WinRM, and HTTPS, go out through
+Windows. Windows makes the connection, so its routes, VPN, and firewall apply,
+and Ansible reaches the same servers as PowerShell. This includes Hyper-V
+virtual machines on the Default Switch, which the WSL network alone doesn't
+reach.
+
+!!! info "How a refused connection shows up"
+
+    When the server refuses the connection, Ansible sees the connection
+    reset (`Connection reset by peer`), and not refused
+    (`Connection refused`). A server that doesn't answer still times out.
 
 ## localhost
 

@@ -81,6 +81,19 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains("iniciar_ponte_de_rede(ambiente.get('relayDeRede'))") | Should-BeTrue
     }
 
+    It 'leva pelo Windows as conexões TCP aos outros destinos' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains('oifname != "lo" meta l4proto tcp redirect to :47999') | Should-BeTrue
+    }
+
+    It 'apaga as regras da ponte que ficaram sem dono, como as de um comando encerrado à força' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("REGRAS_SEM_A_PONTE = 'table inet winplaybook\ndelete table inet winplaybook\n'") | Should-BeTrue
+        $script.Contains('apagar_regras_sem_dono()') | Should-BeTrue
+    }
+
     It 'começa o comando depois que a ponte para o localhost do Windows aplica as portas' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

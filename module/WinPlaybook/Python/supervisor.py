@@ -3,6 +3,7 @@ import base64
 import ctypes
 import glob
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -37,9 +38,11 @@ table inet winplaybook {
         type nat hook output priority -100; policy accept;
         ip daddr 127.0.0.1 tcp dport @portas_do_windows redirect to :47999
         ip6 daddr ::1 tcp dport @portas_do_windows redirect to :47999
+        oifname != "lo" meta l4proto tcp redirect to :47999
     }
 }
 '''
+REGRAS_SEM_A_PONTE = 'table inet winplaybook\ndelete table inet winplaybook\n'
 portas_do_windows = []
 processos_da_ponte = []
 portas_mudaram = threading.Event()
@@ -483,13 +486,32 @@ def escrever_no_relay(processo):
     return escrever
 
 
+def fechar_conexao_do_relay(conexao, processo):
+    try:
+        falhou = processo.wait(timeout=0.5) != 0
+    except subprocess.TimeoutExpired:
+        falhou = False
+    if falhou:
+        conexao.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack('ii', 1, 0))
+        conexao.shutdown(socket.SHUT_RD)
+        return
+    conexao.shutdown(socket.SHUT_WR)
+
+
 def atender_conexao(conexao, familia, relay):
     with conexao:
         nivel = socket.SOL_IP if familia == socket.AF_INET else socket.IPPROTO_IPV6
         endereco = conexao.getsockopt(nivel, SO_ORIGINAL_DST, 16 if familia == socket.AF_INET else 28)
         porta = struct.unpack('!H', endereco[2:4])[0]
-        processo = subprocess.Popen([relay, 'conectar', str(porta)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        do_windows = threading.Thread(target=copiar_conexao, args=(processo.stdout.read1, conexao.sendall, lambda: conexao.shutdown(socket.SHUT_WR)), daemon=True)
+        if familia == socket.AF_INET:
+            destino = ipaddress.ip_address(endereco[4:8])
+        else:
+            destino = ipaddress.ip_address(endereco[8:24])
+        argumentos = [relay, 'conectar', str(porta)]
+        if not destino.is_loopback:
+            argumentos.append(str(destino))
+        processo = subprocess.Popen(argumentos, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        do_windows = threading.Thread(target=copiar_conexao, args=(processo.stdout.read1, conexao.sendall, lambda: fechar_conexao_do_relay(conexao, processo)), daemon=True)
         do_windows.start()
         copiar_conexao(conexao.recv, escrever_no_relay(processo), processo.stdin.close)
         do_windows.join()
@@ -535,15 +557,27 @@ def assumir_a_ponte_de_rede(relay):
 
 
 def encerrar_a_ponte_de_rede():
-    aplicar_regras_de_rede('flush set inet winplaybook portas_do_windows\n')
+    aplicar_regras_de_rede(REGRAS_SEM_A_PONTE)
     for processo in processos_da_ponte:
         processo.kill()
 
 
+def apagar_regras_sem_dono():
+    servidores = abrir_servidores_da_ponte()
+    if servidores:
+        aplicar_regras_de_rede(REGRAS_SEM_A_PONTE)
+    for servidor, _ in servidores:
+        servidor.close()
+
+
 def iniciar_ponte_de_rede(relay):
-    if relay and os.access(relay, os.X_OK) and os.access(NFT_DA_PONTE, os.X_OK):
-        threading.Thread(target=assumir_a_ponte_de_rede, args=(relay,), daemon=True).start()
-        ponte_pronta.wait(5)
+    if not os.access(NFT_DA_PONTE, os.X_OK):
+        return
+    if not (relay and os.access(relay, os.X_OK)):
+        apagar_regras_sem_dono()
+        return
+    threading.Thread(target=assumir_a_ponte_de_rede, args=(relay,), daemon=True).start()
+    ponte_pronta.wait(5)
 
 
 def preparar_config_do_ssh():
