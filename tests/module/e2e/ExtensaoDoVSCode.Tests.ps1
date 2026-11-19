@@ -70,6 +70,25 @@ Describe 'Extensão Ansible do VS Code' {
             @($diagnosticos.mensagens) -join "`n" | Should-BeLikeString '*name*'
             @($diagnosticos.mensagens) -join "`n" | Should-NotBeLikeString '*No such file*'
         }
+
+        It 'mostra nos metadados o caminho do Ansible que o Windows abre' {
+            $metadados = ($registros | Where-Object { $_.tipo -eq 'metadados' }).dados
+
+            $metadados.'ansible information'.location | Should-BeLikeString "\\wsl.localhost\$nomeDaDistribuicao\*"
+        }
+
+        It 'mostra nos metadados a versão e o caminho do Python do Ansible' {
+            $metadados = ($registros | Where-Object { $_.tipo -eq 'metadados' }).dados
+
+            $metadados.'python information'.version | Should-MatchString '^3\.\d+\.\d+$'
+            $metadados.'python information'.location | Should-BeLikeString "\\wsl.localhost\$nomeDaDistribuicao\*python*"
+        }
+
+        It 'mostra nos metadados o shim do ansible-lint' {
+            $metadados = ($registros | Where-Object { $_.tipo -eq 'metadados' }).dados
+
+            $metadados.'ansible-lint information'.location | Should-Be (Join-Path $pastaDosShims 'ansible-lint.exe')
+        }
     }
 
     Context 'quando a extensão não tem as correções' {

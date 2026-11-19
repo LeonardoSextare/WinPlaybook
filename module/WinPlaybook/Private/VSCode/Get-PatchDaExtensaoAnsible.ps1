@@ -37,6 +37,12 @@
             @{ Arquivo = "$servidor\utils\docsFinder.cjs"; De = 'function s(e,t){if(!a.existsSync(e)'; Para = 'function s(e,t){' + $barrasNormais + 'if(!a.existsSync(e)' }
             @{ Arquivo = $extensao; De = 'const pythonVersion = await getBinDetail("python3", "--version");'; Para = $pythonDoAnsible }
             @{ Arquivo = "$servidor\utils\docsFinder.cjs"; De = 'function c(e,t){let s=/* @__PURE__ */ new Map;'; Para = 'function c(e,t){' + $barrasNormais + 'let s=/* @__PURE__ */ new Map;' }
+            @{ Arquivo = "$servidor\utils\getAnsibleMetaData.cjs"; De = 's(`command -v`,`ansible-lint`)'; Para = 's(`where`,`ansible-lint`)' }
+            @{ Arquivo = "$servidor\utils\getAnsibleMetaData.cjs"; De = 'e.location=n?.stdout.trim()||void 0'; Para = 'e.location=n?.stdout.trim().split(/\r?\n/)[0]||void 0' }
+            @{ Arquivo = "$servidor\utils\getAnsibleMetaData.cjs"; De = 'async function l(){let e={},t=await s(`python3`,`--version`);return t===void 0?e:(e.version=t.stdout.trim().split(` `).pop()?.trim(),e.location=(await s(`python3`,`-c "import sys; print(sys.executable)"`))?.stdout.trim(),e)}'; Para = 'async function l(){let e={},t=/^(\S+).*\((.+)\)\s*$/.exec(String((await i.ansibleConfig).ansible_meta_data[`python version`]||``));return t&&(e.version=t[1],e.location=t[2]),e}' }
+            @{ Arquivo = $extensao; De = 'return path7.win32.resolve(absolutePath);'; Para = 'return path7.win32.resolve(absolutePath).split(String.fromCharCode(92)).join(String.fromCharCode(92,92));' }
+            @{ Arquivo = $extensao; De = "<a href='`${formattedVal}'>"; Para = "<a href='`${require(`"url`").pathToFileURL(formattedVal).href}'>" }
+            @{ Arquivo = $extensao; De = "<a href='`${pathValue}'>"; Para = "<a href='`${require(`"url`").pathToFileURL(pathValue).href}'>" }
         )
     }
 }
