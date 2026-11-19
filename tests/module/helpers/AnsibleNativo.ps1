@@ -198,7 +198,9 @@ function Format-SaidaDoAnsible {
     Troca as pastas do projeto por <projeto> e as quebras de linha do Windows pelas do Linux.
 
     .DESCRIPTION
-    Deixa comparáveis as saídas de um mesmo projeto copiado para pastas diferentes.
+    Deixa comparáveis as saídas de um mesmo projeto copiado para pastas diferentes. As barras
+    invertidas, simples ou escapadas, viram barras normais, para os caminhos do Windows que o
+    WinPlaybook mostra se compararem com os do Linux.
 
     .PARAMETER Texto
     A saída ou os erros de um comando.
@@ -216,7 +218,7 @@ function Format-SaidaDoAnsible {
         [Parameter(Mandatory)] [string[]] $PastasDoProjeto
     )
 
-    $textoFormatado = $Texto.Replace("`r`n", "`n")
+    $textoFormatado = $Texto.Replace("`r`n", "`n").Replace('\\\\wsl.localhost', '//wsl.localhost').Replace('\\wsl.localhost', '//wsl.localhost').Replace('\\', '/').Replace('\', '/')
     foreach ($pasta in $PastasDoProjeto) {
         $textoFormatado = $textoFormatado.Replace($pasta, '<projeto>')
     }
@@ -231,8 +233,10 @@ function ConvertTo-SaidaVistaDoWindows {
 
     .DESCRIPTION
     Um caminho da distribuição vira //wsl.localhost/<distribuição>/..., e as pastas
-    .ansible\collections e .ansible\roles e o .ansible.cfg, que a distribuição liga ao perfil
-    do Windows, viram os caminhos delas no perfil, com barras normais. É o que o WinPlaybook
+    .ansible\collections, .ansible\roles e .ansible\plugins e o .ansible.cfg, que a distribuição
+    liga ao perfil do Windows, viram os caminhos delas no perfil. Uma lista de caminhos passa a
+    ser separada por ponto e vírgula. As barras ficam normais, porque o Format-SaidaDoAnsible
+    deixa as duas saídas com barras normais antes de compará-las. É o que o WinPlaybook
     mostra no ansible-config, no ansible-doc, no ansible-galaxy e no ansible --version.
 
     .PARAMETER Texto
@@ -259,9 +263,18 @@ function ConvertTo-SaidaVistaDoWindows {
     $ligacoesParaOPerfil = [ordered]@{
         '/home/winplaybook/.ansible/collections' = "$perfil/.ansible/collections"
         '/home/winplaybook/.ansible/roles'       = "$perfil/.ansible/roles"
+        '/home/winplaybook/.ansible/plugins'     = "$perfil/.ansible/plugins"
         '/home/winplaybook/.ansible.cfg'         = "$perfil/.ansible.cfg"
     }
     $padrao = '(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/[^\s''"\],:;=()]*)?'
+    $Texto = [regex]::Replace($Texto, '(?<![\w/.~-])/[^\s''"\],:;=()]*(?::/[^\s''"\],:;=()]*)+', {
+            param($lista)
+            $todosSaoTraduzidos = @($lista.Value.Split(':') | Where-Object { $_ -notmatch '^/(?:home|root|tmp|usr|etc|opt|var|srv|mnt/[a-z])(?:/|$)' }).Count -eq 0
+            if ($todosSaoTraduzidos) {
+                return $lista.Value.Replace(':/', ';/')
+            }
+            return $lista.Value
+        })
     return [regex]::Replace($Texto, $padrao, {
             param($ocorrencia)
             foreach ($ligacao in $ligacoesParaOPerfil.Keys) {
