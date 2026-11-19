@@ -22,5 +22,6 @@
 
     $pasta = Get-PastaDoSshdDoWinPlaybook
     Remove-Item -LiteralPath $pasta -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath (Get-PastaDoOpenSshDoWinPlaybook) -Recurse -Force -ErrorAction SilentlyContinue
     Remove-PastaVazia -Pasta (Split-Path -Path $pasta -Parent)
 }

@@ -35,7 +35,7 @@ Com o `Enable-WinPlaybookLocalhost`:
 
 | Item                    | Onde                              | Na desinstalação                        |
 | ----------------------- | --------------------------------- | --------------------------------------- |
-| Recurso OpenSSH Server  | Recursos opcionais do Windows     | Desinstalado se o WinPlaybook o instalou |
+| OpenSSH do WinPlaybook  | `C:\ProgramData\WinPlaybook\openssh` | Apagado                       |
 | Serviço `WinPlaybookSshd` | Serviços do Windows             | Apagado                                 |
 | Configuração do serviço | `C:\ProgramData\WinPlaybook\ssh`  | Apagada                                 |
 

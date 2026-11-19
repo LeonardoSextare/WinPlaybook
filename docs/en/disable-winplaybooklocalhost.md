@@ -22,8 +22,8 @@ Disable-WinPlaybookLocalhost
 ## What it changes
 
 - Deletes the `WinPlaybookSshd` service and the
-  `C:\ProgramData\WinPlaybook\ssh` folder.
-- Uninstalls OpenSSH Server, if WinPlaybook installed it.
+  `C:\ProgramData\WinPlaybook\ssh` and `C:\ProgramData\WinPlaybook\openssh`
+  folders.
 
 Needs an administrator. `Uninstall-WinPlaybook` also turns off
 `localhost_windows`.

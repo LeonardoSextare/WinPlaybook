@@ -19,20 +19,24 @@
     .PARAMETER Porta
     A porta do 127.0.0.1 em que o serviço escuta.
 
+    .PARAMETER PastaDoOpenSsh
+    A pasta do OpenSSH de Install-OpenSshDoWinPlaybook, com o sshd.exe e o ssh-keygen.exe.
+
     .EXAMPLE
-    Install-SshdDoWinPlaybook -ChavePublica $chave -Usuario 'eu' -Porta 47022
+    Install-SshdDoWinPlaybook -ChavePublica $chave -Usuario 'eu' -Porta 47022 -PastaDoOpenSsh (Install-OpenSshDoWinPlaybook)
     #>
     [CmdletBinding()]
     [OutputType([void])]
     param(
         [Parameter(Mandatory)] [string] $ChavePublica,
         [Parameter(Mandatory)] [string] $Usuario,
-        [Parameter(Mandatory)] [int] $Porta
+        [Parameter(Mandatory)] [int] $Porta,
+        [Parameter(Mandatory)] [string] $PastaDoOpenSsh
     )
 
     $pasta = Get-PastaDoSshdDoWinPlaybook
-    $sshd = Join-Path -Path $env:WINDIR -ChildPath 'System32\OpenSSH\sshd.exe'
-    $sshKeygen = Join-Path -Path $env:WINDIR -ChildPath 'System32\OpenSSH\ssh-keygen.exe'
+    $sshd = Join-Path -Path $PastaDoOpenSsh -ChildPath 'sshd.exe'
+    $sshKeygen = Join-Path -Path $PastaDoOpenSsh -ChildPath 'ssh-keygen.exe'
     $null = New-Item -ItemType Directory -Path $pasta -Force
     $null = & icacls.exe $pasta /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F'
 

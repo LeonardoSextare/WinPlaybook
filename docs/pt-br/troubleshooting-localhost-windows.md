@@ -44,12 +44,16 @@ mensagem completa.
 
 ---
 
-## O OpenSSH Server não foi instalado
+## O OpenSSH não foi baixado
 
-A instalação do recurso baixa os arquivos do Windows Update. Numa empresa, o
-Windows pode usar um servidor de atualizações que não tem o recurso. Fale com
-o time que administra as máquinas, ou instale o recurso em
-**Configurações**, **Sistema**, **Recursos opcionais**, **OpenSSH Server**, e
+!!! failure "Mensagem de erro"
+
+    ```text
+    Não foi possível baixar o OpenSSH de https://github.com/PowerShell/Win32-OpenSSH/...
+    ```
+
+O WinPlaybook baixa o OpenSSH do GitHub. Confira se o Windows acessa a
+internet e se a rede, ou o proxy da empresa, libera o `github.com`. Depois,
 rode o `Enable-WinPlaybookLocalhost` de novo.
 
 ---

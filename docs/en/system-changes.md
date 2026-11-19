@@ -35,7 +35,7 @@ With `Enable-WinPlaybookLocalhost`:
 
 | Item                        | Where                             | On uninstall                          |
 | --------------------------- | --------------------------------- | ------------------------------------- |
-| OpenSSH Server feature      | Windows optional features         | Uninstalled if WinPlaybook installed it |
+| WinPlaybook OpenSSH         | `C:\ProgramData\WinPlaybook\openssh` | Deleted                        |
 | `WinPlaybookSshd` service   | Windows services                  | Deleted                               |
 | Service configuration       | `C:\ProgramData\WinPlaybook\ssh`  | Deleted                               |
 

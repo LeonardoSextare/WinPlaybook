@@ -16,7 +16,7 @@ Describe 'Install-SshdDoWinPlaybook' {
         Mock Get-Service -ModuleName WinPlaybook { $null }
         Mock New-Service -ModuleName WinPlaybook { }
         Mock Start-Service -ModuleName WinPlaybook { }
-        InModuleScope WinPlaybook { Install-SshdDoWinPlaybook -ChavePublica 'ssh-ed25519 AAAA winplaybook' -Usuario 'eu' -Porta 47022 }
+        InModuleScope WinPlaybook { Install-SshdDoWinPlaybook -ChavePublica 'ssh-ed25519 AAAA winplaybook' -Usuario 'eu' -Porta 47022 -PastaDoOpenSsh 'C:\ProgramData\WinPlaybook\openssh' }
         $configuracao = Get-Content -LiteralPath (Join-Path $pasta 'sshd_config')
     }
 
@@ -48,6 +48,6 @@ Describe 'Install-SshdDoWinPlaybook' {
         Mock Start-Service -ModuleName WinPlaybook { throw 'falhou' }
         Mock Get-WinEvent -ModuleName WinPlaybook { [pscustomobject]@{ Message = 'error: Bad configuration option' } }
 
-        { InModuleScope WinPlaybook { Install-SshdDoWinPlaybook -ChavePublica 'ssh-ed25519 AAAA winplaybook' -Usuario 'eu' -Porta 47022 } } | Should-Throw -ExceptionMessage '*WinPlaybookSshd não iniciou*Bad configuration option*'
+        { InModuleScope WinPlaybook { Install-SshdDoWinPlaybook -ChavePublica 'ssh-ed25519 AAAA winplaybook' -Usuario 'eu' -Porta 47022 -PastaDoOpenSsh 'C:\ProgramData\WinPlaybook\openssh' } } | Should-Throw -ExceptionMessage '*WinPlaybookSshd não iniciou*Bad configuration option*'
     }
 }

@@ -5,8 +5,9 @@
 
     .DESCRIPTION
     Precisa de administrador, e o Windows pede a aprovação quando o PowerShell não é
-    elevado. Apaga o serviço WinPlaybookSshd e a configuração dele e desinstala o OpenSSH
-    Server quando foi o WinPlaybook que o instalou. Sem o localhost_windows ligado, nada
+    elevado. Apaga o serviço WinPlaybookSshd, a configuração dele e o OpenSSH que o WinPlaybook
+    baixou. O recurso OpenSSH Server do Windows só é desinstalado quando uma versão anterior
+    do WinPlaybook o instalou. Sem o localhost_windows ligado, nada
     muda.
 
     .EXAMPLE
