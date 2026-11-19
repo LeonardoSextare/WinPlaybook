@@ -61,6 +61,10 @@ Toda tarefa segue as etapas abaixo, na ordem.
 - Mantenha os padrões do projeto e do código ao redor.
 - Escreva ou ajuste os testes junto com o código, no mesmo commit. Todo teste
   novo é visto falhando antes de passar.
+- Atualize a documentação junto com o código, no mesmo commit e nos dois
+  idiomas: toda mudança que o usuário percebe, como um parâmetro, uma mensagem,
+  uma pergunta, um caminho ou um comportamento, muda também as páginas que falam
+  dela, a ajuda do comando e o README, quando for o caso.
 - Fique no escopo da tarefa. Anote no relatório final o que notar fora dele,
   como um bug ou um texto desatualizado, sem mexer no código.
 - Commite a cada mudança lógica concluída.
@@ -75,6 +79,10 @@ Antes de abrir o PR:
   testes.
 - Mudança em `docs/` passa pelo build dos dois idiomas e pela revisão de
   entrega da documentação.
+- Procure na documentação (`docs/pt-br`, `docs/en` e os READMEs) e na ajuda
+  dos comandos o que fala do comportamento alterado, como os nomes dos
+  comandos, dos parâmetros e das mensagens, e confira que tudo descreve o
+  comportamento novo.
 - Revise o próprio diff com `git diff main...HEAD`, procurando sobras de
   depuração, arquivos que não deveriam estar ali e mudanças fora do escopo.
 
