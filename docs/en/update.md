@@ -17,6 +17,10 @@ its commands in the terminal:
 WinPlaybook: version 0.20.0 is available (you use 0.19.0). Update with: Update-WinPlaybook
 ```
 
+It checks the PowerShell Gallery in the background, at most once an hour,
+without slowing down the command. A version published after the last check
+shows up in the notice within an hour.
+
 To turn off the notice, set the `WINPLAYBOOK_UPDATE_CHECK` environment
 variable to `off`:
 

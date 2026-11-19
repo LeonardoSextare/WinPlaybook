@@ -5,7 +5,7 @@
 
     .DESCRIPTION
     Usa a versão guardada por Update-VersaoMaisNovaGuardada, sem esperar a internet. Quando a
-    versão guardada tem mais de um dia, ou não existe, abre um PowerShell em segundo plano
+    versão guardada tem mais de uma hora, não existe ou não é mais nova que a atual, abre um PowerShell em segundo plano
     para consultá-la de novo, e o aviso usa a consulta nova no próximo comando. Não avisa
     quando a variável WINPLAYBOOK_UPDATE_CHECK é off, quando o stderr não é o terminal,
     como num programa que lê a saída, nem na versão de desenvolvimento (0.0.0). A sessão é
@@ -41,13 +41,13 @@
         $guardada = $null
     }
 
-    $consultaVenceu = (-not $guardada) -or (((Get-Date) - [datetime] $guardada.verificadoEm).TotalHours -ge 24)
+    $temVersaoMaisNova = $guardada -and $guardada.versao -and ([version] $guardada.versao -gt $VersaoAtual)
+    $consultaVenceu = (-not $temVersaoMaisNova) -or (((Get-Date) - [datetime] $guardada.verificadoEm).TotalHours -ge 1)
     if ($consultaVenceu) {
         $comando = "Import-Module '$((Get-PastaDoModulo).Replace("'", "''"))'; & (Get-Module WinPlaybook) { Update-VersaoMaisNovaGuardada }"
         $null = Start-Process -FilePath (Get-Process -Id $PID).Path -ArgumentList '-NoProfile', '-NonInteractive', '-Command', $comando -WindowStyle Hidden
     }
 
-    $temVersaoMaisNova = $guardada -and $guardada.versao -and ([version] $guardada.versao -gt $VersaoAtual)
     if ($temVersaoMaisNova) {
         [Console]::Error.WriteLine((Get-Mensagem -Nome 'AvisoDeVersaoNova' -Valores $guardada.versao, $VersaoAtual))
     }

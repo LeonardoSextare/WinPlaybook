@@ -82,7 +82,37 @@ Describe 'Show-AvisoDeVersaoNova' {
         }
     }
 
-    Context 'quando a versão guardada tem mais de um dia ou não existe' {
+    Context 'quando a versão guardada é recente, mas não é mais nova que a instalada' {
+        BeforeEach {
+            Set-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'versao-mais-nova.json') -Value (ConvertTo-Json @{ versao = '0.17.0'; verificadoEm = (Get-Date).ToString('o') })
+        }
+
+        It 'consulta a Gallery de novo em segundo plano' {
+            InModuleScope WinPlaybook { Show-AvisoDeVersaoNova -VersaoAtual '0.18.0' }
+
+            Should-Invoke Start-Process -ModuleName WinPlaybook -Times 1 -Exactly
+        }
+    }
+
+    Context 'quando a versão guardada foi consultada há mais de uma hora' {
+        BeforeEach {
+            Set-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'versao-mais-nova.json') -Value (ConvertTo-Json @{ versao = '0.20.0'; verificadoEm = (Get-Date).AddMinutes(-61).ToString('o') })
+        }
+
+        It 'consulta a Gallery de novo em segundo plano' {
+            InModuleScope WinPlaybook { Show-AvisoDeVersaoNova -VersaoAtual '0.18.0' }
+
+            Should-Invoke Start-Process -ModuleName WinPlaybook -Times 1 -Exactly
+        }
+
+        It 'avisa com a versão guardada enquanto a consulta nova não termina' {
+            InModuleScope WinPlaybook { Show-AvisoDeVersaoNova -VersaoAtual '0.18.0' }
+
+            $erros.ToString() | Should-BeLikeString '*0.20.0*'
+        }
+    }
+
+    Context 'quando a versão guardada não existe' {
         It 'consulta a Gallery em segundo plano, num PowerShell novo' {
             InModuleScope WinPlaybook { Show-AvisoDeVersaoNova -VersaoAtual '0.18.0' }
 
