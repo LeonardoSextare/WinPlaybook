@@ -49,8 +49,8 @@
 
     .PARAMETER PowerShell
     O PowerShell que os shims .exe abrem: Desktop (o Windows PowerShell 5.1, que abre mais
-    rápido) ou Core (o PowerShell 7). O padrão é o escolhido na instalação anterior ou, na
-    primeira instalação, o PowerShell que executa este comando.
+    rápido) ou Core (o PowerShell 7). O padrão é o Core escolhido numa instalação anterior,
+    se o PowerShell 7 continua instalado, ou o Desktop.
 
     .PARAMETER AnsibleVersion
     A versão do pacote ansible, como 13.0.0 ou 13.*. O padrão é a escolhida na instalação
@@ -84,7 +84,7 @@
     .EXAMPLE
     Install-WinPlaybook -Path 'C:\Tools' -PowerShell Desktop
 
-    Cria os shims em C:\Tools\WinPlaybook\bin, abertos pelo Windows PowerShell 5.1.
+    Cria os shims em C:\Tools\WinPlaybook\bin, abertos pelo PowerShell 7.
 
     .LINK
     https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html
@@ -201,16 +201,17 @@
             throw
         }
 
-        $caminhoDoPowerShell = $configuracao.ShimPowerShellPath
+        $edicaoDoPowerShell = $PowerShell
         $edicaoFoiEscolhida = [bool] $PowerShell
-        if ($edicaoFoiEscolhida) {
-            $caminhoDoPowerShell = Get-CaminhoDoPowerShell -Edicao $PowerShell
+        if (-not $edicaoFoiEscolhida) {
+            $edicaoDoPowerShell = 'Desktop'
+            $usaOPowerShell7Escolhido = $configuracao.ShimPowerShellEdition -eq 'Core' -and [bool] (Get-Command -Name 'pwsh' -CommandType Application -ErrorAction SilentlyContinue)
+            if ($usaOPowerShell7Escolhido) {
+                $edicaoDoPowerShell = 'Core'
+            }
         }
 
-        $powerShellExiste = $caminhoDoPowerShell -and (Test-Path -LiteralPath $caminhoDoPowerShell)
-        if (-not $powerShellExiste) {
-            $caminhoDoPowerShell = Get-CaminhoDoPowerShell
-        }
+        $caminhoDoPowerShell = Get-CaminhoDoPowerShell -Edicao $edicaoDoPowerShell
 
         $pastaDoModulo = Get-PastaDoModulo
 
@@ -225,6 +226,7 @@
         Save-Configuracao -Configuracao @{
             ShimFolder               = $pastaDosShims
             ShimPowerShellPath       = $caminhoDoPowerShell
+            ShimPowerShellEdition    = $edicaoDoPowerShell
             WslDistribution          = $distribuicao
             WslMountRoot             = $raizDeMontagem
             AnsibleVersion           = $versaoDoAnsible

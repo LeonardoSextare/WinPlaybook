@@ -26,8 +26,8 @@ Default: `%LOCALAPPDATA%\WinPlaybook\bin`.
 The PowerShell that the `.exe` commands open: `Desktop`, Windows PowerShell
 5.1, which opens faster, or `Core`, PowerShell 7.
 
-Default: the one from the previous installation or, in the first one, the
-PowerShell that runs the command.
+Default: Windows PowerShell 5.1. If a previous installation chose PowerShell
+7 and it is still installed, the default is PowerShell 7.
 
 ### -AnsibleVersion
 
