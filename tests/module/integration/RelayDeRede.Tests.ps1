@@ -7,7 +7,7 @@
     function Start-RelayDeRede {
         <#
         .SYNOPSIS
-        Inicia o relay de rede com os argumentos escolhidos, com a entrada e as saídas redirecionadas, e devolve o processo.
+        Inicia o relay de rede com os argumentos escolhidos, com a entrada vazia e as saídas gravadas em arquivos, e devolve o processo e os arquivos.
 
         .PARAMETER Argumentos
         Os argumentos do relay, como 'portas' ou 'conectar 8080'.
@@ -16,17 +16,20 @@
         $relay = Start-RelayDeRede -Argumentos "conectar $porta"
         #>
         [CmdletBinding()]
-        [OutputType([Diagnostics.Process])]
+        [OutputType([pscustomobject])]
         param(
             [Parameter(Mandatory)] [string] $Argumentos
         )
 
-        $inicio = New-Object Diagnostics.ProcessStartInfo($caminhoDoRelay, $Argumentos)
-        $inicio.UseShellExecute = $false
-        $inicio.RedirectStandardInput = $true
-        $inicio.RedirectStandardOutput = $true
-        $inicio.RedirectStandardError = $true
-        return [Diagnostics.Process]::Start($inicio)
+        $pasta = Join-Path $TestDrive ([guid]::NewGuid().ToString('N'))
+        $null = New-Item -ItemType Directory -Path $pasta
+        $entrada = Join-Path $pasta 'entrada.txt'
+        [IO.File]::WriteAllText($entrada, '')
+        $saida = Join-Path $pasta 'saida.txt'
+        $erros = Join-Path $pasta 'erros.txt'
+        $processo = Start-Process -FilePath $caminhoDoRelay -ArgumentList $Argumentos -RedirectStandardInput $entrada -RedirectStandardOutput $saida -RedirectStandardError $erros -NoNewWindow -PassThru
+        $null = $processo.Handle
+        return [pscustomobject]@{ Processo = $processo; Saida = $saida; Erros = $erros }
     }
 }
 
@@ -54,22 +57,20 @@ Describe 'Relay de rede' {
             $dados = [Text.Encoding]::ASCII.GetBytes("oi do servidor`n")
             $cliente.GetStream().Write($dados, 0, $dados.Length)
             $cliente.Close()
-            $linha = $relay.StandardOutput.ReadLine()
-            $relay.StandardInput.Close()
-            $saiuSozinho = $relay.WaitForExit(10000)
+            $saiuSozinho = $relay.Processo.WaitForExit(10000)
         }
 
         AfterAll {
-            $relay.Dispose()
+            $relay.Processo.Dispose()
         }
 
         It 'repassa à saída o que o serviço responde' {
-            $linha | Should-Be 'oi do servidor'
+            [IO.File]::ReadAllText($relay.Saida).Trim() | Should-Be 'oi do servidor'
         }
 
         It 'sai com 0 quando a entrada termina' {
             $saiuSozinho | Should-BeTrue
-            $relay.ExitCode | Should-Be 0
+            $relay.Processo.ExitCode | Should-Be 0
         }
     }
 
@@ -81,81 +82,73 @@ Describe 'Relay de rede' {
             $relay = Start-RelayDeRede -Argumentos "conectar $($destino.LocalEndpoint.Port) $enderecoDaMaquina"
             $aceite = $destino.AcceptTcpClientAsync()
             $conectou = $aceite.Wait(10000)
+            if ($conectou) {
+                $dados = [Text.Encoding]::ASCII.GetBytes("oi do destino`n")
+                $aceite.Result.GetStream().Write($dados, 0, $dados.Length)
+                $aceite.Result.Close()
+            }
+            $null = $relay.Processo.WaitForExit(10000)
         }
 
         AfterAll {
-            if ($conectou) {
-                $aceite.Result.Close()
-            }
             $destino.Stop()
-            if (-not $relay.HasExited) {
-                $relay.Kill()
+            if (-not $relay.Processo.HasExited) {
+                $relay.Processo.Kill()
             }
-            $relay.Dispose()
+            $relay.Processo.Dispose()
         }
 
         It 'conecta no endereço pedido, e não no localhost' {
             $conectou | Should-BeTrue
         }
+
+        It 'repassa à saída o que o destino responde' {
+            [IO.File]::ReadAllText($relay.Saida).Trim() | Should-Be 'oi do destino'
+        }
     }
 
-    Context 'quando o endereço de destino recusa a conexão' {
+    Context 'quando <Descricao> recusa a conexão' -ForEach @(
+        @{ Descricao = 'o localhost do Windows'; Destino = '' }
+        @{ Descricao = 'o endereço de destino'; Destino = ' 127.0.0.1' }
+    ) {
         BeforeAll {
             $portaFechada = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, 0)
             $portaFechada.Start()
             $numeroDaPortaFechada = $portaFechada.LocalEndpoint.Port
             $portaFechada.Stop()
-            $relay = Start-RelayDeRede -Argumentos "conectar $numeroDaPortaFechada 127.0.0.1"
-            $erros = $relay.StandardError.ReadToEnd()
-            $null = $relay.WaitForExit(10000)
+            $relay = Start-RelayDeRede -Argumentos "conectar $numeroDaPortaFechada$Destino"
+            $null = $relay.Processo.WaitForExit(10000)
         }
 
         AfterAll {
-            $relay.Dispose()
+            $relay.Processo.Dispose()
         }
 
         It 'sai com 1 e explica o erro' {
-            $relay.ExitCode | Should-Be 1
-            $erros | Should-BeLikeString 'WinPlaybook:*'
-        }
-    }
-
-    Context 'quando conecta numa porta em que o Windows não escuta' {
-        BeforeAll {
-            $portaFechada = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Loopback, 0)
-            $portaFechada.Start()
-            $numeroDaPortaFechada = $portaFechada.LocalEndpoint.Port
-            $portaFechada.Stop()
-            $relay = Start-RelayDeRede -Argumentos "conectar $numeroDaPortaFechada"
-            $erros = $relay.StandardError.ReadToEnd()
-            $null = $relay.WaitForExit(10000)
-        }
-
-        AfterAll {
-            $relay.Dispose()
-        }
-
-        It 'sai com 1 e explica o erro' {
-            $relay.ExitCode | Should-Be 1
-            $erros | Should-BeLikeString 'WinPlaybook:*'
+            $relay.Processo.ExitCode | Should-Be 1
+            [IO.File]::ReadAllText($relay.Erros) | Should-BeLikeString 'WinPlaybook:*'
         }
     }
 
     Context 'quando lista as portas' {
         BeforeAll {
             $relay = Start-RelayDeRede -Argumentos 'portas'
-            $leitura = $relay.StandardOutput.ReadLineAsync()
-            $null = $leitura.Wait(10000)
-            $relay.Kill()
-            $null = $relay.WaitForExit(5000)
+            $prazo = (Get-Date).AddSeconds(10)
+            $lista = ''
+            while (-not $lista -and (Get-Date) -lt $prazo) {
+                Start-Sleep -Milliseconds 200
+                $lista = Get-Content -LiteralPath $relay.Saida -TotalCount 1 -ErrorAction SilentlyContinue
+            }
+            $relay.Processo.Kill()
+            $null = $relay.Processo.WaitForExit(5000)
         }
 
         AfterAll {
-            $relay.Dispose()
+            $relay.Processo.Dispose()
         }
 
         It 'inclui a porta em que o teste escuta' {
-            @($leitura.Result -split ' ') | Should-ContainCollection "$porta"
+            @("$lista" -split ' ') | Should-ContainCollection "$porta"
         }
     }
 }
