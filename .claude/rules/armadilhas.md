@@ -263,5 +263,10 @@ bugs, e como o código lida com cada um.
 
 ## Pester
 
+- No Windows PowerShell 5.1, um processo que abre mais de um `relay-de-rede.exe`
+  com o `Diagnostics.Process` e a entrada e as saídas redirecionadas para pipes às
+  vezes não recebe a saída do segundo, e a leitura trava para sempre. No uso real,
+  quem abre o relay é a distribuição. O `tests/module/integration/RelayDeRede.Tests.ps1`
+  abre cada relay com o `Start-Process` e a entrada e as saídas em arquivos.
 - O Pester faz mock de funções, não de métodos do .NET. Uma chamada a método
   estático que os testes precisam simular fica numa função privada própria.
