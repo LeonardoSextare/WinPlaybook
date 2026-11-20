@@ -143,9 +143,9 @@ Funções privadas:
 - O WinPlaybook só cria e apaga pastas dele. Os shims ficam em
   `<local>\WinPlaybook\bin` (padrão `%LOCALAPPDATA%\WinPlaybook\bin`). Uma
   pasta já existente que não está registrada na configuração não é tocada.
-- No perfil do usuário, o WinPlaybook cria só as pastas `.ansible\collections` e
-  `.ansible\roles`, que o Ansible usa como no Windows, e a desinstalação as apaga
-  só se continuarem vazias.
+- No perfil do usuário, o WinPlaybook cria só as pastas `.ansible\collections`,
+  `.ansible\roles` e `.ansible\plugins`, que o Ansible usa como no Windows, e a
+  desinstalação as apaga só se continuarem vazias.
 - A única distribuição WSL que o WinPlaybook cria, altera e apaga é a dele, a
   `WinPlaybook`, com o disco em `%LOCALAPPDATA%\WinPlaybook\distro`. As
   distribuições do usuário não são tocadas.
