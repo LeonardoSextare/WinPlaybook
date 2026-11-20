@@ -8,14 +8,6 @@ AfterAll {
 }
 
 Describe 'Get-CaminhoDoPowerShell' {
-    Context 'quando nenhuma edição é escolhida' {
-        It 'devolve o PowerShell em execução' {
-            $resultado = InModuleScope WinPlaybook { Get-CaminhoDoPowerShell }
-
-            $resultado | Should-Be (Get-Process -Id $PID).Path
-        }
-    }
-
     Context 'quando a edição Desktop é escolhida' {
         It 'devolve o Windows PowerShell' {
             $esperado = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'

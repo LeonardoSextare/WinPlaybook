@@ -65,13 +65,9 @@ Each Ansible command has two files in the commands folder:
   which opens PowerShell and passes on the input, the output, and the exit
   code.
 
-The `.exe` file uses the PowerShell where `Install-WinPlaybook` ran. To change
-it, pass `-PowerShell`.
-
-!!! tip "Tip"
-
-    Windows PowerShell 5.1 opens faster than PowerShell 7:
-    `Install-WinPlaybook -PowerShell Desktop`.
+The `.exe` file opens Windows PowerShell 5.1, which comes with every Windows
+and opens faster than PowerShell 7. To use PowerShell 7, run
+`Install-WinPlaybook -PowerShell Core`.
 
 ---
 

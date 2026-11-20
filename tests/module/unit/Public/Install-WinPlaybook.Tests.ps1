@@ -32,8 +32,9 @@ Describe 'Install-WinPlaybook' {
         $powerShellAtual = Join-Path $TestDrive 'atual/pwsh.exe'
         $powerShellDesktop = Join-Path $TestDrive 'desktop/powershell.exe'
         $null = New-Item -ItemType File -Path $powerShellAtual, $powerShellDesktop -Force
-        Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook { $powerShellAtual }
+        Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook -ParameterFilter { $Edicao -eq 'Core' } { $powerShellAtual }
         Mock Get-CaminhoDoPowerShell -ModuleName WinPlaybook -ParameterFilter { $Edicao -eq 'Desktop' } { $powerShellDesktop }
+        Mock Get-Command -ModuleName WinPlaybook -ParameterFilter { $Name -eq 'pwsh' } { [pscustomobject]@{ Source = $powerShellAtual } }
 
         Mock Add-EntradaNoPathDoUsuario -ModuleName WinPlaybook { }
         Mock Remove-EntradaDoPathDoUsuario -ModuleName WinPlaybook { }
@@ -449,34 +450,43 @@ Describe 'Install-WinPlaybook' {
 
     Context 'quando uma edição do PowerShell é escolhida' {
         It 'salva essa edição para os shims executáveis' {
-            $null = Install-WinPlaybook -PowerShell 'Desktop'
+            $null = Install-WinPlaybook -PowerShell 'Core'
 
-            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
         }
     }
 
     Context 'quando nenhuma edição do PowerShell é escolhida' {
-        It 'usa o PowerShell em execução na primeira instalação' {
+        It 'usa o Windows PowerShell na primeira instalação' {
+            $null = Install-WinPlaybook
+
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
+        }
+
+        It 'mantém o PowerShell 7 escolhido numa instalação anterior' {
+            $null = Install-WinPlaybook -PowerShell 'Core'
+
             $null = Install-WinPlaybook
 
             (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
         }
 
-        It 'mantém o PowerShell escolhido numa instalação anterior' {
-            $null = Install-WinPlaybook -PowerShell 'Desktop'
+        It 'passa para o Windows PowerShell uma instalação anterior sem edição escolhida' {
+            $null = New-Item -ItemType Directory -Path $pastaDeConfiguracao
+            Set-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'settings.json') -Value '{ "ShimPowerShellPath": "C:\\PowerShell\\pwsh.exe" }'
 
             $null = Install-WinPlaybook
 
             (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
         }
 
-        It 'usa o PowerShell em execução quando o salvo não existe mais' {
-            $null = New-Item -ItemType Directory -Path $pastaDeConfiguracao
-            Set-Content -LiteralPath (Join-Path $pastaDeConfiguracao 'settings.json') -Value '{ "ShimPowerShellPath": "C:\\Inexistente\\pwsh.exe" }'
+        It 'usa o Windows PowerShell quando o PowerShell 7 escolhido foi desinstalado' {
+            $null = Install-WinPlaybook -PowerShell 'Core'
+            Mock Get-Command -ModuleName WinPlaybook -ParameterFilter { $Name -eq 'pwsh' } { }
 
             $null = Install-WinPlaybook
 
-            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellAtual
+            (Get-ConfiguracaoSalva).ShimPowerShellPath | Should-Be $powerShellDesktop
         }
     }
 

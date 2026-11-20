@@ -26,8 +26,8 @@ Padrão: `%LOCALAPPDATA%\WinPlaybook\bin`.
 O PowerShell que os comandos `.exe` abrem: `Desktop`, o Windows PowerShell
 5.1, que abre mais rápido, ou `Core`, o PowerShell 7.
 
-Padrão: o da instalação anterior ou, na primeira, o PowerShell que roda o
-comando.
+Padrão: o Windows PowerShell 5.1. Se uma instalação anterior escolheu o
+PowerShell 7 e ele continua instalado, o padrão é o PowerShell 7.
 
 ### -AnsibleVersion
 

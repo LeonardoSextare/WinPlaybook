@@ -64,13 +64,9 @@ Cada comando do Ansible tem dois arquivos na pasta dos comandos:
 - um `.exe`, para os outros programas, como o Prompt de Comando e os editores,
   que abre um PowerShell e repassa a entrada, a saída e o código de saída.
 
-O `.exe` usa o mesmo PowerShell em que o `Install-WinPlaybook` foi executado. Para trocar,
-passe o `-PowerShell`.
-
-!!! tip "Dica"
-
-    O Windows PowerShell 5.1 abre mais rápido que o PowerShell 7:
-    `Install-WinPlaybook -PowerShell Desktop`.
+O `.exe` abre o Windows PowerShell 5.1, que vem em todo Windows e abre mais
+rápido que o PowerShell 7. Para usar o PowerShell 7, rode
+`Install-WinPlaybook -PowerShell Core`.
 
 ---
 

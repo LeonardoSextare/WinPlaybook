@@ -3,9 +3,6 @@
     .SYNOPSIS
     Devolve o caminho do PowerShell que os shims de comando abrem.
 
-    .DESCRIPTION
-    Sem uma edição, devolve o PowerShell em execução, onde o módulo está instalado.
-
     .PARAMETER Edicao
     Desktop para o Windows PowerShell 5.1, que abre mais rápido, ou Core para o PowerShell 7.
 
@@ -17,13 +14,8 @@
     [CmdletBinding()]
     [OutputType([string])]
     param(
-        [ValidateSet('Desktop', 'Core')] [string] $Edicao
+        [Parameter(Mandatory)] [ValidateSet('Desktop', 'Core')] [string] $Edicao
     )
-
-    $edicaoFoiEscolhida = [bool] $Edicao
-    if (-not $edicaoFoiEscolhida) {
-        return (Get-Process -Id $PID).Path
-    }
 
     $ehDesktop = $Edicao -eq 'Desktop'
     if ($ehDesktop) {
