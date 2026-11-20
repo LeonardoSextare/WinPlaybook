@@ -1340,6 +1340,98 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando duas execuções usam a ponte de rede ao mesmo tempo' {
+        BeforeAll {
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-concorrente/relay-de-rede.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-concorrentes'
+                Distribuicao   = $nomeDaDistribuicao
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelayDeRede -Caminho $CaminhoDoRelay
+                Install-RelayDeRede -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims }
+            }
+            $rotaPadrao = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -- ip -4 route show default"
+            $ipDoWindows = ($rotaPadrao.Saida -split '\s+')[2]
+            $escutaTemporaria = New-Object System.Net.Sockets.TcpListener ([Net.IPAddress]::Parse($ipDoWindows), 0)
+            $escutaTemporaria.Start()
+            $portaDoEco = $escutaTemporaria.LocalEndpoint.Port
+            $escutaTemporaria.Stop()
+            $servidorDeEco = Join-Path $TestDrive 'servidor-de-eco.ps1'
+            $linhasDoServidor = @(
+                'Add-Type -TypeDefinition @"'
+                'using System; using System.IO; using System.Net; using System.Net.Sockets; using System.Threading;'
+                'public static class ServidorDeEco {'
+                '    public static void Rodar(string endereco, int porta) {'
+                '        TcpListener escuta = new TcpListener(IPAddress.Parse(endereco), porta);'
+                '        escuta.Start();'
+                '        while (true) {'
+                '            TcpClient cliente = escuta.AcceptTcpClient();'
+                '            new Thread(() => {'
+                '                using (cliente) {'
+                '                    StreamReader leitor = new StreamReader(cliente.GetStream());'
+                '                    StreamWriter escritor = new StreamWriter(cliente.GetStream()); escritor.AutoFlush = true;'
+                '                    string linha;'
+                '                    while ((linha = leitor.ReadLine()) != null) { escritor.WriteLine("eco " + linha); }'
+                '                }'
+                '            }).Start();'
+                '        }'
+                '    }'
+                '}'
+                '"@'
+                "[ServidorDeEco]::Rodar('$ipDoWindows', $portaDoEco)"
+            )
+            [IO.File]::WriteAllText($servidorDeEco, ($linhasDoServidor -join "`r`n") + "`r`n")
+            $processoDoEco = Start-Process -FilePath 'powershell.exe' -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$servidorDeEco`"" -WindowStyle Hidden -PassThru
+            $regraQueBloqueiaOCaminhoDireto = "table inet e2e_eco_direto { chain saida { type filter hook output priority 0; policy accept; ip daddr $ipDoWindows tcp dport $portaDoEco drop; }; }"
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- nft `"$regraQueBloqueiaOCaminhoDireto`""
+            $linhasDoCliente = @(
+                'import socket, sys, time'
+                'def perguntar(conexao, texto):'
+                '    conexao.sendall((texto + "\n").encode())'
+                '    return conexao.makefile().readline().strip()'
+                'aberta = socket.create_connection((sys.argv[1], int(sys.argv[2])), 10)'
+                'aberta.settimeout(10)'
+                'print(perguntar(aberta, "antes"))'
+                'time.sleep(float(sys.argv[3]))'
+                'print(perguntar(aberta, "na mesma conexao"))'
+                'nova = socket.create_connection((sys.argv[1], int(sys.argv[2])), 10)'
+                'nova.settimeout(10)'
+                'print(perguntar(nova, "numa conexao nova"))'
+            )
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'cliente_de_eco.py'), ($linhasDoCliente -join "`n") + "`n")
+            Start-Sleep -Seconds 2
+            Push-Location $TestDrive
+            $parametrosDaDona = @{ Modulo = $caminhoDoModulo; LocalAppData = $env:LOCALAPPDATA; Pasta = $TestDrive }
+            $dona = Start-Job -ArgumentList $parametrosDaDona -ScriptBlock {
+                param($Parametros)
+                $env:LOCALAPPDATA = $Parametros.LocalAppData
+                Import-Module $Parametros.Modulo
+                Set-Location -LiteralPath $Parametros.Pasta
+                Invoke-WinPlaybook sh -c 'sleep 6' 2>&1 | Out-String
+            }
+            Start-Sleep -Seconds 3
+            $saida = Invoke-WinPlaybook python3 cliente_de_eco.py $ipDoWindows $portaDoEco 8 2>&1 | Out-String
+            $codigoDeSaida = $LASTEXITCODE
+            $null = $dona | Wait-Job -Timeout 60
+        }
+
+        AfterAll {
+            Pop-Location
+            $dona | Remove-Job -Force
+            Stop-Process -Id $processoDoEco.Id -Force -ErrorAction SilentlyContinue
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u root -- nft delete table inet e2e_eco_direto"
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
+        }
+
+        It 'mantém a conexão aberta e abre novas depois que a outra execução termina' {
+            $codigoDeSaida | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString '*eco antes*eco na mesma conexao*eco numa conexao nova*'
+        }
+    }
+
     Context 'quando o agente SSH do Windows não está rodando' {
         BeforeAll {
             $parametrosDoRelay = @{

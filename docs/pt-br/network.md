@@ -36,6 +36,8 @@ serviço do Windows.
     - Se a distribuição também usa a porta, a conexão fica na distribuição.
     - Uma porta fechada no Windows continua recusando a conexão.
     - A ponte existe só enquanto um comando do WinPlaybook roda.
+    - Vários comandos ao mesmo tempo, como o do VS Code e o do terminal,
+      dividem a ponte, e cada conexão dura enquanto o comando que a abriu roda.
 
 ---
 

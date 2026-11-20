@@ -35,6 +35,9 @@ reaches the Windows service.
     - A port that the distribution listens on stays in the distribution.
     - A port that's closed on Windows still refuses the connection.
     - The bridge only exists while a WinPlaybook command runs.
+    - Several commands at once, such as the one from VS Code and the one from
+      the terminal, share the bridge, and each connection lasts while the
+      command that opened it runs.
 
 ---
 

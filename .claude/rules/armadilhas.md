@@ -252,6 +252,14 @@ bugs, e como o código lida com cada um.
   tabela ao sair, e um supervisor que não liga a ponte apaga a tabela que
   ficou sem dono, como a de um comando encerrado à força. O teste "deixa a
   rede da distribuição como estava quando o comando termina" confere.
+- Só um supervisor é dono da porta da ponte, e um programa do Windows aberto pelo
+  interop só troca dados enquanto a sessão do `wsl.exe` que o abriu existe.
+  Se o dono atendesse as conexões de todos, elas morreriam quando o comando dele
+  terminasse. O dono acha, pelo `/proc`, o supervisor do processo que abriu a
+  conexão e entrega o socket a ele pelo canal `@winplaybook-ponte-<pid>`
+  (`SCM_RIGHTS`), e esse supervisor abre o relay pela própria sessão. Ao sair,
+  o dono entrega os sockets de escuta a outro supervisor vivo. O teste "mantém a
+  conexão aberta e abre novas depois que a outra execução termina" confere.
 
 ## Pester
 
