@@ -269,6 +269,13 @@ bugs, e como o código lida com cada um.
   abre o relay com a entrada num pipe que só fecha quando ele termina. O teste
   "termina quando a entrada fecha" do
   `tests/module/integration/RelayDeRede.Tests.ps1` confere.
+- O Windows não deixa sobrescrever nem apagar um `.exe` em execução, mas deixa
+  renomeá-lo, e o `Copy-Item` que falha não interrompe o comando. O
+  `Copy-Executavel` renomeia o executável anterior com a extensão
+  `.winplaybook-antigo`, apaga os antigos já liberados e para o comando se a
+  cópia falhar. O `tests/module/unit/Private/Shim/Copy-Executavel.Tests.ps1`
+  confere.
+
 ## Pester
 
 - No Windows PowerShell 5.1, um processo que abre mais de um `relay-de-rede.exe`

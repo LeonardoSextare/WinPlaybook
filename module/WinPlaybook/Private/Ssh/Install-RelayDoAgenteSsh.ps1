@@ -34,7 +34,7 @@
 
     $caminhoDoRelay = Get-CaminhoDoRelayDoAgenteSsh -PastaDosShims $PastaDosShims
     $null = New-Item -ItemType Directory -Path (Split-Path -Path $caminhoDoRelay -Parent) -Force
-    Copy-Item -LiteralPath $CaminhoDoExecutavel -Destination $caminhoDoRelay -Force
+    Copy-Executavel -Origem $CaminhoDoExecutavel -Destino $caminhoDoRelay
 
     $caminhoNaDistribuicao = ConvertTo-CaminhoDoWsl -Caminho $caminhoDoRelay -RaizDeMontagem $RaizDeMontagem
     $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Distribuicao -Script 'chmod +x "$1"' -Argumentos $caminhoNaDistribuicao -Usuario 'root'

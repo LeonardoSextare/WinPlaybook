@@ -54,7 +54,7 @@
     $decodificacaoDosArgumentos = '$argumentos = @($args | ForEach-Object { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($_.Substring(1))) })'
     Set-Content -LiteralPath $caminhoDoScriptDoExe -Value "$importacaoDoModulo; $decodificacaoDosArgumentos; WinPlaybook\Invoke-WinPlaybook '$Nome' @argumentos; exit `$LASTEXITCODE" -Encoding UTF8
 
-    Copy-Item -LiteralPath $CaminhoDoExecutavel -Destination (Join-Path -Path $Pasta -ChildPath "$Nome.exe") -Force
+    Copy-Executavel -Origem $CaminhoDoExecutavel -Destino (Join-Path -Path $Pasta -ChildPath "$Nome.exe")
 
     Set-Content -LiteralPath (Join-Path -Path $Pasta -ChildPath "$Nome.shim") -Encoding UTF8 -Value @(
         "path = $CaminhoDoPowerShell"
