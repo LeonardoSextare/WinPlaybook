@@ -85,7 +85,7 @@ jobs:
         run: Invoke-Pester -Path tests/module/integration -CI -Output Detailed
 
   testes-e2e-por-edicao:
-    name: Testes e2e (${{ matrix.edicao.nome }})
+    name: Testes e2e (${{ matrix.edicao.nome }}, ${{ matrix.grupo.nome }})
     runs-on: windows-2025
     timeout-minutes: 30
     env:
@@ -98,6 +98,13 @@ jobs:
             shell: pwsh
           - nome: Windows PowerShell 5.1
             shell: powershell
+        grupo:
+          - nome: comandos
+            parametros: -Path tests/module/e2e/Invoke-WinPlaybook.Tests.ps1
+          - nome: comportamento nativo
+            parametros: -Path tests/module/e2e/ComportamentoNativo.Tests.ps1
+          - nome: demais arquivos
+            parametros: -Path tests/module/e2e -ExcludePath '*Invoke-WinPlaybook.Tests.ps1', '*ComportamentoNativo.Tests.ps1'
     steps:
       - name: Baixa o repositório
         uses: actions/checkout@v7
@@ -152,12 +159,12 @@ jobs:
 
       - name: Roda os testes (PowerShell 7)
         if: matrix.edicao.shell == 'pwsh'
-        run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
+        run: Invoke-Pester ${{ matrix.grupo.parametros }} -CI -Output Detailed
 
       - name: Roda os testes (Windows PowerShell 5.1)
         if: matrix.edicao.shell == 'powershell'
         shell: powershell
-        run: Invoke-Pester -Path tests/module/e2e -CI -Output Detailed
+        run: Invoke-Pester ${{ matrix.grupo.parametros }} -CI -Output Detailed
 
   testes-e2e:
     name: Testes e2e
