@@ -14,7 +14,11 @@ Crie um `pyproject.toml` na raiz do projeto, com o `ansible` ou o
 name = "infra"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["ansible-core==2.19.*", "ansible-lint", "boto3"]
+dependencies = [
+    "ansible-core==2.19.*; sys_platform == 'linux'",
+    "ansible-lint; sys_platform == 'linux'",
+    "boto3",
+]
 ```
 
 !!! success "Como o uv run"
@@ -23,6 +27,23 @@ dependencies = ["ansible-core==2.19.*", "ansible-lint", "boto3"]
     esse ambiente, como o `uv run` faria. Na primeira vez, o WinPlaybook instala os
     pacotes, e o uv grava o `uv.lock` no projeto. Faça o _commit_ dos dois
     arquivos.
+
+---
+
+## Por que o marcador sys_platform
+
+O `; sys_platform == 'linux'` instala o Ansible e o `ansible-lint` só na
+distribuição. Sem ele, um `uv sync` no Windows, que o VS Code ou o hábito
+podem rodar, cria na `.venv` um `ansible-playbook.exe` do Windows. Esse
+Ansible não funciona (`OSError: [WinError 87]`) e, com a `.venv` ativada no
+terminal, passa na frente dos comandos do WinPlaybook. Quando encontra uma
+`.venv` assim, o WinPlaybook avisa no terminal.
+
+Se a `.venv` já tem o Ansible do Windows, acrescente o marcador e rode de novo:
+
+```powershell
+uv sync
+```
 
 ---
 

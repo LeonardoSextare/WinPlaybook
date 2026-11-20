@@ -14,7 +14,11 @@ Create a `pyproject.toml` in the project root, with `ansible` or
 name = "infra"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["ansible-core==2.19.*", "ansible-lint", "boto3"]
+dependencies = [
+    "ansible-core==2.19.*; sys_platform == 'linux'",
+    "ansible-lint; sys_platform == 'linux'",
+    "boto3",
+]
 ```
 
 !!! success "Like uv run"
@@ -22,6 +26,23 @@ dependencies = ["ansible-core==2.19.*", "ansible-lint", "boto3"]
     In the project folder, or in a subfolder, the Ansible commands use this
     environment, as `uv run` would. The first time, WinPlaybook installs the
     packages, and uv writes `uv.lock` to the project. Commit both files.
+
+---
+
+## Why the sys_platform marker
+
+The `; sys_platform == 'linux'` marker installs Ansible and `ansible-lint`
+only in the distribution. Without it, a `uv sync` on Windows, which VS Code
+or habit might run, creates a Windows `ansible-playbook.exe` in `.venv`.
+That Ansible doesn't work (`OSError: [WinError 87]`) and, when `.venv` is
+activated in the terminal, it runs instead of the WinPlaybook commands. When
+WinPlaybook finds a `.venv` like this, it warns you in the terminal.
+
+If `.venv` already has the Windows Ansible, add the marker and run again:
+
+```powershell
+uv sync
+```
 
 ---
 

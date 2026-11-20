@@ -10,6 +10,7 @@
     ComandoComoAdministradorFalhou = 'O comando {0} falhou como administrador (código de saída {1}): {2}'
     ElevacaoRecusada           = 'O Windows não abriu o PowerShell de administrador, que o comando precisa: {0}'
     ServicoSshNaoIniciou       = 'O serviço WinPlaybookSshd não iniciou. Rode o Enable-WinPlaybookLocalhost de novo; se o erro continuar, abra uma issue com esta mensagem. A configuração está em {0}. O sshd registrou: {1}'
+    AnsibleDoWindowsNaVenv     = 'WinPlaybook: a pasta {0} tem um Ansible do Windows, criado por um uv sync no Windows. Ele não funciona e, com a .venv ativada, passa na frente dos comandos do WinPlaybook. Marque o Ansible no pyproject.toml com ; sys_platform == ''linux'' e rode uv sync de novo. Veja: https://leonardosextare.github.io/WinPlaybook/pt-br/project-environment/'
     AvisoDeVersaoNova          = 'WinPlaybook: a versão {0} está disponível (você usa a {1}). Atualize com: Update-WinPlaybook'
     InstalacaoDaVersaoNovaFalhou = 'O módulo foi atualizado, mas o Install-WinPlaybook da versão nova falhou (código de saída {0}). Rode o Install-WinPlaybook num terminal novo.'
     ModuloNaoAtualizado        = 'Não foi possível atualizar o módulo WinPlaybook pela PowerShell Gallery. Se você instalou pelo código-fonte, atualize o código e rode o Install-WinPlaybook. O PowerShell respondeu: {0}'
