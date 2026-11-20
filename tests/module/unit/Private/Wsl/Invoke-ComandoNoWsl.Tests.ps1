@@ -125,7 +125,7 @@ Describe 'Invoke-ComandoNoWsl' {
     It 'executa o comando pelo python3 do sistema, com o supervisor' {
         $argumentosDoWsl = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible-playbook' -Argumentos 'site.yml' }
 
-        $argumentosDoWsl[7] | Should-BeLikeString '*exec /usr/bin/python3 "$supervisor" "$@"'
+        $argumentosDoWsl[7] | Should-BeLikeString '*exec /usr/bin/python3 -P -c * "$pasta_do_supervisor" "$modulo_do_supervisor" "$@"'
     }
 
     It 'passa o comando e os argumentos dele depois do supervisor' {

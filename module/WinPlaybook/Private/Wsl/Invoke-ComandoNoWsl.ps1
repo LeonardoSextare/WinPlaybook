@@ -99,7 +99,7 @@
     }
 
     $supervisor = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoSupervisor) -RaizDeMontagem $raizDeMontagem
-    $comandoSupervisionado = '/usr/bin/python3 "$supervisor" "$@"'
+    $comandoSupervisionado = '/usr/bin/python3 -P -c ''import sys; sys.path.insert(0, sys.argv[1]); nome = sys.argv[2]; sys.argv = sys.argv[2:]; __import__(nome)'' "$pasta_do_supervisor" "$modulo_do_supervisor" "$@"'
 
     $temEntrada = $Entrada.Count -gt 0
     $execucaoDoComando = "exec $comandoSupervisionado"
@@ -147,6 +147,8 @@
 
     $script = @(
         'mensagem_de_comando_ausente="$0"; supervisor="$1"; shift;'
+        'pasta_do_supervisor="$HOME/.cache/winplaybook/supervisor"; modulo_do_supervisor="$(basename "$supervisor" .py | tr -c "A-Za-z0-9_\n" _)";'
+        'if [ ! -f "$pasta_do_supervisor/$modulo_do_supervisor.py" ]; then mkdir -p "$pasta_do_supervisor" && find "$pasta_do_supervisor" -mindepth 1 -maxdepth 1 -mtime +1 -exec rm -rf {} + ; cp "$supervisor" "$pasta_do_supervisor/$modulo_do_supervisor.py.$$" && mv -f "$pasta_do_supervisor/$modulo_do_supervisor.py.$$" "$pasta_do_supervisor/$modulo_do_supervisor.py"; fi;'
         $leituraDoAgente
         'export WINPLAYBOOK_COMMAND_NOT_FOUND_MESSAGE="$mensagem_de_comando_ausente";'
         $preparacaoDoAgente
