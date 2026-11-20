@@ -1354,6 +1354,14 @@ Describe 'Invoke-WinPlaybook' {
             $tabelas.Saida | Should-NotBeLikeString '*winplaybook*'
         }
 
+        It 'registra no log do WinPlaybook o erro do Windows quando o destino recusa a conexão' {
+            $null = Invoke-WinPlaybook python3 cliente.py $ipDoWindowsNaRedeDoWsl $portaFechada 2>&1
+
+            $log = Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8
+
+            $log | Should-BeLikeString ("*[[]INFO]*a conexão a " + [WildcardPattern]::Escape("$($ipDoWindowsNaRedeDoWsl):$portaFechada") + " pelo Windows falhou: WinPlaybook: *")
+        }
+
         It 'interrompe a conexão quando o destino fora do localhost a recusa' {
             $saida = Invoke-WinPlaybook python3 cliente.py $ipDoWindowsNaRedeDoWsl $portaFechada 2>&1 | Out-String
 

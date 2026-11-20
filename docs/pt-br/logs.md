@@ -25,7 +25,7 @@ A variável de ambiente `WINPLAYBOOK_LOG` define o nível:
 | ------- | ----------------------------------------------------------------------------- |
 | `off`   | Nada                                                                          |
 | `error` | Só os erros                                                                   |
-| `info`  | Os erros e uma linha por comando, com o tempo de cada etapa (o padrão)        |
+| `info`  | Os erros, uma linha por comando, com o tempo de cada etapa, e o erro que o Windows deu numa conexão que falhou (o padrão) |
 | `debug` | Também a pasta, os argumentos e o tempo de cada preparação na distribuição    |
 
 Para a sessão atual do PowerShell:
