@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 
 internal static class RelayDeRede
@@ -23,6 +24,7 @@ internal static class RelayDeRede
         }
         catch (Exception erro)
         {
+            Console.SetError(new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(false)) { AutoFlush = true });
             Console.Error.WriteLine("WinPlaybook: " + erro.Message);
             return 1;
         }

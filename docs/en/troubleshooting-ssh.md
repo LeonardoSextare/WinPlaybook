@@ -36,6 +36,19 @@ stopped. See [Use a key with a passphrase](ssh.md#use-a-key-with-a-passphrase).
 
 ---
 
+## communication with agent failed
+
+WinPlaybook couldn't talk to the Windows SSH agent. At the end of the output, a
+line that starts with `WinPlaybook:` shows the reason. If the agent was busy
+or slow to answer, run the command again. If the failure continues, restart
+the Windows `ssh-agent` service:
+
+```powershell
+Restart-Service ssh-agent
+```
+
+---
+
 ## Host key verification failed
 
 The server isn't in `known_hosts`, or its key changed. Connect once with the

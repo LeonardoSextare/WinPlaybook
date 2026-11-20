@@ -276,6 +276,12 @@ bugs, e como o código lida com cada um.
   cópia falhar. O `tests/module/unit/Private/Shim/Copy-Executavel.Tests.ps1`
   confere.
 
+- O `Console.Error` de um programa do .NET Framework escreve na página de
+  código do console (850 em português), e uma mensagem com acento chega à
+  distribuição como bytes que o `grep` trata como binário. Os relays escrevem
+  os erros em UTF-8. O teste "mostra o erro do relay do agente" do
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` confere.
+
 ## Pester
 
 - No Windows PowerShell 5.1, um processo que abre mais de um `relay-de-rede.exe`
