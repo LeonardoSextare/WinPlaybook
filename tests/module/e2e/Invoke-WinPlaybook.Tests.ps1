@@ -928,6 +928,38 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o projeto está numa pasta com espaços e colchetes' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'Área de Trabalho [cópia]\infra ção'
+            $null = New-Item -ItemType Directory -Path $projeto -Force
+            [IO.File]::WriteAllText((Join-Path $projeto 'quebrado.yml'), "- hosts: localhost`n  tasks:`n    - debug: { msg: oi`n")
+            [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), "- hosts: localhost`n  gather_facts: false`n  tasks:`n    - ansible.builtin.debug:`n        msg: ok`n")
+            Push-Location -LiteralPath $projeto
+        }
+
+        AfterAll {
+            Pop-Location
+        }
+
+        It 'mostra o caminho inteiro do Windows no erro' {
+            $saida = (Invoke-WinPlaybook ansible-playbook quebrado.yml 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
+
+            $saida | Should-BeLikeString ("*Origin: " + [WildcardPattern]::Escape("$projeto\quebrado.yml") + ":*")
+        }
+
+        It 'mostra o caminho inteiro do Windows no playbook' {
+            $saida = Invoke-WinPlaybook ansible-playbook (Join-Path $projeto 'site.yml') --syntax-check 2>&1 | Out-String
+
+            $saida | Should-BeLikeString ("*playbook: " + [WildcardPattern]::Escape("$projeto\site.yml") + "*")
+        }
+
+        It 'não junta ao caminho de um arquivo que não existe o texto que vem depois dele' {
+            $saida = (Invoke-WinPlaybook ansible-playbook (Join-Path $projeto 'nao-existe.yml') 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
+
+            $saida | Should-BeLikeString ("*" + [WildcardPattern]::Escape("$projeto\nao-existe.yml") + " could not be found*")
+        }
+    }
+
     Context 'quando os arquivos do projeto têm caminhos do Windows' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'caminhos-do-windows'
