@@ -11,8 +11,8 @@ mesmos.
 
 ## O aviso de versão nova
 
-O WinPlaybook avisa quando existe uma versão nova, na primeira vez que você
-roda um comando dele no terminal:
+O WinPlaybook avisa quando existe uma versão nova, em amarelo, na primeira vez
+que você roda um comando dele no terminal:
 
 ```text
 WinPlaybook: a versão 0.20.0 está disponível (você usa a 0.19.0). Atualize com: Update-WinPlaybook

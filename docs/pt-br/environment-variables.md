@@ -7,6 +7,10 @@
 | `WINPLAYBOOK_LOG`          | `off`, `error`, `info`, `debug`    | `info` | O detalhe dos logs. Veja [Consultar os logs](logs.md).              |
 | `WINPLAYBOOK_UPDATE_CHECK` | `off`                              | Ligado | Com `off`, o WinPlaybook não avisa sobre versões novas.             |
 
+Com a variável [`NO_COLOR`](https://no-color.org/) definida, os avisos do
+WinPlaybook saem sem cor. Ela também chega ao Ansible, que desliga as cores da
+saída.
+
 ---
 
 ## Variáveis do Windows
