@@ -94,6 +94,22 @@ Veja as regras em [Caminhos entre o Windows e o Linux](paths.md).
 
 ---
 
+## Uma tarefa não alcança um serviço do Windows no localhost
+
+Um `uri` ou um `wait_for` para `localhost:8080` dá `Connection refused`,
+mas o navegador do Windows abre o serviço.
+
+- Confira se o serviço escuta no `127.0.0.1`, no `::1` ou em todas as
+  interfaces. Um serviço que escuta só no IP da placa de rede não é alcançado
+  pelo `localhost`.
+- Se a distribuição também tem um serviço na mesma porta, a conexão fica nela.
+- Se o serviço acabou de abrir, rode o comando de novo. A lista de portas do
+  Windows é atualizada a cada segundo.
+
+Veja [Rede](network.md).
+
+---
+
 ## O ansible.cfg do projeto é ignorado
 
 Rode o comando na pasta do projeto, ou numa subpasta dele. O Ansible procura o
