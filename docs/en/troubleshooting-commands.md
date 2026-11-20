@@ -94,6 +94,23 @@ See the rules in [Paths between Windows and Linux](paths.md).
 
 ---
 
+## A task can't reach a Windows service on localhost
+
+A `uri` or a `wait_for` task to `localhost:8080` fails with
+`Connection refused`, but the Windows browser opens the service.
+
+- Check that the service listens on `127.0.0.1`, on `::1`, or on all
+  interfaces. A service that only listens on the IP address of the network
+  adapter isn't reached through `localhost`.
+- If the distribution also has a service on the same port, the connection
+  stays in the distribution.
+- If the service just started, run the command again. The list of Windows
+  ports is updated every second.
+
+See [Network](network.md).
+
+---
+
 ## The project ansible.cfg file is ignored
 
 Run the command in the project folder, or in a subfolder of it. Ansible looks
