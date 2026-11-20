@@ -165,9 +165,11 @@
     if ($temRelayDeRede) {
         $ambienteDoComando['relayDeRede'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -RaizDeMontagem $raizDeMontagem
     }
-    $registraAsEtapasNoLog = (Get-NivelDoLog) -ge 3
-    if ($registraAsEtapasNoLog) {
+    $nivelDoLog = Get-NivelDoLog
+    $supervisorRegistraNoLog = $nivelDoLog -ge 2
+    if ($supervisorRegistraNoLog) {
         $ambienteDoComando['log'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoLog) -RaizDeMontagem $raizDeMontagem
+        $ambienteDoComando['nivelDoLog'] = $nivelDoLog
     }
     $temLocalhostWindows = [bool] $configuracao['LocalhostWindowsPort']
     if ($temLocalhostWindows) {

@@ -26,7 +26,7 @@ The `WINPLAYBOOK_LOG` environment variable chooses the level:
 | ------- | --------------------------------------------------------------------------- |
 | `off`   | Nothing                                                                     |
 | `error` | Only errors                                                                 |
-| `info`  | Errors and one line per command, with the time of each step (the default)   |
+| `info`  | Errors, one line per command, with the time of each step, and the error that Windows gave for a connection that failed (the default) |
 | `debug` | Also the folder, the arguments, and the time of each step in the distribution |
 
 For the current PowerShell session:

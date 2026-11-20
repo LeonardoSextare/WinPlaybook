@@ -541,13 +541,26 @@ Describe 'Invoke-ComandoNoWsl' {
             Get-Content -LiteralPath (InModuleScope WinPlaybook { Get-CaminhoDoLog }) -Raw -Encoding UTF8 | Should-NotBeLikeString '*segredo.yml*'
         }
 
-        It 'passa ao supervisor o log, no nível debug' {
-            $env:WINPLAYBOOK_LOG = 'debug'
+        It 'passa ao supervisor o log e o nível <Nivel>' -ForEach @(
+            @{ Nivel = 'info'; Numero = 2 }
+            @{ Nivel = 'debug'; Numero = 3 }
+        ) {
+            $env:WINPLAYBOOK_LOG = $Nivel
             Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
 
             $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
 
             $ambiente.log | Should-BeLikeString '/mnt/*/configuracao/logs/winplaybook-*.log'
+            $ambiente.nivelDoLog | Should-Be $Numero
+        }
+
+        It 'não passa o log ao supervisor no nível error' {
+            $env:WINPLAYBOOK_LOG = 'error'
+            Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+            $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+            $ambiente.PSObject.Properties.Name | Should-NotContainCollection 'log'
         }
 
         It 'não grava nada no nível off' {

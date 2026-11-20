@@ -518,12 +518,14 @@ def atender_conexao(conexao, familia, relay):
         argumentos = [relay, 'conectar', str(porta)]
         if not destino.is_loopback:
             argumentos.append(str(destino))
-        processo = subprocess.Popen(argumentos, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        processo = subprocess.Popen(argumentos, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         do_windows = threading.Thread(target=copiar_conexao, args=(processo.stdout.read1, conexao.sendall, lambda: fechar_conexao_do_relay(conexao, processo)), daemon=True)
         do_windows.start()
         copiar_conexao(conexao.recv, escrever_no_relay(processo), processo.stdin.close)
         do_windows.join()
-        processo.wait()
+        if processo.wait() != 0:
+            erro = processo.stderr.read().decode(errors='replace').strip()
+            escrever_no_log('INFO', 'a conexão a ' + str(destino) + ':' + str(porta) + ' pelo Windows falhou: ' + erro)
 
 
 def endereco_do_canal(pid):
@@ -762,9 +764,12 @@ def marcar_etapa(nome):
     inicio_da_etapa[0] = agora
 
 
-def registrar_tempos_no_log(caminho_do_log):
-    marcar_etapa('comando')
-    linha = time.strftime('%Y-%m-%dT%H:%M:%S%z') + ' [DEBUG] [supervisor ' + str(os.getpid()) + '] ' + os.path.basename(sys.argv[1]) + ': ' + ', '.join(tempos_das_etapas)
+def escrever_no_log(nivel, mensagem):
+    caminho_do_log = ambiente.get('log')
+    numero_do_nivel = {'ERROR': 1, 'INFO': 2, 'DEBUG': 3}[nivel]
+    if not caminho_do_log or numero_do_nivel > ambiente.get('nivelDoLog', 3):
+        return
+    linha = time.strftime('%Y-%m-%dT%H:%M:%S%z') + ' [' + nivel + '] [supervisor ' + str(os.getpid()) + '] ' + mensagem
     try:
         os.makedirs(os.path.dirname(caminho_do_log), exist_ok=True)
         with open(caminho_do_log, 'a', encoding='utf-8') as arquivo:
@@ -773,11 +778,14 @@ def registrar_tempos_no_log(caminho_do_log):
         pass
 
 
+def registrar_tempos_no_log():
+    marcar_etapa('comando')
+    escrever_no_log('DEBUG', os.path.basename(sys.argv[1]) + ': ' + ', '.join(tempos_das_etapas))
+
 entrada = criar_entrada_do_usuario()
 ambiente = json.loads(os.environ.pop('WINPLAYBOOK_ENVIRONMENT'))
 os.environ.update(ambiente['variaveis'])
-if ambiente.get('log'):
-    atexit.register(registrar_tempos_no_log, ambiente['log'])
+atexit.register(registrar_tempos_no_log)
 os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
 marcar_etapa('path do Windows')
 preparar_config_do_ssh()
