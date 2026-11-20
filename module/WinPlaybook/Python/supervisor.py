@@ -49,6 +49,7 @@ PREFIXO_DO_CANAL_DA_PONTE = 'winplaybook-ponte-'
 servidores_da_ponte = []
 sou_o_dono_da_ponte = threading.Event()
 portas_do_windows = []
+portas_fixas_do_windows = set()
 processos_da_ponte = []
 portas_mudaram = threading.Event()
 lista_de_portas_recebida = [False]
@@ -499,7 +500,7 @@ def acompanhar_portas_do_windows(relay):
 def atualizar_portas_da_ponte():
     aplicadas = None
     while True:
-        portas = sorted(set(portas_do_windows) - ler_portas_da_distribuicao() - {PORTA_DA_PONTE})
+        portas = sorted((set(portas_do_windows) | portas_fixas_do_windows) - ler_portas_da_distribuicao() - {PORTA_DA_PONTE})
         if portas != aplicadas:
             comandos = 'flush set inet winplaybook portas_do_windows\n'
             if portas:
@@ -844,6 +845,7 @@ marcar_etapa('certificados')
 preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))
 marcar_etapa('ambiente do projeto')
 if ambiente.get('localhostWindows'):
+    portas_fixas_do_windows.add(int(ambiente['localhostWindows']['porta']))
     os.environ['WINPLAYBOOK_LOCALHOST_WINDOWS'] = json.dumps(dict(ambiente['localhostWindows'], chave=CHAVE_DO_LOCALHOST_WINDOWS, knownHosts=KNOWN_HOSTS_DO_LOCALHOST_WINDOWS))
 iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
 marcar_etapa('ponte de rede')
