@@ -22,7 +22,7 @@ Describe 'Get-ScriptDoSupervisor' {
     It 'põe as pastas do Path do Windows no fim do PATH' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 
-        $script.Contains("os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])") | Should-BeTrue
+        $script.Contains("os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'], ambiente.get('impressaoDoPath'))") | Should-BeTrue
     }
 
     It 'não cria o nome sem extensão do Python e do pip, que a detecção de interpretador do Ansible procura' {

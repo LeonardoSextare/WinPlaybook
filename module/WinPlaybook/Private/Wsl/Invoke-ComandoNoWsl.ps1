@@ -160,7 +160,7 @@
     $variaveisDoWindows['WINPLAYBOOK_MOUNT_ROOT'] = $raizDeMontagem
     $pathDoWindows = @(ConvertTo-PathDoWindowsNaDistribuicao -Path "$env:Path" -PastaDosShims "$($configuracao.ShimFolder)")
     $certificadosDoWindows = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDosCertificadosDoWindows) -RaizDeMontagem $raizDeMontagem
-    $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows; certificadosDoWindows = $certificadosDoWindows }
+    $ambienteDoComando = @{ variaveis = $variaveisDoWindows; pathDoWindows = $pathDoWindows; impressaoDoPath = (Get-ImpressaoDoPathDoWindows -Path "$env:Path"); certificadosDoWindows = $certificadosDoWindows }
     $temRelayDeRede = $temPastaDosShims -and (Test-Path -LiteralPath (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -PathType Leaf)
     if ($temRelayDeRede) {
         $ambienteDoComando['relayDeRede'] = ConvertTo-CaminhoDoWsl -Caminho (Get-CaminhoDoRelayDeRede -PastaDosShims $configuracao.ShimFolder) -RaizDeMontagem $raizDeMontagem
