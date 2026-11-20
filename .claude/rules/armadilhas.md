@@ -165,7 +165,9 @@ bugs, e como o código lida com cada um.
   `ansible --version` funciona. O ambiente de um projeto com `pyproject.toml`
   tem o mesmo problema: quando o `pyproject.toml`, o `uv.lock` ou o
   `.python-version` mudam, o supervisor confere se o Ansible do ambiente abre
-  e, se não abrir, refaz o ambiente com o Python anterior. O contexto "quando
+  e, se não abrir, refaz o ambiente com o Python anterior. Um `uv sync` que
+  falha, como quando uma dependência não tem wheel para o Python mais novo,
+  também passa para o Python anterior. O contexto "quando
   o projeto tem um pyproject.toml com o Ansible" do
   `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` usa um `requires-python`
   sem limite de cima.
