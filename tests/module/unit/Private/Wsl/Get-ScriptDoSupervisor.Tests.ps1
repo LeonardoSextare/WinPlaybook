@@ -94,6 +94,14 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains('apagar_regras_sem_dono()') | Should-BeTrue
     }
 
+    It 'entrega cada conexão da ponte ao supervisor do comando que a abriu, e a ponte a outro supervisor quando termina' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("PREFIXO_DO_CANAL_DA_PONTE = 'winplaybook-ponte-'") | Should-BeTrue
+        $script.Contains('socket.send_fds(canal, [mensagem], descritores)') | Should-BeTrue
+        $script.Contains('if not entregar_a_ponte():') | Should-BeTrue
+    }
+
     It 'começa o comando depois que a ponte para o localhost do Windows aplica as portas' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

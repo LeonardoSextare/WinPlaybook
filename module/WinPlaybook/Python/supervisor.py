@@ -43,6 +43,9 @@ table inet winplaybook {
 }
 '''
 REGRAS_SEM_A_PONTE = 'table inet winplaybook\ndelete table inet winplaybook\n'
+PREFIXO_DO_CANAL_DA_PONTE = 'winplaybook-ponte-'
+servidores_da_ponte = []
+sou_o_dono_da_ponte = threading.Event()
 portas_do_windows = []
 processos_da_ponte = []
 portas_mudaram = threading.Event()
@@ -523,10 +526,133 @@ def atender_conexao(conexao, familia, relay):
         processo.wait()
 
 
+def endereco_do_canal(pid):
+    return '\0' + PREFIXO_DO_CANAL_DA_PONTE + str(pid)
+
+
+def listar_supervisores_com_canal():
+    supervisores = set()
+    try:
+        with open('/proc/net/unix') as tabela:
+            next(tabela)
+            for linha in tabela:
+                campos = linha.split()
+                nome = campos[7] if len(campos) > 7 else ''
+                if nome.startswith('@' + PREFIXO_DO_CANAL_DA_PONTE):
+                    pid = nome[len(PREFIXO_DO_CANAL_DA_PONTE) + 1:]
+                    if pid.isdigit():
+                        supervisores.add(int(pid))
+    except (OSError, StopIteration):
+        pass
+    return supervisores
+
+
+def inode_do_socket_de_origem(porta_de_origem):
+    for caminho in ('/proc/net/tcp', '/proc/net/tcp6'):
+        try:
+            with open(caminho) as tabela:
+                next(tabela)
+                for linha in tabela:
+                    campos = linha.split()
+                    if int(campos[1].rsplit(':', 1)[1], 16) == porta_de_origem:
+                        return campos[9]
+        except (OSError, StopIteration, ValueError, IndexError):
+            pass
+    return None
+
+
+def processo_do_socket(inode):
+    alvo = 'socket:[' + inode + ']'
+    for pid in os.listdir('/proc'):
+        if not pid.isdigit():
+            continue
+        pasta_dos_descritores = '/proc/' + pid + '/fd'
+        try:
+            for descritor in os.listdir(pasta_dos_descritores):
+                if os.readlink(pasta_dos_descritores + '/' + descritor) == alvo:
+                    return int(pid)
+        except OSError:
+            continue
+    return None
+
+
+def processo_pai(pid):
+    try:
+        with open('/proc/' + str(pid) + '/stat') as arquivo:
+            return int(arquivo.read().rsplit(')', 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+def supervisor_da_conexao(conexao):
+    inode = inode_do_socket_de_origem(conexao.getpeername()[1])
+    pid = processo_do_socket(inode) if inode else None
+    supervisores = listar_supervisores_com_canal() | {os.getpid()}
+    while pid and pid > 1:
+        if pid in supervisores:
+            return pid
+        pid = processo_pai(pid)
+    return None
+
+
+def enviar_pelo_canal(pid, mensagem, descritores):
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as canal:
+        canal.settimeout(2)
+        canal.connect(endereco_do_canal(pid))
+        socket.send_fds(canal, [mensagem], descritores)
+
+
+def encaminhar_conexao(conexao, familia, relay):
+    supervisor = supervisor_da_conexao(conexao)
+    if supervisor and supervisor != os.getpid():
+        try:
+            enviar_pelo_canal(supervisor, b'c' + (b'4' if familia == socket.AF_INET else b'6'), [conexao.fileno()])
+            conexao.close()
+            return
+        except OSError:
+            pass
+    atender_conexao(conexao, familia, relay)
+
+
+def receber_pelo_canal(canal, relay):
+    while True:
+        cliente, _ = canal.accept()
+        try:
+            with cliente:
+                mensagem, descritores, _, _ = socket.recv_fds(cliente, 64, 8)
+        except OSError:
+            continue
+        if mensagem[:1] == b'c' and descritores:
+            familia = socket.AF_INET if mensagem[1:2] == b'4' else socket.AF_INET6
+            threading.Thread(target=atender_conexao, args=(socket.socket(fileno=descritores[0]), familia, relay), daemon=True).start()
+        elif mensagem[:1] == b'e' and descritores:
+            servidores = [(socket.socket(fileno=descritor), socket.AF_INET if tipo == ord('4') else socket.AF_INET6) for descritor, tipo in zip(descritores, mensagem[1:])]
+            threading.Thread(target=ser_o_dono_da_ponte, args=(servidores, relay, False), daemon=True).start()
+
+
+def abrir_o_canal_da_ponte(relay):
+    canal = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    canal.bind(endereco_do_canal(os.getpid()))
+    canal.listen(64)
+    threading.Thread(target=receber_pelo_canal, args=(canal, relay), daemon=True).start()
+
+
+def entregar_a_ponte():
+    familias = b''.join(b'4' if familia == socket.AF_INET else b'6' for _, familia in servidores_da_ponte)
+    descritores = [servidor.fileno() for servidor, _ in servidores_da_ponte]
+    for supervisor in sorted(listar_supervisores_com_canal() - {os.getpid()}):
+        try:
+            enviar_pelo_canal(supervisor, b'e' + familias, descritores)
+            return True
+        except OSError:
+            continue
+    return False
+
+
 def aceitar_conexoes(servidor, familia, relay):
     while True:
         conexao, _ = servidor.accept()
-        threading.Thread(target=atender_conexao, args=(conexao, familia, relay), daemon=True).start()
+        threading.Thread(target=encaminhar_conexao, args=(conexao, familia, relay), daemon=True).start()
 
 
 def abrir_servidores_da_ponte():
@@ -546,26 +672,35 @@ def abrir_servidores_da_ponte():
     return servidores
 
 
-def assumir_a_ponte_de_rede(relay):
-    servidores = abrir_servidores_da_ponte()
-    if not servidores:
-        ponte_pronta.set()
-    while not servidores:
-        time.sleep(1)
-        servidores = abrir_servidores_da_ponte()
-    aplicar_regras_de_rede(REGRAS_DA_PONTE)
-    atexit.register(encerrar_a_ponte_de_rede)
+def ser_o_dono_da_ponte(servidores, relay, aplicar_as_regras):
+    servidores_da_ponte[:] = servidores
+    sou_o_dono_da_ponte.set()
+    if aplicar_as_regras:
+        aplicar_regras_de_rede(REGRAS_DA_PONTE)
     for servidor, familia in servidores:
         threading.Thread(target=aceitar_conexoes, args=(servidor, familia, relay), daemon=True).start()
     threading.Thread(target=acompanhar_portas_do_windows, args=(relay,), daemon=True).start()
     atualizar_portas_da_ponte()
 
 
+def assumir_a_ponte_de_rede(relay):
+    servidores = abrir_servidores_da_ponte()
+    if not servidores:
+        ponte_pronta.set()
+    while not servidores and not sou_o_dono_da_ponte.is_set():
+        time.sleep(1)
+        servidores = abrir_servidores_da_ponte()
+    if servidores:
+        ser_o_dono_da_ponte(servidores, relay, True)
+
+
 def encerrar_a_ponte_de_rede():
-    aplicar_regras_de_rede(REGRAS_SEM_A_PONTE)
+    if not sou_o_dono_da_ponte.is_set():
+        return
     for processo in processos_da_ponte:
         processo.kill()
-
+    if not entregar_a_ponte():
+        aplicar_regras_de_rede(REGRAS_SEM_A_PONTE)
 
 def apagar_regras_sem_dono():
     servidores = abrir_servidores_da_ponte()
@@ -581,6 +716,8 @@ def iniciar_ponte_de_rede(relay):
     if not (relay and os.access(relay, os.X_OK)):
         apagar_regras_sem_dono()
         return
+    abrir_o_canal_da_ponte(relay)
+    atexit.register(encerrar_a_ponte_de_rede)
     threading.Thread(target=assumir_a_ponte_de_rede, args=(relay,), daemon=True).start()
     ponte_pronta.wait(5)
 
