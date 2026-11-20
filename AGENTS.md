@@ -95,6 +95,7 @@ Os comandos rodam na raiz do repositório, no PowerShell 7.
 | Conferir os títulos dos commits da branch       | `./scripts/Test-TituloDeCommit.ps1`                                                    |
 | Ver a documentação de um idioma, com hot reload | `uvx --python 3.14 zensical serve -f docs/zensical.pt-br.toml`                         |
 | Ver o site completo, com o seletor de idioma    | `./scripts/dev/docs.ps1`                                                               |
+| Comparar os tempos com o Ansible nativo         | `./scripts/dev/Measure-WinPlaybook.ps1`                                                |
 
 ## Convenções de código
 
