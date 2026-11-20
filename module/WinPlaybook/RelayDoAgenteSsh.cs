@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Pipes;
+using System.Text;
 using System.Threading;
 
 internal static class RelayDoAgenteSsh
@@ -22,6 +23,7 @@ internal static class RelayDoAgenteSsh
         }
         catch (Exception erro)
         {
+            Console.SetError(new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(false)) { AutoFlush = true });
             Console.Error.WriteLine("WinPlaybook: " + erro.Message);
             return 1;
         }

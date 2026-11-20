@@ -358,6 +358,42 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o agente SSH do Windows não aceita a conexão' {
+        BeforeAll {
+            $nomeDoPipeOcupado = "winplaybook-teste-$([guid]::NewGuid().ToString('N'))"
+            $pipeOcupado = [IO.Pipes.NamedPipeServerStream]::new($nomeDoPipeOcupado, [IO.Pipes.PipeDirection]::InOut, 1)
+            $clienteQueOcupaOPipe = [IO.Pipes.NamedPipeClientStream]::new('.', $nomeDoPipeOcupado, [IO.Pipes.PipeDirection]::InOut)
+            $clienteQueOcupaOPipe.Connect(5000)
+            $pipeOcupado.WaitForConnection()
+            $parametrosDoRelay = @{
+                CaminhoDoRelay = Join-Path $TestDrive 'relay-pipe-ocupado/relay-do-agente-ssh.exe'
+                PastaDosShims  = Join-Path $TestDrive 'shims-pipe-ocupado'
+                Distribuicao   = $nomeDaDistribuicao
+                Pipe           = $nomeDoPipeOcupado
+            }
+            InModuleScope WinPlaybook -Parameters $parametrosDoRelay {
+                $raizDeMontagem = Get-RaizDeMontagemDoWsl -Distribuicao $Distribuicao
+                New-ExecutavelDoRelay -Caminho $CaminhoDoRelay
+                Install-RelayDoAgenteSsh -CaminhoDoExecutavel $CaminhoDoRelay -PastaDosShims $PastaDosShims -Distribuicao $Distribuicao -RaizDeMontagem $raizDeMontagem
+                Save-Configuracao -Configuracao @{ WslDistribution = $Distribuicao; WslMountRoot = $raizDeMontagem; ShimFolder = $PastaDosShims; SshAgentPipe = $Pipe }
+            }
+            Push-Location $TestDrive
+        }
+
+        AfterAll {
+            Pop-Location
+            $clienteQueOcupaOPipe.Dispose()
+            $pipeOcupado.Dispose()
+            Reset-ConfiguracaoDeTeste -Distribuicao $nomeDaDistribuicao
+        }
+
+        It 'mostra o erro do relay do agente' {
+            $saida = (Invoke-WinPlaybook ssh-add -l 2>&1 | ForEach-Object { "$_" }) -join "`n"
+
+            $saida | Should-BeLikeString '*WinPlaybook: *'
+        }
+    }
+
     Context 'quando o agente SSH do Windows está rodando' {
         BeforeAll {
             $agente = Start-AgenteSshFalso

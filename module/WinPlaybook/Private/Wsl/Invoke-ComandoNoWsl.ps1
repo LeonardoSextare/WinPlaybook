@@ -133,9 +133,9 @@
             'pasta_do_agente=$(mktemp -d /tmp/winplaybook-agente.XXXXXX);'
             'ln -s "$relay_do_agente" "$pasta_do_agente/relay";'
             'export SSH_AUTH_SOCK="$pasta_do_agente/agente.sock";'
-            'socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork,umask=177 EXEC:"$pasta_do_agente/relay $pipe_do_agente" 2> /dev/null &'
+            'socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork,umask=177 EXEC:"$pasta_do_agente/relay $pipe_do_agente" 2> "$pasta_do_agente/erros" &'
             'pid_do_socat=$!;'
-            'trap ''kill "$pid_do_socat" 2> /dev/null; rm -rf "$pasta_do_agente"'' EXIT;'
+            'trap ''kill "$pid_do_socat" 2> /dev/null; grep -a "^WinPlaybook:" "$pasta_do_agente/erros" | sort -u >&2; rm -rf "$pasta_do_agente"'' EXIT;'
             'tentativas=0; while [ ! -S "$SSH_AUTH_SOCK" ] && [ "$tentativas" -lt 100 ]; do sleep 0.01; tentativas=$((tentativas + 1)); done;'
             'fi;'
         )
