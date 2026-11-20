@@ -58,12 +58,13 @@ a difference between running Ansible on Windows and running it on Linux.
 
     [:lucide-arrow-right: Run Windows programs and scripts](windows-programs.md)
 
--   :lucide-network: **The Windows localhost**
+-   :lucide-network: **The Windows network**
 
     ---
 
-    A service on the Windows `localhost`, such as a Docker Desktop container,
-    answers on the `localhost` of the tasks.
+    Connections go out through Windows, with its VPN, routes, and Hyper-V
+    virtual machines, and a service on the Windows `localhost`, such as a
+    Docker Desktop container, answers on the `localhost` of the tasks.
 
     [:lucide-arrow-right: Network](network.md)
 
