@@ -22,6 +22,16 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    It 'confere a .venv do projeto da pasta atual' {
+        Mock Show-AvisoDeAnsibleDoWindowsNaVenv -ModuleName WinPlaybook { }
+
+        Invoke-WinPlaybook ansible --version
+
+        Should-Invoke Show-AvisoDeAnsibleDoWindowsNaVenv -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+            $PastaAtual -eq (Get-Location -PSProvider FileSystem).ProviderPath
+        }
+    }
+
     It 'executa o primeiro argumento como o comando, com os outros argumentos' {
         Invoke-WinPlaybook ansible-playbook -i inventory.yml site.yml --check
 

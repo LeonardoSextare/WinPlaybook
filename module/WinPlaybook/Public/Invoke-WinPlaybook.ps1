@@ -23,6 +23,7 @@
     #>
 
     Show-AvisoDeVersaoNova -VersaoAtual $MyInvocation.MyCommand.Module.Version
+    Show-AvisoDeAnsibleDoWindowsNaVenv -PastaAtual (Get-Location -PSProvider FileSystem).ProviderPath
 
     $temComando = $args.Count -gt 0
     if (-not $temComando) {

@@ -43,6 +43,21 @@ dependencies.
 
 ---
 
+## OSError: [WinError 87] in a project with pyproject.toml
+
+!!! failure "Error message"
+
+    ```text
+    OSError: [WinError 87] The parameter is incorrect
+    ```
+
+The command ran the Windows Ansible that a `uv sync` on Windows installed in
+the project `.venv`, and not the WinPlaybook one. Mark Ansible with
+`; sys_platform == 'linux'` in `pyproject.toml` and run `uv sync`. See
+[Use a per-project environment](project-environment.md#why-the-sys_platform-marker).
+
+---
+
 ## The first command is slow
 
 The first command after Windows starts takes a few more seconds, because WSL
