@@ -7,6 +7,10 @@
 | `WINPLAYBOOK_LOG`          | `off`, `error`, `info`, `debug` | `info`  | The log detail. See [Read the logs](logs.md).             |
 | `WINPLAYBOOK_UPDATE_CHECK` | `off`                           | On      | With `off`, WinPlaybook doesn't tell you about new versions. |
 
+When the [`NO_COLOR`](https://no-color.org/) variable is set, WinPlaybook
+notices have no color. Ansible also receives it and turns off the colors of its
+output.
+
 ---
 
 ## Windows variables

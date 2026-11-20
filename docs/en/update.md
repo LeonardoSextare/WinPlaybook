@@ -10,8 +10,8 @@ The Ansible version and the Python packages that you chose stay the same.
 
 ## The new version notice
 
-WinPlaybook tells you when a new version exists, the first time you run one of
-its commands in the terminal:
+WinPlaybook tells you when a new version exists, in yellow, the first time you
+run one of its commands in the terminal:
 
 ```text
 WinPlaybook: version 0.20.0 is available (you use 0.19.0). Update with: Update-WinPlaybook
