@@ -10,6 +10,7 @@
     quando a variável WINPLAYBOOK_UPDATE_CHECK é off, quando o stderr não é o terminal,
     como num programa que lê a saída, nem na versão de desenvolvimento (0.0.0). A sessão é
     a do módulo carregado: a do terminal do PowerShell, ou a de cada chamada de um shim .exe.
+    O aviso sai em amarelo, ou sem cor quando a variável NO_COLOR está definida.
 
     .PARAMETER VersaoAtual
     A versão do módulo carregado.
@@ -49,6 +50,6 @@
     }
 
     if ($temVersaoMaisNova) {
-        [Console]::Error.WriteLine((Get-Mensagem -Nome 'AvisoDeVersaoNova' -Valores $guardada.versao, $VersaoAtual))
+        Write-LinhaColoridaNoErro -Texto (Get-Mensagem -Nome 'AvisoDeVersaoNova' -Valores $guardada.versao, $VersaoAtual) -Cor 'Yellow'
     }
 }
