@@ -162,7 +162,13 @@ bugs, e como o código lida com cada um.
   Python mais novo, em que o Ansible pode quebrar ao importar (como o
   `ansible-core` 2.21 no Python 3.15). O `Install-AnsibleNaDistribuicao` tenta
   do Python mais novo para o mais antigo e fica com o primeiro em que o
-  `ansible --version` funciona.
+  `ansible --version` funciona. O ambiente de um projeto com `pyproject.toml`
+  tem o mesmo problema: quando o `pyproject.toml`, o `uv.lock` ou o
+  `.python-version` mudam, o supervisor confere se o Ansible do ambiente abre
+  e, se não abrir, refaz o ambiente com o Python anterior. O contexto "quando
+  o projeto tem um pyproject.toml com o Ansible" do
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1` usa um `requires-python`
+  sem limite de cima.
 
 ## Shims
 
