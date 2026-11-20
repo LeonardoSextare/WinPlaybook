@@ -261,6 +261,14 @@ bugs, e como o código lida com cada um.
   o dono entrega os sockets de escuta a outro supervisor vivo. O teste "mantém a
   conexão aberta e abre novas depois que a outra execução termina" confere.
 
+- No .NET Framework, a escrita na saída padrão (`Console.OpenStandardOutput`)
+  não falha quando quem lia a saída já fechou o pipe, e um programa que só
+  escreve não percebe que ficou sem leitor. Um `relay-de-rede.exe portas` ficou
+  rodando um dia inteiro depois que o comando e a distribuição terminaram, e
+  segurava o `.exe`. O relay sai quando a entrada padrão fecha, e o supervisor
+  abre o relay com a entrada num pipe que só fecha quando ele termina. O teste
+  "termina quando a entrada fecha" do
+  `tests/module/integration/RelayDeRede.Tests.ps1` confere.
 ## Pester
 
 - No Windows PowerShell 5.1, um processo que abre mais de um `relay-de-rede.exe`

@@ -478,7 +478,7 @@ def guardar_portas(portas):
 
 
 def acompanhar_portas_do_windows(relay):
-    processo = subprocess.Popen([relay, 'portas'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    processo = subprocess.Popen([relay, 'portas'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     processos_da_ponte.append(processo)
     for linha in processo.stdout:
         portas = [int(porta) for porta in linha.split()]
