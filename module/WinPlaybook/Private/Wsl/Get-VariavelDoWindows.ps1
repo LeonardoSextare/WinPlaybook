@@ -58,9 +58,16 @@
         $temNomeValidoNoLinux = $nome -match '^[A-Za-z_][A-Za-z0-9_]*$'
         $ehDoLinux = ($nome -in $nomesDoLinux) -or @($prefixosDoLinux | Where-Object { $nome.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) }).Count -gt 0
         $vaiParaOWsl = $temNomeValidoNoLinux -and -not $ehDoLinux -and ($nome -notin $nomesNoWslenv)
-        if ($vaiParaOWsl) {
-            $variaveis[$nome] = ConvertTo-ValorDoWsl -Valor $variaveisDoProcesso[$nome] -Distribuicao $Distribuicao -RaizDeMontagem $RaizDeMontagem -PastaAtual $PastaAtual -DestinoDeUnidade $DestinoDeUnidade
+        if (-not $vaiParaOWsl) {
+            continue
         }
+
+        $valor = $variaveisDoProcesso[$nome]
+        $podeTerCaminhoDoWindows = $valor.IndexOfAny([char[]] ':\') -ge 0
+        if ($podeTerCaminhoDoWindows) {
+            $valor = ConvertTo-ValorDoWsl -Valor $valor -Distribuicao $Distribuicao -RaizDeMontagem $RaizDeMontagem -PastaAtual $PastaAtual -DestinoDeUnidade $DestinoDeUnidade
+        }
+        $variaveis[$nome] = $valor
     }
 
     return $variaveis
