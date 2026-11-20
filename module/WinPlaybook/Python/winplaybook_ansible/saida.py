@@ -9,6 +9,7 @@ CARACTERE_DE_CAMINHO = rb'[^\s\'"\],:;=()]'
 CAMINHO_DA_DISTRIBUICAO = re.compile(rb'(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/' + CARACTERE_DE_CAMINHO + rb'*)?')
 LISTA_DE_CAMINHOS = re.compile(rb'(?<![\w/.~-])/' + CARACTERE_DE_CAMINHO + rb'*(?::/' + CARACTERE_DE_CAMINHO + rb'*)+')
 ASPAS_SEM_ESCAPE = re.compile(rb'(?<!\\)"')
+CONTINUACAO_DO_CAMINHO = re.compile(rb'[ \]](' + CARACTERE_DE_CAMINHO + rb'*)')
 PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES = b'/opt/winplaybook/exec/'
 PROGRAMAS_DO_NO_DE_CONTROLE = ('ansible-config', 'ansible-doc', 'ansible-galaxy')
 programa_mostra_caminhos_da_distribuicao = []
@@ -33,6 +34,43 @@ def formatar_caminho_do_windows(caminho, entre_aspas):
     return caminho
 
 
+def caminho_pode_continuar(caminho, continuacao):
+    pasta, _, nome = caminho.rpartition(b'/')
+    if not os.path.isdir(pasta or b'/'):
+        return False
+    if b'/' in continuacao:
+        return True
+    try:
+        return any(entrada.startswith(nome) for entrada in os.listdir(pasta or b'/'))
+    except OSError:
+        return False
+
+
+def fim_do_caminho(texto, caminho, fim):
+    while True:
+        continuacao = CONTINUACAO_DO_CAMINHO.match(texto, fim)
+        if not continuacao or not continuacao.group(1):
+            return fim
+        candidato = caminho + continuacao.group(0)
+        if not caminho_pode_continuar(candidato, continuacao.group(0)):
+            return fim
+        caminho = candidato
+        fim = continuacao.end()
+
+
+def substituir_caminhos(padrao, dados, mostrar):
+    partes = []
+    posicao = 0
+    for ocorrencia in padrao.finditer(dados):
+        if ocorrencia.start() < posicao:
+            continue
+        fim = fim_do_caminho(dados, ocorrencia.group(0), ocorrencia.end())
+        partes.append(dados[posicao:ocorrencia.start()])
+        partes.append(mostrar(ocorrencia, dados[ocorrencia.end():fim]))
+        posicao = fim
+    partes.append(dados[posicao:])
+    return b''.join(partes)
+
 def caminho_da_montagem_no_windows(ocorrencia):
     if ocorrencia.group('servidor'):
         inicio = b'//' + ocorrencia.group('servidor') + b'/' + ocorrencia.group('compartilhamento')
@@ -55,10 +93,10 @@ def separar_lista_de_caminhos(ocorrencia):
 
 
 def traduzir_caminhos_da_montagem(dados):
-    def mostrar(ocorrencia):
-        return formatar_caminho_do_windows(caminho_da_montagem_no_windows(ocorrencia), esta_entre_aspas(ocorrencia.string, ocorrencia.start()))
+    def mostrar(ocorrencia, continuacao):
+        return formatar_caminho_do_windows(caminho_da_montagem_no_windows(ocorrencia) + continuacao, esta_entre_aspas(ocorrencia.string, ocorrencia.start()))
 
-    return padrao_da_montagem().sub(mostrar, dados)
+    return substituir_caminhos(padrao_da_montagem(), dados, mostrar)
 
 
 def mostra_caminhos_da_distribuicao():
@@ -85,13 +123,13 @@ def caminho_da_distribuicao_no_windows(caminho):
 
 
 def traduzir_caminhos_da_distribuicao(dados):
-    def mostrar(ocorrencia):
-        caminho = caminho_da_distribuicao_no_windows(ocorrencia.group(0))
+    def mostrar(ocorrencia, continuacao):
+        caminho = caminho_da_distribuicao_no_windows(ocorrencia.group(0) + continuacao)
         if caminho is None:
-            return ocorrencia.group(0)
+            return ocorrencia.group(0) + continuacao
         return formatar_caminho_do_windows(caminho, esta_entre_aspas(ocorrencia.string, ocorrencia.start()))
 
-    return CAMINHO_DA_DISTRIBUICAO.sub(mostrar, dados)
+    return substituir_caminhos(CAMINHO_DA_DISTRIBUICAO, dados, mostrar)
 
 
 def traduzir_saida(dados):
