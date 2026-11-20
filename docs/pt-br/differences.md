@@ -68,6 +68,7 @@ conexão recusada pelo servidor aparece como interrompida
 
 ## Tempo
 
-Cada comando demora alguns segundos a mais para começar do que no Linux. O
-acesso aos arquivos nas pastas do Windows também é mais lento do que num disco
-do Linux, o que pesa em projetos com muitos arquivos.
+Cada comando leva pouco mais de um segundo a mais para começar do que no
+Linux. O acesso aos arquivos nas pastas do Windows também é mais lento do que
+num disco do Linux, o que pesa em projetos com muitos arquivos. Veja
+[Limitações conhecidas](limitations.md).

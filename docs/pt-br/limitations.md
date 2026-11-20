@@ -1,32 +1,40 @@
 # Limitações conhecidas
 
-!!! info "Versão 0"
-
-    O WinPlaybook está na versão 0. O que está abaixo é conhecido e tem issue
-    aberta ou planejada. Se uma limitação atrapalhar o seu trabalho,
-    [conte para a gente](report-issue.md): isso ajuda a definir as prioridades.
+Estas são as diferenças que o WinPlaybook ainda não consegue esconder. Se
+uma delas atrapalhar o seu trabalho, [conte para a gente](report-issue.md).
+Isso ajuda a definir as prioridades.
 
 ## Tempo de início
 
-Cada comando passa pelo WSL, e os comandos `.exe` abrem também um PowerShell.
-Isso acrescenta alguns segundos ao início de cada execução, e um pouco mais
-quando a distribuição está parada. A otimização é o próximo passo do projeto, depois
-que todos os recursos estiverem prontos.
+Cada comando passa pelo PowerShell e pelo WSL antes de o Ansible começar. Isso
+soma pouco mais de um segundo a cada comando, em comparação com o Ansible
+rodando direto no Linux. O tempo é quase fixo: num _playbook_ longo, a
+diferença quase não aparece, mas num `ansible --version` ela é a maior parte
+do tempo.
+
+O primeiro comando depois de ligar o Windows leva alguns segundos a mais,
+porque o WSL precisa iniciar a distribuição.
 
 ---
 
 ## Arquivos nas pastas do Windows
 
-O acesso aos arquivos das unidades do Windows é mais lento que ao disco da
-distribuição. Isso pesa em projetos com muitos arquivos.
+O Ansible lê os arquivos das unidades do Windows pelo WSL, o que é mais lento
+que ler do disco da distribuição. Isso pesa em projetos com milhares de
+arquivos, como uma pasta de _roles_ grande ou um `synchronize` de uma pasta
+inteira.
 
 ---
 
 ## A ponte do localhost
 
 Nas tarefas, o `localhost` do Windows só responde enquanto um comando do
-WinPlaybook está rodando. Um processo que você deixa rodando em segundo plano na
-distribuição perde a ponte quando o comando termina.
+WinPlaybook está rodando. Um processo que você deixa rodando em segundo plano
+na distribuição perde a ponte quando o comando termina.
+
+A lista de portas do Windows é atualizada a cada segundo. Um serviço que você
+abriu no Windows menos de um segundo antes do comando pode não responder na
+primeira conexão.
 
 ---
 
@@ -34,11 +42,4 @@ distribuição perde a ponte quando o comando termina.
 
 As correções valem para uma versão testada da extensão Ansible. Uma
 atualização da extensão desfaz as correções até o WinPlaybook testar a versão
-nova.
-
----
-
-## Agente SSH
-
-Em algumas máquinas, o primeiro pedido ao agente SSH do Windows falha, e o
-comando seguinte funciona. A causa ainda não foi encontrada.
+nova. Veja [Usar o VS Code](vscode.md).
