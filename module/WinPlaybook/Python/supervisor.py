@@ -65,10 +65,17 @@ HELPER_DO_WINDOWS = re.compile(r'^"?(manager(-core)?|.*git-credential-manager(\.
 PACOTE_DE_CERTIFICADOS_DO_SISTEMA = '/etc/ssl/certs/ca-certificates.crt'
 VARIAVEIS_DE_CERTIFICADOS = ('SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'GIT_SSL_CAINFO')
 sinais_de_fim = []
+esperando_o_comando = [False]
+
+
+class FimPedido(Exception):
+    pass
 
 
 def guardar_sinal_de_fim(numero, quadro):
     sinais_de_fim.append(numero)
+    if esperando_o_comando[0]:
+        raise FimPedido()
 
 
 def ignorar_interrupcao(numero, quadro):
@@ -848,11 +855,13 @@ if shutil.which(sys.argv[1], path=pastas_da_distribuicao) is None:
 comando = subprocess.Popen(sys.argv[1:], stdin=entrada)
 if entrada is not None:
     os.close(entrada)
-while comando.poll() is None and not sinais_de_fim:
-    try:
-        comando.wait(timeout=0.2)
-    except subprocess.TimeoutExpired:
-        pass
+try:
+    esperando_o_comando[0] = True
+    if not sinais_de_fim:
+        comando.wait()
+    esperando_o_comando[0] = False
+except FimPedido:
+    esperando_o_comando[0] = False
 
 if sinais_de_fim:
     encerrar_descendentes()
