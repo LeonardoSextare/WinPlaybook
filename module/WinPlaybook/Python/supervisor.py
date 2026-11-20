@@ -423,6 +423,42 @@ def listar_comandos_do_projeto(ambiente_do_projeto, caminho_da_lista):
         arquivo.write('\n'.join(comandos) + '\n')
 
 
+def o_ansible_do_ambiente_abre(ambiente_do_projeto):
+    ansible = os.path.join(ambiente_do_projeto, 'bin', 'ansible')
+    if not os.access(ansible, os.X_OK):
+        return True
+    return subprocess.run([ansible, '--version'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def impressao_do_projeto(projeto, ambiente_do_projeto):
+    partes = []
+    for caminho in (os.path.join(projeto, 'pyproject.toml'), os.path.join(projeto, 'uv.lock'), os.path.join(projeto, '.python-version'), os.path.join(ambiente_do_projeto, 'pyvenv.cfg')):
+        try:
+            partes.append(str(os.stat(caminho).st_mtime_ns))
+        except OSError:
+            partes.append('-')
+    return ' '.join(partes)
+
+
+def garantir_python_em_que_o_ansible_abre(projeto, ambiente_do_projeto):
+    marca = os.path.join(ambiente_do_projeto, '.winplaybook-ansible-abre')
+    try:
+        with open(marca, encoding='utf-8') as arquivo:
+            if arquivo.read() == impressao_do_projeto(projeto, ambiente_do_projeto):
+                return
+    except OSError:
+        pass
+    if not o_ansible_do_ambiente_abre(ambiente_do_projeto):
+        lista = subprocess.run([UV, 'python', 'list'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True).stdout
+        versoes = sorted({versao for versao in re.findall(r'^cpython-(3\.\d+)\.\d+\S*-linux', lista, re.MULTILINE)}, key=lambda versao: int(versao.split('.')[1]), reverse=True)
+        for versao in versoes:
+            sincronizacao = subprocess.run([UV, 'sync', '--quiet', '--project', projeto, '--python', versao], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if sincronizacao.returncode == 0 and o_ansible_do_ambiente_abre(ambiente_do_projeto):
+                break
+    with open(marca, 'w', encoding='utf-8') as arquivo:
+        arquivo.write(impressao_do_projeto(projeto, ambiente_do_projeto))
+
+
 def preparar_ambiente_do_projeto(caminho_da_lista_de_comandos):
     projeto = achar_projeto_do_ansible(os.getcwd())
     if projeto is None:
@@ -432,6 +468,7 @@ def preparar_ambiente_do_projeto(caminho_da_lista_de_comandos):
     sincronizacao = subprocess.run([UV, 'sync', '--quiet', '--project', projeto], stdin=subprocess.DEVNULL)
     if sincronizacao.returncode != 0:
         sys.exit(sincronizacao.returncode)
+    garantir_python_em_que_o_ansible_abre(projeto, ambiente_do_projeto)
     instalar_modulo_do_winplaybook(ambiente_do_projeto)
     if caminho_da_lista_de_comandos:
         listar_comandos_do_projeto(ambiente_do_projeto, caminho_da_lista_de_comandos)

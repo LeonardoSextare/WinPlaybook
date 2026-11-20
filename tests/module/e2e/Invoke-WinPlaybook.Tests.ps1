@@ -1168,7 +1168,7 @@ Describe 'Invoke-WinPlaybook' {
                 '[project]'
                 'name = "projeto-com-uv"'
                 'version = "0.1.0"'
-                'requires-python = ">=3.11,<3.14"'
+                'requires-python = ">=3.11"'
                 'dependencies = ["ansible-core==2.19.*"]'
             )
             [IO.File]::WriteAllText((Join-Path $projeto 'pyproject.toml'), ($linhas -join "`n") + "`n")
@@ -1232,7 +1232,7 @@ Describe 'Invoke-WinPlaybook' {
                 '[project]'
                 'name = "projeto-com-ferramenta"'
                 'version = "0.1.0"'
-                'requires-python = ">=3.11,<3.14"'
+                'requires-python = ">=3.11"'
                 'dependencies = ["ansible-core==2.19.*", "yamllint"]'
             )
             [IO.File]::WriteAllText((Join-Path $projeto 'pyproject.toml'), ($linhas -join "`n") + "`n")
