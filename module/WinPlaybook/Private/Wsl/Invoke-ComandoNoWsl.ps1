@@ -153,7 +153,8 @@
         $execucaoDoComando
     ) -join ' '
 
-    $parametrosDaConversao = @{ Distribuicao = $distribuicao; RaizDeMontagem = $raizDeMontagem; PastaAtual = $pastaAtual; DestinoDeUnidade = (Get-DestinoDeUnidade) }
+    $textosParaConverter = @($pastaAtual) + $Argumentos + @([Environment]::GetEnvironmentVariables().Values)
+    $parametrosDaConversao = @{ Distribuicao = $distribuicao; RaizDeMontagem = $raizDeMontagem; PastaAtual = $pastaAtual; DestinoDeUnidade = (Get-DestinoDeUnidade -Texto $textosParaConverter) }
     $pastaAtualNaDistribuicao = ConvertTo-ArgumentoDoWsl -Argumento $pastaAtual @parametrosDaConversao
     $argumentosNaDistribuicao = @(foreach ($argumento in $Argumentos) { ConvertTo-ArgumentoDoWsl -Argumento $argumento @parametrosDaConversao })
     $variaveisDoWindows = Get-VariavelDoWindows @parametrosDaConversao

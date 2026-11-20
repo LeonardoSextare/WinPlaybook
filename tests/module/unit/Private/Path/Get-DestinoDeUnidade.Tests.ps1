@@ -15,22 +15,36 @@ Describe 'Get-DestinoDeUnidade' {
         }
     }
 
-    It 'devolve a pasta das unidades do subst' {
-        $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade }
+    Context 'quando os textos citam outras unidades' {
+        It 'devolve a pasta das unidades do subst' {
+            $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade -Texto 'W:\site.yml' }
 
-        $destinos['W'] | Should-Be 'C:\Users\eu\infra'
-        $destinos['X'] | Should-Be 'D:\outro pasta'
+            $destinos['W'] | Should-Be 'C:\Users\eu\infra'
+            $destinos['X'] | Should-Be 'D:\outro pasta'
+        }
+
+        It 'devolve o caminho de rede das unidades mapeadas' {
+            $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade -Texto 'z:\hosts.yml' }
+
+            $destinos['Z'] | Should-Be '\\servidor\infra\projetos'
+        }
+
+        It 'não devolve as unidades locais' {
+            $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade -Texto 'W:\site.yml' }
+
+            $destinos.ContainsKey('C') | Should-BeFalse
+        }
     }
 
-    It 'devolve o caminho de rede das unidades mapeadas' {
-        $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade }
+    Context 'quando os textos só citam a unidade do sistema' {
+        It 'não procura as unidades' -ForEach @(
+            @{ Textos = @("$env:SystemDrive\projeto", 'https://exemplo.com', '') }
+            @{ Textos = @() }
+        ) {
+            $destinos = InModuleScope WinPlaybook -Parameters @{ Textos = $Textos } { Get-DestinoDeUnidade -Texto $Textos }
 
-        $destinos['Z'] | Should-Be '\\servidor\infra\projetos'
-    }
-
-    It 'não devolve as unidades locais' {
-        $destinos = InModuleScope WinPlaybook { Get-DestinoDeUnidade }
-
-        $destinos.ContainsKey('C') | Should-BeFalse
+            $destinos.Count | Should-Be 0
+            Should-NotInvoke subst.exe -ModuleName WinPlaybook
+        }
     }
 }
