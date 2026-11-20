@@ -8,6 +8,7 @@ from .comum import eh_programa_do_ansible, raiz_de_montagem
 CARACTERE_DE_CAMINHO = rb'[^\s\'"\],:;=()]'
 CAMINHO_DA_DISTRIBUICAO = re.compile(rb'(?<![\w/.~-])/(?:home|root|tmp|usr|etc|opt|var|srv)(?:/' + CARACTERE_DE_CAMINHO + rb'*)?')
 LISTA_DE_CAMINHOS = re.compile(rb'(?<![\w/.~-])/' + CARACTERE_DE_CAMINHO + rb'*(?::/' + CARACTERE_DE_CAMINHO + rb'*)+')
+FIM_DE_LISTA = (b"'", b'"', b' ', b'\t', b'\n', b'[', b',', b'=')
 ASPAS_SEM_ESCAPE = re.compile(rb'(?<!\\)"')
 CONTINUACAO_DO_CAMINHO = re.compile(rb'[ \]](' + CARACTERE_DE_CAMINHO + rb'*)')
 PASTA_DA_MONTAGEM_COM_EXECUCAO_EM_BYTES = b'/opt/winplaybook/exec/'
@@ -20,9 +21,18 @@ def padrao_da_montagem():
     return re.compile(rb'(?<![\w/.-])' + raiz + rb'/(?:unc/(?P<servidor>[^/\s\'"]+)/(?P<compartilhamento>[^/\s\'"]+)|(?P<unidade>[a-z])(?![\w.-]))(?P<resto>(?:/' + CARACTERE_DE_CAMINHO + rb'*)?)')
 
 
+def comeco_da_lista(texto, separador):
+    comeco = separador
+    while comeco > 0 and texto[comeco - 1:comeco] not in FIM_DE_LISTA:
+        comeco -= 1
+    return comeco
+
+
 def esta_entre_aspas(texto, inicio):
     if texto[inicio - 1:inicio] == b"'":
         return True
+    if texto[inicio - 1:inicio] == b';':
+        return esta_entre_aspas(texto, comeco_da_lista(texto, inicio - 1))
     comeco_da_linha = texto.rfind(b'\n', 0, inicio) + 1
     return len(ASPAS_SEM_ESCAPE.findall(texto, comeco_da_linha, inicio)) % 2 == 1
 

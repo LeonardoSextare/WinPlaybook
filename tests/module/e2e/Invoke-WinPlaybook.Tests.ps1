@@ -791,6 +791,14 @@ Describe 'Invoke-WinPlaybook' {
             $saida | Should-BeLikeString ("*ansible collection location = " + [WildcardPattern]::Escape("$perfilDosTestes\.ansible\collections;\\wsl.localhost\$nomeDaDistribuicao\usr\share\ansible\collections") + "*")
         }
 
+        It 'dobra as barras de todos os caminhos de uma lista entre aspas' {
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'requisitos-de-collections.yml'), "collections:`n  - name: ansible.posix`n")
+
+            $saida = (Invoke-WinPlaybook ansible-galaxy collection install -r (Join-Path $TestDrive 'requisitos-de-collections.yml') -p (Join-Path $TestDrive 'colecoes-fora-do-caminho') 2>&1 | ForEach-Object { "$_" }) -join [Environment]::NewLine
+
+            $saida | Should-BeLikeString ("*configured Ansible collections paths '" + [WildcardPattern]::Escape("$($perfilDosTestes.Replace('\', '\\'))\\.ansible\\collections;\\\\wsl.localhost\\$nomeDaDistribuicao\\usr\\share\\ansible\\collections") + "'*")
+        }
+
         It 'mostra as collections pela pasta delas no perfil do Windows' {
             $saida = Invoke-WinPlaybook ansible-config dump 2>&1 | Out-String
 

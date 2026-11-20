@@ -268,5 +268,11 @@ bugs, e como o código lida com cada um.
   vezes não recebe a saída do segundo, e a leitura trava para sempre. No uso real,
   quem abre o relay é a distribuição. O `tests/module/integration/RelayDeRede.Tests.ps1`
   abre cada relay com o `Start-Process` e a entrada e as saídas em arquivos.
+- No Windows PowerShell 5.1, cada linha do stderr de um programa vira um
+  `ErrorRecord`, e o `2>&1 | Out-String` quebra essas linhas na largura do
+  console, às vezes no meio de um caminho. Um teste que confere um texto longo do
+  stderr junta as linhas com `ForEach-Object { "$_" }` e `-join`, como o
+  "dobra as barras de todos os caminhos de uma lista entre aspas" do
+  `tests/module/e2e/Invoke-WinPlaybook.Tests.ps1`.
 - O Pester faz mock de funções, não de métodos do .NET. Uma chamada a método
   estático que os testes precisam simular fica numa função privada própria.
