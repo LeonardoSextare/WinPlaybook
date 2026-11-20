@@ -102,6 +102,13 @@ Describe 'Get-ScriptDoSupervisor' {
         $script.Contains('if not entregar_a_ponte():') | Should-BeTrue
     }
 
+    It 'aplica na hora a última lista de portas do Windows, sem esperar o relay' {
+        $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
+
+        $script.Contains("PORTAS_DO_WINDOWS_GUARDADAS = os.path.expanduser('~/.cache/winplaybook/portas-do-windows')") | Should-BeTrue
+        $script.Contains('guardadas = ler_portas_guardadas()') | Should-BeTrue
+    }
+
     It 'começa o comando depois que a ponte para o localhost do Windows aplica as portas' {
         $script = InModuleScope WinPlaybook { Get-ScriptDoSupervisor }
 

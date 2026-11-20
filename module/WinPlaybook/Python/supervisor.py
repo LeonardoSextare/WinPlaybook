@@ -21,6 +21,7 @@ import time
 
 PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
+PORTAS_DO_WINDOWS_GUARDADAS = os.path.expanduser('~/.cache/winplaybook/portas-do-windows')
 UV = os.path.expanduser('~/.local/bin/uv')
 PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
 PACOTE_DO_HOOK = 'winplaybook_ansible'
@@ -446,11 +447,33 @@ def aplicar_regras_de_rede(regras):
     subprocess.run([NFT_DA_PONTE, '-f', '-'], input=regras.replace('\r', ''), text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
+def ler_portas_guardadas():
+    try:
+        with open(PORTAS_DO_WINDOWS_GUARDADAS) as arquivo:
+            return [int(porta) for porta in arquivo.read().split()]
+    except (OSError, ValueError):
+        return None
+
+
+def guardar_portas(portas):
+    try:
+        os.makedirs(os.path.dirname(PORTAS_DO_WINDOWS_GUARDADAS), exist_ok=True)
+        temporario = PORTAS_DO_WINDOWS_GUARDADAS + '.' + str(os.getpid())
+        with open(temporario, 'w') as arquivo:
+            arquivo.write(' '.join(str(porta) for porta in portas))
+        os.replace(temporario, PORTAS_DO_WINDOWS_GUARDADAS)
+    except OSError:
+        pass
+
+
 def acompanhar_portas_do_windows(relay):
     processo = subprocess.Popen([relay, 'portas'], stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
     processos_da_ponte.append(processo)
     for linha in processo.stdout:
-        portas_do_windows[:] = [int(porta) for porta in linha.split()]
+        portas = [int(porta) for porta in linha.split()]
+        if portas != portas_do_windows or not lista_de_portas_recebida[0]:
+            guardar_portas(portas)
+        portas_do_windows[:] = portas
         lista_de_portas_recebida[0] = True
         portas_mudaram.set()
 
@@ -676,6 +699,10 @@ def abrir_servidores_da_ponte():
 
 def ser_o_dono_da_ponte(servidores, relay, aplicar_as_regras):
     servidores_da_ponte[:] = servidores
+    guardadas = ler_portas_guardadas()
+    if guardadas is not None:
+        portas_do_windows[:] = guardadas
+        lista_de_portas_recebida[0] = True
     sou_o_dono_da_ponte.set()
     if aplicar_as_regras:
         aplicar_regras_de_rede(REGRAS_DA_PONTE)
