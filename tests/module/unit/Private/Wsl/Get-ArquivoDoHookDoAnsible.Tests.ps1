@@ -71,6 +71,13 @@ Describe 'Get-ArquivoDoHookDoAnsible' {
         $script.Contains('os.open(copia, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)') | Should-BeTrue
     }
 
+    It 'envia sem os CR o script com shebang que o copy leva para um host que não é Windows' {
+        $script = InModuleScope WinPlaybook { -join (Get-ArquivoDoHookDoAnsible | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Conteudo) }) }
+
+        $script.Contains('modulo.ActionBase._find_needle = find_needle_sem_crlf') | Should-BeTrue
+        $script.Contains("FAMILIAS_DE_SHELL_DO_WINDOWS = ('powershell', 'cmd')") | Should-BeTrue
+    }
+
     It 'usa a raiz de montagem da variável WINPLAYBOOK_MOUNT_ROOT' {
         $script = InModuleScope WinPlaybook { -join (Get-ArquivoDoHookDoAnsible | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Conteudo) }) }
 

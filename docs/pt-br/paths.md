@@ -79,5 +79,6 @@ Na saída dos comandos, os caminhos aparecem no formato do Windows:
 ## Finais de linha
 
 Um _script_ com _shebang_ (`#!/bin/sh`) e finais de linha CRLF, como os que o
-Git for Windows grava por padrão, funciona no `ansible.builtin.script`: o
-Ansible envia uma cópia sem os CR, e o arquivo do projeto fica como está.
+Git for Windows grava por padrão, funciona no `ansible.builtin.script` e no
+`ansible.builtin.copy` para um host que não é Windows: o Ansible envia uma
+cópia sem os CR, e o arquivo do projeto fica como está.
