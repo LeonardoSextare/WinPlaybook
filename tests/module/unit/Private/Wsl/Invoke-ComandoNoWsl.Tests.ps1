@@ -573,6 +573,15 @@ Describe 'Invoke-ComandoNoWsl' {
         }
     }
 
+    It 'passa ao supervisor a impressão do Path do Windows' {
+        Mock Get-ImpressaoDoPathDoWindows -ModuleName WinPlaybook { 'impressao-do-path' }
+        Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }
+
+        $ambiente = InModuleScope WinPlaybook { Invoke-ComandoNoWsl -Comando 'ansible' } | ConvertFrom-Json
+
+        $ambiente.impressaoDoPath | Should-Be 'impressao-do-path'
+    }
+
     It 'passa ao supervisor a porta e o usuário do localhost_windows, quando ele está ligado' {
         Mock Get-Configuracao -ModuleName WinPlaybook { @{ WslDistribution = 'Ubuntu'; WslMountRoot = '/mnt/'; ShimFolder = $null; ShimPowerShellPath = $null; SshAgentPipe = $null; LocalhostWindowsPort = 47022; LocalhostWindowsUser = 'eu' } }
         Mock wsl -ModuleName WinPlaybook { $env:WINPLAYBOOK_ENVIRONMENT }

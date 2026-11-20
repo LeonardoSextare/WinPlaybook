@@ -21,6 +21,7 @@ import time
 
 PR_SET_CHILD_SUBREAPER = 36
 PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
+GERENCIADOR_DE_CREDENCIAIS_GUARDADO = '.gerenciador-de-credenciais'
 PORTAS_DO_WINDOWS_GUARDADAS = os.path.expanduser('~/.cache/winplaybook/portas-do-windows')
 UV = os.path.expanduser('~/.local/bin/uv')
 PACOTES_DO_ANSIBLE = ('ansible', 'ansible-core')
@@ -181,8 +182,8 @@ def gerar_path_do_windows(pastas, pasta_nova):
                     criar_entrada_de_programa(pasta_nova, nome_no_path, pasta + '/' + nome)
 
 
-def preparar_path_do_windows(pastas):
-    impressao = calcular_impressao(pastas)
+def preparar_path_do_windows(pastas, impressao_do_windows):
+    impressao = impressao_do_windows or calcular_impressao(pastas)
     try:
         with open(os.path.join(PASTA_DO_PATH_DO_WINDOWS, '.impressao')) as arquivo:
             if arquivo.read() == impressao:
@@ -193,6 +194,8 @@ def preparar_path_do_windows(pastas):
     os.makedirs(pasta_do_cache, exist_ok=True)
     pasta_nova = tempfile.mkdtemp(prefix='path-do-windows.', dir=pasta_do_cache)
     gerar_path_do_windows(pastas, pasta_nova)
+    with open(os.path.join(pasta_nova, GERENCIADOR_DE_CREDENCIAIS_GUARDADO), 'w') as arquivo:
+        arquivo.write(achar_gerenciador_de_credenciais(pastas) or '')
     with open(os.path.join(pasta_nova, '.impressao'), 'w') as arquivo:
         arquivo.write(impressao)
     atalho_novo = pasta_nova + '.atalho'
@@ -267,6 +270,14 @@ def achar_gerenciador_de_credenciais(pastas_do_path):
     return None
 
 
+def ler_gerenciador_de_credenciais_guardado(pastas_do_path):
+    try:
+        with open(os.path.join(PASTA_DO_PATH_DO_WINDOWS, GERENCIADOR_DE_CREDENCIAIS_GUARDADO)) as arquivo:
+            return arquivo.read() or None
+    except OSError:
+        return achar_gerenciador_de_credenciais(pastas_do_path)
+
+
 def converter_valor_do_git(chave, valor, gerenciador_de_credenciais):
     if chave == 'helper' and HELPER_DO_WINDOWS.match(valor):
         return '"\'' + gerenciador_de_credenciais + '\'"' if gerenciador_de_credenciais else None
@@ -282,7 +293,7 @@ def converter_valor_do_git(chave, valor, gerenciador_de_credenciais):
 def preparar_config_do_git(pastas_do_path):
     perfil = os.environ.get('USERPROFILE', '')
     origem = os.path.join(perfil, '.gitconfig') if perfil else None
-    gerenciador_de_credenciais = achar_gerenciador_de_credenciais(pastas_do_path)
+    gerenciador_de_credenciais = ler_gerenciador_de_credenciais_guardado(pastas_do_path)
     try:
         with open(origem, encoding='utf-8-sig', errors='surrogateescape') as arquivo:
             original = arquivo.read().splitlines()
@@ -813,7 +824,7 @@ entrada = criar_entrada_do_usuario()
 ambiente = json.loads(os.environ.pop('WINPLAYBOOK_ENVIRONMENT'))
 os.environ.update(ambiente['variaveis'])
 atexit.register(registrar_tempos_no_log)
-os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'])
+os.environ['PATH'] = os.environ.get('PATH', '') + ':' + preparar_path_do_windows(ambiente['pathDoWindows'], ambiente.get('impressaoDoPath'))
 marcar_etapa('path do Windows')
 preparar_config_do_ssh()
 marcar_etapa('config do ssh')
