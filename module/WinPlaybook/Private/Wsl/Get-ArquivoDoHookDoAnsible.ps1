@@ -15,7 +15,8 @@
       escrevem, e, nos comandos do nó de controle, os caminhos do disco da distribuição como
       caminhos do Windows ou de \\wsl.localhost;
     - scripts: roda pela extensão os scripts das pastas do Windows, que não têm a permissão de
-      execução, e tira os CR dos scripts com shebang que o ansible.builtin.script envia;
+      execução, e tira os CR dos scripts com shebang que o ansible.builtin.script envia e que o
+      ansible.builtin.copy envia para um host que não é Windows;
     - chaves: entrega ao ssh uma cópia com 0600 da chave de private_key_file que está numa
       pasta do Windows, legível por outros;
     - localhost_windows: cria o host implícito localhost_windows, com a porta, o usuário e a

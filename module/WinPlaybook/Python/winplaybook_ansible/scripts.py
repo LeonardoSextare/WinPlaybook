@@ -1,3 +1,4 @@
+import atexit
 import os
 import re
 import shutil
@@ -11,6 +12,9 @@ from .comum import eh_programa_do_ansible, raiz_de_montagem
 EXTENSOES_DE_SCRIPT = ('.bat', '.cmd', '.exe', '.com', '.ps1', '.py', '.sh')
 EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PASTA_DA_MONTAGEM_COM_EXECUCAO = '/opt/winplaybook/exec/'
+ACOES_DE_COPIA = ('copy', 'ansible.builtin.copy', 'ansible.legacy.copy')
+FAMILIAS_DE_SHELL_DO_WINDOWS = ('powershell', 'cmd')
+pasta_das_copias_sem_crlf = []
 access_original = os.access
 popen_original = subprocess.Popen
 
@@ -28,6 +32,29 @@ def converter_script_com_crlf(caminho_local):
         arquivo.write(conteudo.replace(b'\r\n', b'\n'))
     return caminho_convertido
 
+def copia_do_script_sem_crlf(caminho_local):
+    try:
+        with open(caminho_local, 'rb') as arquivo:
+            conteudo = arquivo.read()
+    except OSError:
+        return caminho_local
+    if not conteudo.startswith(b'#!') or b'\r\n' not in conteudo:
+        return caminho_local
+    if not pasta_das_copias_sem_crlf:
+        pasta_das_copias_sem_crlf.append(tempfile.mkdtemp(prefix='winplaybook-copy-'))
+        atexit.register(shutil.rmtree, pasta_das_copias_sem_crlf[0], True)
+    pasta = tempfile.mkdtemp(dir=pasta_das_copias_sem_crlf[0])
+    copia = os.path.join(pasta, os.path.basename(caminho_local))
+    with open(copia, 'wb') as arquivo:
+        arquivo.write(conteudo.replace(b'\r\n', b'\n'))
+    shutil.copymode(caminho_local, copia)
+    return copia
+
+
+def host_eh_windows(acao):
+    shell = getattr(getattr(acao, '_connection', None), '_shell', None)
+    return getattr(shell, 'SHELL_FAMILY', '') in FAMILIAS_DE_SHELL_DO_WINDOWS
+
 
 def ajustar_action_base(modulo):
     transfer_file = modulo.ActionBase._transfer_file
@@ -44,6 +71,17 @@ def ajustar_action_base(modulo):
                 os.remove(caminho_enviado)
 
     modulo.ActionBase._transfer_file = transfer_file_sem_crlf
+
+    find_needle = modulo.ActionBase._find_needle
+
+    def find_needle_sem_crlf(self, dirname, needle):
+        caminho = find_needle(self, dirname, needle)
+        acao = getattr(getattr(self, '_task', None), 'action', '')
+        if acao in ACOES_DE_COPIA and os.path.isfile(caminho) and not host_eh_windows(self):
+            return copia_do_script_sem_crlf(caminho)
+        return caminho
+
+    modulo.ActionBase._find_needle = find_needle_sem_crlf
 
 
 def ler_shebang(caminho):

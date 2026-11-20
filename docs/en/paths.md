@@ -79,5 +79,6 @@ The command output shows paths in the Windows format:
 ## Line endings
 
 A script with a shebang (`#!/bin/sh`) and CRLF line endings, like the ones that
-Git for Windows writes by default, runs with `ansible.builtin.script`: Ansible
-sends a copy without the CR characters, and the project file stays as it is.
+Git for Windows writes by default, works with `ansible.builtin.script`, and
+with `ansible.builtin.copy` to a host that isn't Windows: Ansible sends a copy
+without the CR characters, and the project file stays as it is.

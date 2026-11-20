@@ -881,6 +881,53 @@ Describe 'Invoke-WinPlaybook' {
         }
     }
 
+    Context 'quando o copy envia um script gravado no Windows com CRLF' {
+        BeforeAll {
+            $projeto = Join-Path $TestDrive 'copy-de-script-com-crlf'
+            $null = New-Item -ItemType Directory -Path (Join-Path $projeto 'files') -Force
+            $script = Join-Path $projeto 'files\saude.sh'
+            [IO.File]::WriteAllText($script, "#!/bin/sh`r`necho saude ok`r`n")
+            $destino = "/tmp/winplaybook-e2e-copy-$([guid]::NewGuid().ToString('N'))"
+            $linhas = @(
+                '- hosts: localhost'
+                '  gather_facts: false'
+                '  tasks:'
+                '    - ansible.builtin.copy:'
+                '        src: saude.sh'
+                "        dest: $destino/"
+                '        mode: "0755"'
+                '    - ansible.builtin.command: ' + "$destino/saude.sh"
+                '      register: saude'
+                '      changed_when: false'
+                '    - ansible.builtin.debug:'
+                '        var: saude.stdout'
+            )
+            [IO.File]::WriteAllText((Join-Path $projeto 'site.yml'), ($linhas -join "`r`n") + "`r`n")
+            Push-Location $projeto
+            $primeiraSaida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+            $primeiroCodigo = $LASTEXITCODE
+            $segundaSaida = Invoke-WinPlaybook ansible-playbook site.yml 2>&1 | Out-String
+        }
+
+        AfterAll {
+            Pop-Location
+            $null = Invoke-LinhaDeComando -Programa 'wsl.exe' -Argumentos "-d $nomeDaDistribuicao -u winplaybook -- rm -rf $destino"
+        }
+
+        It 'executa no host Linux o script copiado' {
+            $primeiroCodigo | Should-Be 0 -Because $primeiraSaida
+            $primeiraSaida | Should-BeLikeString '*saude ok*'
+        }
+
+        It 'não muda nada ao rodar de novo' {
+            $segundaSaida | Should-BeLikeString '*changed=0*'
+        }
+
+        It 'deixa o script do projeto como está, com CRLF' {
+            [IO.File]::ReadAllText($script) | Should-Be "#!/bin/sh`r`necho saude ok`r`n"
+        }
+    }
+
     Context 'quando os arquivos do projeto têm caminhos do Windows' {
         BeforeAll {
             $projeto = Join-Path $TestDrive 'caminhos-do-windows'
