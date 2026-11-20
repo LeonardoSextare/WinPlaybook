@@ -30,6 +30,10 @@ internal static class RelayDeRede
 
     private static int ListarPortas()
     {
+        Thread esperaPeloFimDaEntrada = new Thread(EncerrarNoFimDaEntrada);
+        esperaPeloFimDaEntrada.IsBackground = true;
+        esperaPeloFimDaEntrada.Start();
+
         string anteriores = null;
         StreamWriter saida = new StreamWriter(Console.OpenStandardOutput());
         while (true)
@@ -49,6 +53,17 @@ internal static class RelayDeRede
 
             Thread.Sleep(1000);
         }
+    }
+
+    private static void EncerrarNoFimDaEntrada()
+    {
+        Stream entrada = Console.OpenStandardInput();
+        byte[] dados = new byte[256];
+        while (entrada.Read(dados, 0, dados.Length) > 0)
+        {
+        }
+
+        Environment.Exit(0);
     }
 
     private static int Conectar(int porta, IPAddress destino)

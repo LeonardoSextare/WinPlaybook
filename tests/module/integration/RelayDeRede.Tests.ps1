@@ -10,7 +10,7 @@
         Inicia o relay de rede com os argumentos escolhidos, com a entrada vazia e as saídas gravadas em arquivos, e devolve o processo e os arquivos.
 
         .PARAMETER Argumentos
-        Os argumentos do relay, como 'portas' ou 'conectar 8080'.
+        Os argumentos do relay, como 'conectar 8080'.
 
         .EXAMPLE
         $relay = Start-RelayDeRede -Argumentos "conectar $porta"
@@ -132,23 +132,36 @@ Describe 'Relay de rede' {
 
     Context 'quando lista as portas' {
         BeforeAll {
-            $relay = Start-RelayDeRede -Argumentos 'portas'
-            $prazo = (Get-Date).AddSeconds(10)
-            $lista = ''
-            while (-not $lista -and (Get-Date) -lt $prazo) {
-                Start-Sleep -Milliseconds 200
-                $lista = Get-Content -LiteralPath $relay.Saida -TotalCount 1 -ErrorAction SilentlyContinue
-            }
-            $relay.Processo.Kill()
-            $null = $relay.Processo.WaitForExit(5000)
+            $informacoes = [Diagnostics.ProcessStartInfo]::new($caminhoDoRelay, 'portas')
+            $informacoes.UseShellExecute = $false
+            $informacoes.RedirectStandardInput = $true
+            $informacoes.RedirectStandardOutput = $true
+            $relay = [Diagnostics.Process]::Start($informacoes)
+            $leitura = $relay.StandardOutput.ReadLineAsync()
+            $null = $leitura.Wait(10000)
+            $lista = $leitura.Result
+            $relayContinuaComAEntradaAberta = -not $relay.WaitForExit(2000)
+            $relay.StandardInput.Close()
+            $relaySaiuNoFimDaEntrada = $relay.WaitForExit(10000)
         }
 
         AfterAll {
-            $relay.Processo.Dispose()
+            if (-not $relay.HasExited) {
+                $relay.Kill()
+            }
+            $relay.Dispose()
         }
 
         It 'inclui a porta em que o teste escuta' {
             @("$lista" -split ' ') | Should-ContainCollection "$porta"
+        }
+
+        It 'continua rodando enquanto a entrada está aberta' {
+            $relayContinuaComAEntradaAberta | Should-BeTrue
+        }
+
+        It 'termina quando a entrada fecha' {
+            $relaySaiuNoFimDaEntrada | Should-BeTrue
         }
     }
 }
