@@ -5,6 +5,9 @@ as `ansible-playbook --che` to `--check`, and the subcommands, such as
 `ansible-galaxy co` to `collection`. Paths are still completed as in any
 command.
 
+The first Tab on the options of a command takes about a second. The next ones,
+in the same terminal, are instant.
+
 `Install-WinPlaybook` turns on autocomplete in the PowerShell 7 profile and in
 the Windows PowerShell profile. It works in every new terminal, without
 configuration.
