@@ -41,6 +41,14 @@ Describe 'Show-AvisoDeVersaoNova' {
             $erros.ToString() | Should-BeLikeString '*versão 0.20.0 está disponível (você usa a 0.18.0)*Update-WinPlaybook*'
         }
 
+        It 'escreve o aviso em amarelo' {
+            Mock Write-LinhaColoridaNoErro -ModuleName WinPlaybook { }
+
+            InModuleScope WinPlaybook { Show-AvisoDeVersaoNova -VersaoAtual '0.18.0' }
+
+            Should-Invoke Write-LinhaColoridaNoErro -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter { $Cor -eq 'Yellow' -and $Texto -like '*Update-WinPlaybook*' }
+        }
+
         It 'avisa uma vez só por sessão' {
             InModuleScope WinPlaybook {
                 Show-AvisoDeVersaoNova -VersaoAtual '0.18.0'
