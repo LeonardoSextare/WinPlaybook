@@ -65,6 +65,7 @@ connection that the server refuses shows up as reset
 
 ## Time
 
-Each command takes a few more seconds to start than on Linux. Access to the
-files in Windows folders is also slower than to a Linux disk, which matters in
-projects with many files.
+Each command takes a little over one second longer to start than on Linux.
+Access to the files in Windows folders is also slower than to a Linux disk,
+which matters in projects with many files. See
+[Known limitations](limitations.md).
