@@ -492,15 +492,21 @@ Describe 'Invoke-WinPlaybook' {
         }
 
         It 'conecta no Windows pelo SSH do 127.0.0.1, com o shell do cmd' {
+            $variaveis = Invoke-WinPlaybook ansible-inventory --host localhost_windows 2> $null | Out-String | ConvertFrom-Json
+            $configuracaoDoSsh = Invoke-WinPlaybook ssh -G localhost_windows 2>&1 | Out-String
+
+            $variaveis.ansible_connection | Should-Be 'ssh'
+            $variaveis.ansible_shell_type | Should-Be 'cmd'
+            $configuracaoDoSsh | Should-BeLikeString '*hostname 127.0.0.1*'
+            $configuracaoDoSsh | Should-BeLikeString '*port 47022*'
+            $configuracaoDoSsh | Should-BeLikeString '*user eu*'
+        }
+
+        It 'não mostra caminhos do Linux nas variáveis do host' {
             $saida = Invoke-WinPlaybook ansible-inventory --host localhost_windows 2> $null | Out-String
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
-            $variaveis = $saida | ConvertFrom-Json
-            $variaveis.ansible_host | Should-Be '127.0.0.1'
-            $variaveis.ansible_port | Should-Be 47022
-            $variaveis.ansible_user | Should-Be 'eu'
-            $variaveis.ansible_connection | Should-Be 'ssh'
-            $variaveis.ansible_shell_type | Should-Be 'cmd'
+            $saida | Should-NotBeLikeString '*/home/*'
         }
 
         It 'deixa o localhost_windows fora do grupo all, como o localhost' {

@@ -32,8 +32,9 @@ Describe 'Initialize-DistribuicaoDoWinPlaybook' {
             @{ Descricao = 'o Path do Windows fora do PATH do WSL'; Trecho = 'appendWindowsPath=false' }
             @{ Descricao = 'o systemd desligado'; Trecho = 'systemd=false' }
             @{ Descricao = 'o idioma C.UTF-8'; Trecho = 'LANG=C.UTF-8' }
-            @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = '''HashKnownHosts no\n' }
-            @{ Descricao = 'o usuário do Windows como padrão do ssh'; Trecho = 'User "%s"\n'' "$3" > /etc/ssh/ssh_config.d/winplaybook.conf' }
+            @{ Descricao = 'o ssh_config do localhost_windows'; Trecho = '''Include /home/%s/.cache/winplaybook/ssh_config_localhost_windows\n' }
+            @{ Descricao = 'o known_hosts gravado sem hash'; Trecho = 'HashKnownHosts no\n' }
+            @{ Descricao = 'o usuário do Windows como padrão do ssh'; Trecho = 'User "%s"\n'' "$1" "$3" > /etc/ssh/ssh_config.d/winplaybook.conf' }
             @{ Descricao = 'o .ansible.cfg do perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible.cfg" "/home/$1/.ansible.cfg"' }
             @{ Descricao = 'as collections e as roles no perfil do Windows'; Trecho = 'ln -sfn "$perfil/.ansible/$pasta" "$pasta_do_ansible/$pasta"' }
             @{ Descricao = 'as collections que já estavam na distribuição levadas para o perfil'; Trecho = 'cp -r "$pasta_do_ansible/$pasta/." "$perfil/.ansible/$pasta/"' }

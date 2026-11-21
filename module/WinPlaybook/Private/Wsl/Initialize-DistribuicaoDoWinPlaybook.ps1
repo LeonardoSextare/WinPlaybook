@@ -25,6 +25,8 @@
     - o idioma é o C.UTF-8, que o Ansible exige;
     - o ssh conecta com o nome do usuário do Windows quando a conexão não define um usuário,
       como o ssh do Windows;
+    - o ssh lê a conexão do localhost_windows do config que o supervisor de
+      Get-ScriptDoSupervisor gera;
     - o Ansible usa o .ansible.cfg do perfil do Windows e as pastas .ansible\collections,
       .ansible\roles e .ansible\plugins do perfil, onde ficam o que o ansible-galaxy instala e
       os plugins do usuário. O que já estava nessas pastas da distribuição vai para o perfil;
@@ -86,7 +88,7 @@
         'export DEBIAN_FRONTEND=noninteractive;'
         'apt-get update -qq;'
         'apt-get install -y -qq --no-install-recommends ca-certificates curl git libcap2-bin nftables openssh-client python3 rsync socat sshpass > /dev/null;'
-        'printf ''HashKnownHosts no\nUser "%s"\n'' "$3" > /etc/ssh/ssh_config.d/winplaybook.conf;'
+        'printf ''Include /home/%s/.cache/winplaybook/ssh_config_localhost_windows\nHashKnownHosts no\nUser "%s"\n'' "$1" "$3" > /etc/ssh/ssh_config.d/winplaybook.conf;'
         'id -u "$1" > /dev/null 2>&1 || useradd --create-home --shell /bin/bash "$1";'
         'pasta_do_ssh="/home/$1/.ssh";'
         '[ -d "$pasta_do_ssh" ] || install -d -m 700 -o "$1" -g "$1" "$pasta_do_ssh";'
