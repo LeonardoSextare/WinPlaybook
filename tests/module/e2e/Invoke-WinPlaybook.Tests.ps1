@@ -790,6 +790,27 @@ Describe 'Invoke-WinPlaybook' {
             $saida | Should-BeLikeString '*oi depois do systemd*'
         }
 
+        It 'passa as aspas e o $ do lookup pipe ao programa do Windows <Descricao>' -ForEach @(
+            @{ Descricao = 'como no Windows'; Comando = 'powershell.exe -NoProfile -Command "$nome = ''a b''; Write-Output \"[$nome]\""'; Esperado = '*"msg": "`[a b`]"*' }
+            @{ Descricao = 'pelo caminho do Windows'; Comando = 'C:\Windows\System32\cmd.exe /c echo "oi do cmd"'; Esperado = '*"msg": "\"oi do cmd\""*' }
+            @{ Descricao = 'com o sh quando o comando usa os operadores dele'; Comando = 'cmd.exe /c echo oi | tr a-z A-Z'; Esperado = '*"msg": "OI*' }
+        ) {
+            $linhas = @(
+                '- hosts: localhost'
+                '  gather_facts: false'
+                '  vars:'
+                "    comando: '$($Comando.Replace("'", "''"))'"
+                '  tasks:'
+                '    - ansible.builtin.debug:'
+                '        msg: "{{ lookup(''pipe'', comando) }}"'
+            )
+            [IO.File]::WriteAllText((Join-Path $TestDrive 'pipe.yml'), ($linhas -join "`n") + "`n")
+
+            $saida = Invoke-WinPlaybook ansible-playbook pipe.yml 2>&1 | Out-String
+
+            $LASTEXITCODE | Should-Be 0 -Because $saida
+            $saida | Should-BeLikeString $Esperado
+        }
         It 'não executa os shims do WinPlaybook pelo Path' {
             $saida = Invoke-WinPlaybook sh -c 'command -v ansible-playbook' 2>&1 | Out-String
 

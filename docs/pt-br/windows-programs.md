@@ -29,6 +29,37 @@ Windows.
 
 ---
 
+## Chamar um programa no lookup pipe
+
+No `lookup('pipe')`, um comando que começa com um programa do Windows recebe os
+argumentos como no Windows, sem que um _shell_ do Linux interprete as aspas e
+o `$`:
+
+```yaml
+- name: Pega o IP de uma máquina virtual do Hyper-V
+  ansible.builtin.set_fact:
+    ip_da_vm: >-
+      {{ lookup('pipe', 'powershell.exe -NoProfile -Command "(Get-VM teste | Get-VMNetworkAdapter).IPAddresses[0]"') }}
+```
+
+Um comando que usa `|`, `&&`, `;`, `<` ou `>` fora das aspas passa pelo `sh`,
+como no Linux.
+
+!!! note "No módulo shell"
+
+    O `ansible.builtin.shell` sempre passa o comando pelo `sh` do Linux, como
+    no Ansible normal. Para chamar o PowerShell com aspas e `$`, use o
+    `ansible.builtin.command` com o `argv`:
+
+    ```yaml
+    - name: Mostra o nome do computador
+      ansible.builtin.command:
+        argv: [powershell.exe, -NoProfile, -Command, "Write-Output $env:COMPUTERNAME"]
+      delegate_to: localhost
+    ```
+
+---
+
 ## Rodar um script do projeto
 
 Um _script_ do projeto é executado de acordo com a extensão, como no Windows:
