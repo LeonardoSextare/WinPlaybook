@@ -50,7 +50,7 @@
     $script = @(
         'export PATH="$HOME/.local/bin:$PATH";'
         'command -v uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | env UV_NO_MODIFY_PATH=1 sh > /dev/null 2>&1;'
-        'arquivos_do_hook="$1"; executaveis="$2"; pacote="$3"; shift 3;'
+        'arquivos_do_hook=$(cat "$(wslpath -a "$1")"); executaveis="$2"; pacote="$3"; shift 3;'
         'for extra in "$@"; do set -- "$@" --with "$extra"; shift; done;'
         'ultima_saida="";'
         'for versao in $(uv python list 2> /dev/null | sed -n ''s/^cpython-\(3\.[0-9]*\)\.[0-9]*-linux.*/\1/p'' | sort -t. -k2 -n -r -u); do'
@@ -65,11 +65,18 @@
         'printf ''%s\n'' "$ultima_saida" >&2; exit 1'
     ) -join ' '
 
+    $caminhoDosArquivosDoHook = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath "WinPlaybook-hook-$([guid]::NewGuid().ToString('N')).txt"
     $arquivosDoHook = @(foreach ($arquivo in Get-ArquivoDoHookDoAnsible) { "$($arquivo.Nome) $([Convert]::ToBase64String($arquivo.Conteudo))" }) -join "`n"
+    [IO.File]::WriteAllText($caminhoDosArquivosDoHook, $arquivosDoHook)
     $nomesDosPacotes = @(foreach ($pacote in $PacotesPython) { [regex]::Match($pacote, '^[A-Za-z0-9][A-Za-z0-9._-]*(?=\s*([\[<>=!~;@]|$))').Value })
     $executaveis = (@('ansible-core', 'ansible-lint', 'ansible-creator') + @($nomesDosPacotes | Where-Object { $_ })) -join ','
-    $argumentos = @($arquivosDoHook, $executaveis, $pacoteDoAnsible) + $PacotesPython
-    $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'winplaybook'
+    $argumentos = @($caminhoDosArquivosDoHook, $executaveis, $pacoteDoAnsible) + $PacotesPython
+    try {
+        $resultado = Invoke-ScriptNaDistribuicao -Distribuicao $Nome -Script $script -Argumentos $argumentos -Usuario 'winplaybook'
+    }
+    finally {
+        Remove-Item -LiteralPath $caminhoDosArquivosDoHook -Force -ErrorAction SilentlyContinue
+    }
     $instalou = $resultado.CodigoDeSaida -eq 0
     if (-not $instalou) {
         throw (Get-Mensagem -Nome 'AnsibleNaoInstalado' -Valores $Nome, $resultado.Saida)
