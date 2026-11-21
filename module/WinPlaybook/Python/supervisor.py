@@ -399,6 +399,22 @@ def gravar_se_mudou(caminho, conteudo):
         arquivo.write(conteudo)
 
 
+def preparar_config_do_ssh_do_localhost_windows(localhost_windows):
+    linhas = (
+        'Host localhost_windows',
+        '    HostName 127.0.0.1',
+        '    Port ' + str(int(localhost_windows['porta'])),
+        '    User "' + localhost_windows['usuario'] + '"',
+        '    IdentityFile ' + CHAVE_DO_LOCALHOST_WINDOWS,
+        '    IdentitiesOnly yes',
+        '    UserKnownHostsFile ' + KNOWN_HOSTS_DO_LOCALHOST_WINDOWS,
+        '    StrictHostKeyChecking accept-new',
+    )
+    destino = os.path.expanduser('~/.cache/winplaybook/ssh_config_localhost_windows')
+    os.makedirs(os.path.dirname(destino), exist_ok=True)
+    gravar_se_mudou(destino, ('\n'.join(linhas) + '\n').encode())
+
+
 def instalar_modulo_do_winplaybook(ambiente_do_projeto):
     origens = glob.glob(os.path.expanduser('~/.local/share/uv/tools/ansible/lib/python*/site-packages/' + PACOTE_DO_HOOK))
     destinos = glob.glob(ambiente_do_projeto + '/lib/python*/site-packages')
@@ -889,6 +905,7 @@ preparar_ambiente_do_projeto(ambiente.get('comandosDoProjeto'))
 marcar_etapa('ambiente do projeto')
 if ambiente.get('localhostWindows'):
     portas_fixas_do_windows.add(int(ambiente['localhostWindows']['porta']))
+    preparar_config_do_ssh_do_localhost_windows(ambiente['localhostWindows'])
     os.environ['WINPLAYBOOK_LOCALHOST_WINDOWS'] = json.dumps(dict(ambiente['localhostWindows'], chave=CHAVE_DO_LOCALHOST_WINDOWS, knownHosts=KNOWN_HOSTS_DO_LOCALHOST_WINDOWS))
 iniciar_ponte_de_rede(ambiente.get('relayDeRede'))
 marcar_etapa('ponte de rede')

@@ -11,16 +11,11 @@ def criar_host_da_maquina_windows():
         return None
     from ansible.inventory.host import Host
     host = Host(HOST_DA_MAQUINA_WINDOWS)
-    host.address = '127.0.0.1'
+    host.address = HOST_DA_MAQUINA_WINDOWS
     host.implicit = True
     variaveis = {
-        'ansible_host': '127.0.0.1',
-        'ansible_port': configuracao['porta'],
-        'ansible_user': configuracao['usuario'],
         'ansible_connection': 'ssh',
         'ansible_shell_type': 'cmd',
-        'ansible_ssh_private_key_file': configuracao['chave'],
-        'ansible_ssh_common_args': '-o UserKnownHostsFile=' + configuracao['knownHosts'] + ' -o StrictHostKeyChecking=accept-new',
     }
     for nome, valor in variaveis.items():
         host.set_variable(nome, valor)
