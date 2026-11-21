@@ -29,6 +29,37 @@ as `{{ playbook_dir }}`, reach the program as Windows paths.
 
 ---
 
+## Call a program in the pipe lookup
+
+In `lookup('pipe')`, a command that starts with a Windows program gets its
+arguments as on Windows, without a Linux shell interpreting the quotes and the
+`$`:
+
+```yaml
+- name: Get the IP address of a Hyper-V virtual machine
+  ansible.builtin.set_fact:
+    vm_ip: >-
+      {{ lookup('pipe', 'powershell.exe -NoProfile -Command "(Get-VM test | Get-VMNetworkAdapter).IPAddresses[0]"') }}
+```
+
+A command that uses `|`, `&&`, `;`, `<`, or `>` outside quotes goes through
+`sh`, as on Linux.
+
+!!! note "In the shell module"
+
+    `ansible.builtin.shell` always sends the command through the Linux `sh`,
+    as in regular Ansible. To call PowerShell with quotes and `$`, use
+    `ansible.builtin.command` with `argv`:
+
+    ```yaml
+    - name: Show the computer name
+      ansible.builtin.command:
+        argv: [powershell.exe, -NoProfile, -Command, "Write-Output $env:COMPUTERNAME"]
+      delegate_to: localhost
+    ```
+
+---
+
 ## Run a project script
 
 A project script runs by its extension, as on Windows:

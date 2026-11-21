@@ -12,6 +12,7 @@ from .comum import eh_programa_do_ansible, raiz_de_montagem
 EXTENSOES_DE_SCRIPT = ('.bat', '.cmd', '.exe', '.com', '.ps1', '.py', '.sh')
 EXECUTAR_WINDOWS = '/usr/local/lib/winplaybook/executar-windows'
 PASTA_DA_MONTAGEM_COM_EXECUCAO = '/opt/winplaybook/exec/'
+PASTA_DO_PATH_DO_WINDOWS = os.path.expanduser('~/.cache/winplaybook/path-do-windows')
 ACOES_DE_COPIA = ('copy', 'ansible.builtin.copy', 'ansible.legacy.copy')
 FAMILIAS_DE_SHELL_DO_WINDOWS = ('powershell', 'cmd')
 pasta_das_copias_sem_crlf = []
@@ -142,8 +143,80 @@ def access_com_scripts_do_windows(caminho, modo, *args, **kwargs):
     return access_original(caminho, modo, *args, **kwargs)
 
 
+def dividir_como_o_windows(texto):
+    argumentos = []
+    atual = ''
+    tem_argumento = False
+    entre_aspas = False
+    posicao = 0
+    while posicao < len(texto):
+        caractere = texto[posicao]
+        if caractere == '\\':
+            barras = len(texto[posicao:]) - len(texto[posicao:].lstrip('\\'))
+            posicao += barras
+            if posicao < len(texto) and texto[posicao] == '"':
+                atual += '\\' * (barras // 2)
+                if barras % 2:
+                    atual += '"'
+                    posicao += 1
+            else:
+                atual += '\\' * barras
+            tem_argumento = True
+            continue
+        if caractere == '"':
+            if entre_aspas and texto[posicao + 1:posicao + 2] == '"':
+                atual += '"'
+                posicao += 2
+                continue
+            entre_aspas = not entre_aspas
+            tem_argumento = True
+        elif caractere in ' \t' and not entre_aspas:
+            if tem_argumento:
+                argumentos.append(atual)
+            atual = ''
+            tem_argumento = False
+        elif caractere in '|&;<>`\n' and not entre_aspas:
+            return None
+        else:
+            atual += caractere
+            tem_argumento = True
+        posicao += 1
+    if entre_aspas:
+        return None
+    if tem_argumento:
+        argumentos.append(atual)
+    return argumentos
+
+
+def comando_do_programa_do_windows_sem_shell(linha_de_comando):
+    argumentos = dividir_como_o_windows(linha_de_comando)
+    if not argumentos:
+        return None
+    programa = argumentos[0]
+    if re.match(r'^[A-Za-z]:[\\/]', programa):
+        programa = raiz_de_montagem() + '/' + programa[0].lower() + programa[2:].replace('\\', '/')
+    elif '/' not in programa and '\\' not in programa:
+        programa = shutil.which(programa)
+        if programa and os.path.dirname(programa) == PASTA_DO_PATH_DO_WINDOWS:
+            return [programa] + argumentos[1:]
+    if not programa:
+        return None
+    real = os.path.realpath(programa)
+    extensao = os.path.splitext(real)[1].lower()
+    if not real.startswith(raiz_de_montagem() + '/') or extensao not in ('.exe', '.com', '.bat', '.cmd'):
+        return None
+    if extensao in ('.bat', '.cmd'):
+        return [EXECUTAR_WINDOWS, real] + argumentos[1:]
+    return [real] + argumentos[1:]
+
+
 class PopenComScriptsDoWindows(popen_original):
     def __init__(self, args, *outros, **opcoes):
+        if isinstance(args, str) and opcoes.get('shell') and eh_programa_do_ansible():
+            comando = comando_do_programa_do_windows_sem_shell(args)
+            if comando:
+                args = comando
+                opcoes['shell'] = False
         if isinstance(args, (list, tuple)) and args and not opcoes.get('shell') and eh_programa_do_ansible():
             comando = comando_do_script_do_windows(args[0])
             if comando:
