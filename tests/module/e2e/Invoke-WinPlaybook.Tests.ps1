@@ -491,12 +491,12 @@ Describe 'Invoke-WinPlaybook' {
             $saida | Should-BeLikeString '*hosts (1)*localhost_windows*'
         }
 
-        It 'conecta no Windows pelo SSH do 127.0.0.1, com o shell do cmd' {
+        It 'conecta no Windows pelo SSH do 127.0.0.1, com o shell do OpenSSH do Windows' {
             $variaveis = Invoke-WinPlaybook ansible-inventory --host localhost_windows 2> $null | Out-String | ConvertFrom-Json
             $configuracaoDoSsh = Invoke-WinPlaybook ssh -G localhost_windows 2>&1 | Out-String
 
             $variaveis.ansible_connection | Should-Be 'ssh'
-            $variaveis.ansible_shell_type | Should-Be 'cmd'
+            $variaveis.ansible_shell_type | Should-Be (InModuleScope WinPlaybook { Get-ShellDoSshDoWindows })
             $configuracaoDoSsh | Should-BeLikeString '*hostname 127.0.0.1*'
             $configuracaoDoSsh | Should-BeLikeString '*port 47022*'
             $configuracaoDoSsh | Should-BeLikeString '*user eu*'
@@ -551,6 +551,37 @@ Describe 'Invoke-WinPlaybook' {
 
             $LASTEXITCODE | Should-Be 0 -Because $saida
             $saida | Should-BeLikeString "*$($env:USERNAME)*"
+        }
+
+        Context 'quando o shell padrão do OpenSSH do Windows é o PowerShell' {
+            BeforeAll {
+                $shellOriginal = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -ErrorAction SilentlyContinue).DefaultShell
+                $null = New-Item -Path 'HKLM:\SOFTWARE\OpenSSH' -Force
+                Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value (Join-Path ([Environment]::GetFolderPath('System')) 'WindowsPowerShell\v1.0\powershell.exe')
+            }
+
+            AfterAll {
+                if ($shellOriginal) {
+                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -Value $shellOriginal
+                }
+                else {
+                    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\OpenSSH' -Name 'DefaultShell' -ErrorAction SilentlyContinue
+                }
+            }
+
+            It 'executa um módulo do ansible.windows' {
+                $saida = Invoke-WinPlaybook ansible localhost_windows -m ansible.windows.win_ping 2>&1 | Out-String
+
+                $LASTEXITCODE | Should-Be 0 -Because $saida
+                $saida | Should-BeLikeString '*"ping": "pong"*'
+            }
+
+            It 'executa o raw no PowerShell' {
+                $saida = Invoke-WinPlaybook ansible localhost_windows -m ansible.builtin.raw -a 'Write-Output "versao $($PSVersionTable.PSVersion.Major)"' 2>&1 | Out-String
+
+                $LASTEXITCODE | Should-Be 0 -Because $saida
+                $saida | Should-BeLikeString '*versao 5*'
+            }
         }
 
         Context 'quando roda o playbook do tutorial da documentação' {

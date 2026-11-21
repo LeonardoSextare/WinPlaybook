@@ -15,7 +15,7 @@ def criar_host_da_maquina_windows():
     host.implicit = True
     variaveis = {
         'ansible_connection': 'ssh',
-        'ansible_shell_type': 'cmd',
+        'ansible_shell_type': configuracao.get('shell', 'cmd'),
     }
     for nome, valor in variaveis.items():
         host.set_variable(nome, valor)

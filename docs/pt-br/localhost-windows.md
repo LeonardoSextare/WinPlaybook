@@ -73,10 +73,12 @@ para ele, mesmo sem inventário.
 pasta_de_trabalho: C:\Trabalho
 ```
 
-As tarefas rodam pelo SSH com o shell do `cmd`. Isso muda pouco: os módulos
-`ansible.windows`, como o `win_shell`, usam o PowerShell. Só um
-`ansible.builtin.raw` roda no `cmd`. Para um comando do PowerShell, use o
-`ansible.windows.win_shell` ou o `ansible.windows.win_powershell`.
+As tarefas rodam pelo SSH com o shell padrão do OpenSSH do Windows: o `cmd`,
+ou o PowerShell, se você o escolheu como
+[DefaultShell](https://learn.microsoft.com/windows-server/administration/openssh/openssh-server-configuration#configuring-the-default-shell-for-openssh-in-windows).
+O WinPlaybook segue essa escolha. A diferença só aparece no
+`ansible.builtin.raw`, que roda nesse shell. Os módulos `ansible.windows`,
+como o `win_shell`, usam o PowerShell nos dois casos.
 
 ---
 

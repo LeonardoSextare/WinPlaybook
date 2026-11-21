@@ -84,11 +84,11 @@ Describe 'Get-ArquivoDoHookDoAnsible' {
         $script.Contains("os.environ.get('WINPLAYBOOK_MOUNT_ROOT', '/mnt/')") | Should-BeTrue
     }
 
-    It 'cria o host localhost_windows implícito, ligado ao Windows pelo SSH' {
+    It 'cria o host localhost_windows implícito, ligado ao Windows pelo SSH, com o shell do OpenSSH do Windows' {
         $script = InModuleScope WinPlaybook { -join (Get-ArquivoDoHookDoAnsible | ForEach-Object { [Text.Encoding]::UTF8.GetString($_.Conteudo) }) }
 
         $script.Contains("HOST_DA_MAQUINA_WINDOWS = 'localhost_windows'") | Should-BeTrue
         $script.Contains("'ansible.inventory.manager': ajustar_gerenciador_de_inventario") | Should-BeTrue
-        $script.Contains("'ansible_shell_type': 'cmd'") | Should-BeTrue
+        $script.Contains("'ansible_shell_type': configuracao.get('shell', 'cmd')") | Should-BeTrue
     }
 }

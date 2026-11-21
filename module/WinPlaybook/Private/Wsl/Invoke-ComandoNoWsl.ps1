@@ -176,7 +176,7 @@
     }
     $temLocalhostWindows = [bool] $configuracao['LocalhostWindowsPort']
     if ($temLocalhostWindows) {
-        $ambienteDoComando['localhostWindows'] = @{ porta = [int] $configuracao['LocalhostWindowsPort']; usuario = $configuracao['LocalhostWindowsUser'] }
+        $ambienteDoComando['localhostWindows'] = @{ porta = [int] $configuracao['LocalhostWindowsPort']; usuario = $configuracao['LocalhostWindowsUser']; shell = (Get-ShellDoSshDoWindows) }
     }
     $criaShimsDoProjeto = $temPastaDosShims -and [bool] $configuracao.ShimPowerShellPath
     if ($criaShimsDoProjeto) {
