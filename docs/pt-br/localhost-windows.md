@@ -62,6 +62,43 @@ Os módulos disponíveis estão na documentação da
 
 ---
 
+## Definir variáveis
+
+O `localhost_windows` recebe as variáveis como qualquer host: o
+`host_vars/localhost_windows.yml` e o `group_vars/all.yml` do projeto valem
+para ele, mesmo sem inventário.
+
+```yaml
+# host_vars/localhost_windows.yml
+pasta_de_trabalho: C:\Trabalho
+```
+
+As tarefas rodam pelo SSH com o shell do `cmd`. Isso muda pouco: os módulos
+`ansible.windows`, como o `win_shell`, usam o PowerShell. Só um
+`ansible.builtin.raw` roda no `cmd`. Para um comando do PowerShell, use o
+`ansible.windows.win_shell` ou o `ansible.windows.win_powershell`.
+
+---
+
+## Reiniciar o Windows
+
+O Ansible roda no próprio Windows, então um reinício encerra o comando no
+meio, e o _playbook_ não continua depois que o Windows volta. Não use o
+`ansible.windows.win_reboot` no `localhost_windows`.
+
+Deixe o reinício para o fim, com um tempo para o comando terminar:
+
+```yaml
+- name: Agenda o reinício para daqui a um minuto
+  ansible.windows.win_command: shutdown.exe /r /t 60
+  when: reinicio_pendente | default(false)
+```
+
+Ou guarde o `reboot_required` que módulos como o `win_feature` devolvem e
+avise no fim, para você reiniciar quando puder.
+
+---
+
 ## Desligar o localhost_windows
 
 ```powershell
