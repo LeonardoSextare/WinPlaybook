@@ -32,15 +32,29 @@ Describe 'Install-AnsibleNaDistribuicao' {
         }
 
         It 'grava no ambiente do Ansible o pacote que adapta o Ansible ao Windows, no lugar do módulo antigo' {
+            $copiaDosArquivosDoHook = Join-Path $TestDrive 'arquivos-do-hook.txt'
+            Mock Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -ParameterFilter { $Argumentos.Count -gt 0 -and (Test-Path -LiteralPath $Argumentos[0]) } {
+                Copy-Item -LiteralPath $Argumentos[0] -Destination $copiaDosArquivosDoHook
+                [pscustomobject]@{ CodigoDeSaida = 0; Saida = '' }
+            }
+
+            InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
+
+            $linhas = @(Get-Content -LiteralPath $copiaDosArquivosDoHook)
+            $arquivos = @(InModuleScope WinPlaybook { Get-ArquivoDoHookDoAnsible })
+            $linhas.Count | Should-Be $arquivos.Count
+            $linhas[0] | Should-Be "__init__.py $([Convert]::ToBase64String($arquivos[0].Conteudo))"
+            Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
+                $Script.Contains('"$site_packages/winplaybook_ansible/$nome"') -and $Script.Contains('import winplaybook_ansible\n'' > "$site_packages/winplaybook.pth"') -and
+                $Script.Contains('rm -rf "$site_packages/winplaybook_caminhos_do_windows.py"')
+            }
+        }
+
+        It 'mantém a linha de comando curta e apaga o arquivo temporário do pacote' {
             InModuleScope WinPlaybook { Install-AnsibleNaDistribuicao -Nome 'WinPlaybook' -VersaoDoAnsible '' }
 
             Should-Invoke Invoke-ScriptNaDistribuicao -ModuleName WinPlaybook -Times 1 -Exactly -ParameterFilter {
-                $linhas = $Argumentos[0] -split "`n"
-                $arquivos = @(InModuleScope WinPlaybook { Get-ArquivoDoHookDoAnsible })
-                $linhas.Count -eq $arquivos.Count -and
-                $linhas[0] -eq "__init__.py $([Convert]::ToBase64String($arquivos[0].Conteudo))" -and
-                $Script.Contains('"$site_packages/winplaybook_ansible/$nome"') -and $Script.Contains('import winplaybook_ansible\n'' > "$site_packages/winplaybook.pth"') -and
-                $Script.Contains('rm -rf "$site_packages/winplaybook_caminhos_do_windows.py"')
+                ($Argumentos -join ' ').Length -lt 2000 -and -not (Test-Path -LiteralPath $Argumentos[0])
             }
         }
 

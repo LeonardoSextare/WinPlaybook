@@ -103,7 +103,10 @@ bugs, e como o código lida com cada um.
   caminho do arquivo que o `Get-CaminhoDoSupervisor` grava na pasta
   temporária e o JSON na variável `WINPLAYBOOK_ENVIRONMENT`, pelo `WSLENV`. O
   teste unitário "mantém a linha de comando curta com um ambiente grande"
-  confere.
+  confere. O pacote do hook do Ansible, em Base64, passou do limite quando
+  chegou a ~25 KB. O `Install-AnsibleNaDistribuicao` grava o pacote num
+  arquivo temporário e passa só o caminho dele, e o teste "mantém a linha de
+  comando curta e apaga o arquivo temporário do pacote" confere.
 
 - Quando o processo do Windows que chamou o `wsl.exe` termina, como num
   terminal fechado ou num comando que o VS Code cancela, o WSL manda SIGHUP
