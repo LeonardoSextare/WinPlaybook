@@ -74,10 +74,12 @@ project apply to it, even without an inventory.
 work_folder: C:\Work
 ```
 
-The tasks run over SSH with the `cmd` shell. This changes little: the
-`ansible.windows` modules, such as `win_shell`, use PowerShell. Only an
-`ansible.builtin.raw` task runs in `cmd`. For a PowerShell command, use
-`ansible.windows.win_shell` or `ansible.windows.win_powershell`.
+The tasks run over SSH with the default shell of the Windows OpenSSH: `cmd`,
+or PowerShell, if you chose it as the
+[DefaultShell](https://learn.microsoft.com/windows-server/administration/openssh/openssh-server-configuration#configuring-the-default-shell-for-openssh-in-windows).
+WinPlaybook follows that choice. The difference only shows in
+`ansible.builtin.raw`, which runs in that shell. The `ansible.windows` modules,
+such as `win_shell`, use PowerShell in both cases.
 
 ---
 
