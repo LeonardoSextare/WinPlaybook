@@ -63,6 +63,43 @@ The available modules are in the documentation of the
 
 ---
 
+## Set variables
+
+`localhost_windows` gets variables like any host: the
+`host_vars/localhost_windows.yml` and `group_vars/all.yml` files of the
+project apply to it, even without an inventory.
+
+```yaml
+# host_vars/localhost_windows.yml
+work_folder: C:\Work
+```
+
+The tasks run over SSH with the `cmd` shell. This changes little: the
+`ansible.windows` modules, such as `win_shell`, use PowerShell. Only an
+`ansible.builtin.raw` task runs in `cmd`. For a PowerShell command, use
+`ansible.windows.win_shell` or `ansible.windows.win_powershell`.
+
+---
+
+## Restart Windows
+
+Ansible runs on Windows itself, so a restart stops the command in the middle,
+and the playbook doesn't continue after Windows comes back. Don't use
+`ansible.windows.win_reboot` on `localhost_windows`.
+
+Leave the restart for the end, with time for the command to finish:
+
+```yaml
+- name: Schedule the restart in one minute
+  ansible.windows.win_command: shutdown.exe /r /t 60
+  when: restart_pending | default(false)
+```
+
+Or keep the `reboot_required` value that modules such as `win_feature` return
+and show a message at the end, so that you restart when you can.
+
+---
+
 ## Turn off localhost_windows
 
 ```powershell
