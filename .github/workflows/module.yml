@@ -114,7 +114,7 @@ jobs:
 
       - name: Restaura a distribuição de testes do cache
         id: cache-da-distribuicao
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: ${{ runner.temp }}\distribuicao-de-testes
           key: distribuicao-de-testes-${{ hashFiles('module/WinPlaybook/Private/Wsl/New-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Initialize-DistribuicaoDoWinPlaybook.ps1', 'module/WinPlaybook/Private/Wsl/Install-AnsibleNaDistribuicao.ps1', 'module/WinPlaybook/Python/winplaybook_ansible/*.py', 'tests/module/helpers/Wsl.ps1') }}
@@ -152,7 +152,7 @@ jobs:
 
       - name: Guarda a distribuição de testes no cache
         if: steps.cache-da-distribuicao.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: ${{ runner.temp }}\distribuicao-de-testes
           key: ${{ steps.cache-da-distribuicao.outputs.cache-primary-key }}
